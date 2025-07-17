@@ -1,84 +1,140 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import { createClientSupabase } from '@/lib/supabase'
+import { Database } from '@/lib/database.types'
 
-// Sample listings data
-const sampleListings = [
-  {
-    id: 1,
-    title: "500 kVA Power Transformer",
-    description: "Excellent condition 500 kVA power transformer. Recently tested and certified. Includes all…",
-    price: 45000.00,
-    location: "Houston, TX",
-    category: "Transformers",
-    condition: "Excellent",
-    datePosted: "7/10/2025",
-    image: null
-  },
-  {
-    id: 2,
-    title: "15 kV Vacuum Circuit Breaker",
-    description: "High-quality 15 kV vacuum circuit breaker in like-new condition. Includes control panel and ...",
-    price: 12500.00,
-    location: "Houston, TX",
-    category: "Breakers",
-    condition: "Like New",
-    datePosted: "7/10/2025",
-    image: null
-  },
-  {
-    id: 3,
-    title: "1000 HP Electric Motor",
-    description: "Industrial-grade 1000 HP electric motor. Good working condition with recent maintenance…",
-    price: 28000.00,
-    location: "Houston, TX",
-    category: "Motors",
-    condition: "Good",
-    datePosted: "7/10/2025",
-    image: null
-  },
-  {
-    id: 4,
-    title: "Medium Voltage Switchgear",
-    description: "Complete medium voltage switchgear panel. Includes protective relays, control systems, and…",
-    price: 75000.00,
-    location: "Houston, TX",
-    category: "Switchgear",
-    condition: "Excellent",
-    datePosted: "7/10/2025",
-    image: null
-  },
-  {
-    id: 5,
-    title: "Generator Control Panel",
-    description: "Advanced generator control panel with automatic transfer switch capabilities. Fair condition, suitabl…",
-    price: 8500.00,
-    location: "Houston, TX",
-    category: "Panels",
-    condition: "Fair",
-    datePosted: "7/10/2025",
-    image: null
-  }
-]
+type Listing = Database['public']['Tables']['listings']['Row']
 
 export default function ListingsPage() {
+  const [listings, setListings] = useState<Listing[]>([])
+  const [filteredListings, setFilteredListings] = useState<Listing[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All Categories')
   const [selectedLocation, setSelectedLocation] = useState('All Locations')
+  const [sortBy, setSortBy] = useState('newest')
+
+  const supabase = createClientSupabase()
+
+  const categories = [
+    'All Categories',
+    'Transformers',
+    'Breakers', 
+    'Motors',
+    'Switchgear',
+    'Panels',
+    'Cables',
+    'Generators',
+    'Insulators',
+    'Protective Equipment',
+    'Testing Equipment',
+    'Other'
+  ]
+
+  useEffect(() => {
+    fetchListings()
+  }, [])
+
+  useEffect(() => {
+    filterListings()
+  }, [listings, searchTerm, selectedCategory, selectedLocation, sortBy])
+
+  const fetchListings = async () => {
+    try {
+      let query = supabase
+        .from('listings')
+        .select('*')
+        .eq('is_sold', false) // Only show available listings
+
+      // Apply sorting
+      switch (sortBy) {
+        case 'newest':
+          query = query.order('created_at', { ascending: false })
+          break
+        case 'oldest':
+          query = query.order('created_at', { ascending: true })
+          break
+        case 'price_low':
+          query = query.order('price', { ascending: true })
+          break
+        case 'price_high':
+          query = query.order('price', { ascending: false })
+          break
+        default:
+          query = query.order('created_at', { ascending: false })
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+      setListings(data || [])
+    } catch (error) {
+      console.error('Error fetching listings:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const filterListings = () => {
+    let filtered = [...listings]
+
+    // Filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter(listing =>
+        listing.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        listing.description.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    }
+
+    // Filter by category
+    if (selectedCategory !== 'All Categories') {
+      filtered = filtered.filter(listing => listing.category === selectedCategory)
+    }
+
+    // Filter by location
+    if (selectedLocation !== 'All Locations') {
+      filtered = filtered.filter(listing => listing.location === selectedLocation)
+    }
+
+    setFilteredListings(filtered)
+  }
+
+  // Get unique locations from listings
+  const locations = ['All Locations', ...new Set(listings.map(listing => listing.location))]
 
   const getConditionColor = (condition: string) => {
     switch (condition) {
-      case 'Excellent':
-      case 'Like New':
-      case 'Good':
+      case 'new':
         return 'bg-green-100 text-green-800'
-      case 'Fair':
+      case 'used':
         return 'bg-yellow-100 text-yellow-800'
+      case 'refurbished':
+        return 'bg-blue-100 text-blue-800'
       default:
         return 'bg-gray-100 text-gray-800'
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white">
+        <Header />
+        <div className="max-w-7xl mx-auto px-8 py-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/3 mb-8"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="bg-gray-200 h-64 rounded-lg"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    )
   }
 
   return (
@@ -131,12 +187,9 @@ export default function ListingsPage() {
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 className="h-10 px-3 pr-8 border border-gray-200 rounded bg-white font-open-sans text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none"
               >
-                <option>All Categories</option>
-                <option>Transformers</option>
-                <option>Breakers</option>
-                <option>Motors</option>
-                <option>Switchgear</option>
-                <option>Panels</option>
+                {categories.map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
               </select>
               <svg
                 className="absolute right-2 top-3 h-4 w-4 text-gray-500 pointer-events-none"
@@ -155,10 +208,9 @@ export default function ListingsPage() {
                 onChange={(e) => setSelectedLocation(e.target.value)}
                 className="h-10 px-3 pr-8 border border-gray-200 rounded bg-white font-open-sans text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none"
               >
-                <option>All Locations</option>
-                <option>Houston, TX</option>
-                <option>Dallas, TX</option>
-                <option>Austin, TX</option>
+                {locations.map(location => (
+                  <option key={location} value={location}>{location}</option>
+                ))}
               </select>
               <svg
                 className="absolute right-2 top-3 h-4 w-4 text-gray-500 pointer-events-none"
@@ -170,97 +222,119 @@ export default function ListingsPage() {
               </svg>
             </div>
 
-            {/* Search Button */}
-            <button className="h-10 px-8 bg-gray-900 text-white rounded font-open-sans text-sm font-medium hover:bg-gray-800 transition-colors flex items-center gap-2">
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            {/* Sort Filter */}
+            <div className="relative">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="h-10 px-3 pr-8 border border-gray-200 rounded bg-white font-open-sans text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none"
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="price_low">Price: Low to High</option>
+                <option value="price_high">Price: High to Low</option>
+              </select>
+              <svg
+                className="absolute right-2 top-3 h-4 w-4 text-gray-500 pointer-events-none"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
-              SEARCH
-            </button>
+            </div>
           </div>
         </div>
 
         {/* Results Header */}
         <div className="flex justify-between items-center mb-6">
           <p className="font-open-sans text-gray-500">
-            Showing 5 results
+            Showing {filteredListings.length} results
           </p>
-          <div className="flex items-center gap-2">
-            <svg className="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z" />
-            </svg>
-            <span className="font-open-sans text-sm text-gray-500">Sort by relevance</span>
-          </div>
         </div>
 
         {/* Equipment Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          {sampleListings.map((listing) => (
-            <div key={listing.id} className="bg-white border border-gray-200 rounded-md shadow-sm overflow-hidden">
-              {/* Image Placeholder */}
-              <div className="h-48 bg-gray-200 flex items-center justify-center">
-                <span className="text-gray-500 font-open-sans">No Image</span>
-              </div>
-              
-              {/* Card Content */}
-              <div className="p-6">
-                {/* Condition and Date */}
-                <div className="flex justify-between items-center mb-2">
-                  <span className={`px-3 py-1 rounded-full text-xs font-open-sans font-bold ${getConditionColor(listing.condition)}`}>
-                    {listing.condition}
-                  </span>
-                  <span className="text-sm font-open-sans font-bold text-gray-500">
-                    {listing.datePosted}
-                  </span>
-                </div>
+        {filteredListings.length === 0 ? (
+          <div className="text-center py-16">
+            <h3 className="font-open-sans text-xl font-bold text-gray-900 mb-2">No listings found</h3>
+            <p className="font-open-sans text-gray-500">Try adjusting your search criteria</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            {filteredListings.map((listing) => (
+                            <div key={listing.id} className="bg-white border border-gray-200 rounded-md shadow-sm overflow-hidden">
+                  {/* Image */}
+                  <div className="h-48 bg-gray-200 flex items-center justify-center">
+                    {listing.images && listing.images.length > 0 ? (
+                      <img 
+                        src={listing.images[0]} 
+                        alt={listing.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-gray-500 font-open-sans">No Image</span>
+                    )}
+                  </div>
+                  
+                  {/* Card Content */}
+                  <div className="p-6">
+                    {/* Condition and Date */}
+                    <div className="flex justify-between items-center mb-2">
+                      <span className={`px-3 py-1 rounded-full text-xs font-open-sans font-bold ${getConditionColor(listing.condition)}`}>
+                        {listing.condition}
+                      </span>
+                      <span className="text-sm font-open-sans font-bold text-gray-500">
+                        {new Date(listing.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
 
-                {/* Title */}
-                <h3 className="font-open-sans font-bold text-lg text-gray-900 mb-2 leading-7">
-                  {listing.title}
-                </h3>
+                    {/* Title */}
+                    <h3 className="font-open-sans font-bold text-lg text-gray-900 mb-2 leading-7">
+                      {listing.title}
+                    </h3>
 
-                {/* Description */}
-                <p className="font-open-sans text-sm text-gray-500 mb-3 leading-5">
-                  {listing.description}
-                </p>
+                    {/* Description */}
+                    <p className="font-open-sans text-sm text-gray-500 mb-3 leading-5">
+                      {listing.description.length > 100 
+                        ? `${listing.description.substring(0, 100)}...` 
+                        : listing.description
+                      }
+                    </p>
 
-                {/* Price and Location */}
-                <div className="flex justify-between items-center mb-3">
-                  <span className="font-open-sans font-bold text-2xl text-gray-900">
-                    ${listing.price.toLocaleString()}.00
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <span className="font-open-sans font-bold text-sm text-gray-500">
-                      {listing.location}
-                    </span>
+                    {/* Price and Location */}
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="font-open-sans font-bold text-2xl text-gray-900">
+                        ${listing.price.toLocaleString()}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span className="font-open-sans font-bold text-sm text-gray-500">
+                          {listing.location}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Category and View Details */}
+                    <div className="flex justify-between items-center">
+                      <span className="font-open-sans font-bold text-sm text-gray-500">
+                        {listing.category}
+                      </span>
+                      <a
+                        href={`/listings/${listing.id}`}
+                        className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded font-open-sans font-bold text-sm uppercase transition-colors"
+                      >
+                        View Details
+                      </a>
+                    </div>
                   </div>
                 </div>
-
-                {/* Category and View Details */}
-                <div className="flex justify-between items-center">
-                  <span className="font-open-sans font-bold text-sm text-gray-500">
-                    {listing.category}
-                  </span>
-                  <button className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded font-open-sans font-bold text-sm uppercase transition-colors">
-                    View Details
-                  </button>
-                </div>
-              </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
-
-        {/* Pagination */}
-        <div className="flex justify-center">
-          <div className="flex items-center gap-2">
-            <span className="font-open-sans text-gray-500">1   2   3   4   5   6   7   8...</span>
-          </div>
-        </div>
-      </div>
 
       <Footer />
     </div>
