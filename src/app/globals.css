@@ -3,24 +3,43 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  
+  /* High Voltage Classifieds Colors */
+  --primary-orange: #f37121;
+  --secondary-red: #ef4744;
+  --charcoal: #1b1b1b;
+  --navy-blue: #111827;
+  --gray: #928c8e;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-staatliches: var(--font-staatliches);
+  --font-open-sans: var(--font-open-sans);
+  --color-primary: var(--primary-orange);
+  --color-secondary: var(--secondary-red);
+  --color-charcoal: var(--charcoal);
+  --color-navy: var(--navy-blue);
+  --color-gray: var(--gray);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-open-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Custom utility classes for the design */
+.adjustLetterSpacing {
+  letter-spacing: -1.2px;
+}
+
+/* Font utility classes */
+.font-staatliches {
+  font-family: var(--font-staatliches), Arial, sans-serif;
+}
+
+.font-open-sans {
+  font-family: var(--font-open-sans), Arial, sans-serif;
 }
