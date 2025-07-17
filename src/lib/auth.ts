@@ -1,4 +1,4 @@
-import { createAdminSupabase } from './supabase-server'
+import { supabase } from './supabase'
 
 // Basic auth configuration - will be enhanced once packages are compatible
 export const authConfig = {
@@ -14,10 +14,8 @@ export const authConfig = {
   }
 }
 
-// User authentication functions
+// User authentication functions (for client components)
 export async function signInWithCredentials(email: string, password: string, role?: 'buyer' | 'seller') {
-  const supabase = createAdminSupabase()
-
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
@@ -27,38 +25,25 @@ export async function signInWithCredentials(email: string, password: string, rol
     return { success: false, error: error?.message }
   }
 
-  // Get or create user profile
+  // Get user profile from database
   const { data: profile } = await supabase
     .from('users')
     .select('*')
     .eq('id', data.user.id)
     .single()
 
-  if (!profile && role) {
-    await supabase
-      .from('users')
-      .insert({
-        id: data.user.id,
-        email: data.user.email!,
-        name: data.user.user_metadata?.full_name || '',
-        role,
-      })
-  }
-
   return { 
     success: true, 
     user: {
       id: data.user.id,
       email: data.user.email!,
-      name: profile?.name || data.user.user_metadata?.full_name || '',
+      name: profile?.full_name || data.user.user_metadata?.full_name || '',
       role: profile?.role || role || 'buyer',
     }
   }
 }
 
 export async function signUpWithCredentials(email: string, password: string, name: string, role: 'buyer' | 'seller') {
-  const supabase = createAdminSupabase()
-
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -73,15 +58,20 @@ export async function signUpWithCredentials(email: string, password: string, nam
     return { success: false, error: error?.message }
   }
 
-  // Create user profile
-  await supabase
+  // Create user profile in database
+  const { error: profileError } = await supabase
     .from('users')
     .insert({
       id: data.user.id,
       email: email,
-      name: name,
+      full_name: name,
       role: role,
     })
+
+  if (profileError) {
+    // If profile creation fails, still return success since auth succeeded
+    console.error('Profile creation error:', profileError)
+  }
 
   return { 
     success: true, 
@@ -92,6 +82,35 @@ export async function signUpWithCredentials(email: string, password: string, nam
       role: role,
     }
   }
+}
+
+// Function to get current user (client-side)
+export async function getCurrentUser() {
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) {
+    return null
+  }
+
+  // Get user profile
+  const { data: profile } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', user.id)
+    .single()
+
+  return {
+    id: user.id,
+    email: user.email!,
+    name: profile?.full_name || user.user_metadata?.full_name || '',
+    role: profile?.role || 'buyer',
+  }
+}
+
+// Function to sign out
+export async function signOut() {
+  const { error } = await supabase.auth.signOut()
+  return { success: !error, error: error?.message }
 }
 
 // User type definitions
