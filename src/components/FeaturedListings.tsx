@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 
 export default function FeaturedListings() {
   const listings = [
@@ -51,9 +52,9 @@ export default function FeaturedListings() {
         </div>
         
         <div className="text-center">
-          <button className="bg-[#f37121] text-white px-6 py-2 rounded font-bold uppercase hover:bg-[#e55a0a] transition-colors">
+          <Link href="/listings" className="inline-block bg-[#f37121] text-white px-6 py-2 rounded font-bold uppercase hover:bg-[#e55a0a] transition-colors">
             View All Listings
-          </button>
+          </Link>
         </div>
       </div>
     </section>

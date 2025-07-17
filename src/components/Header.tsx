@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -26,9 +27,9 @@ export default function Header() {
             
             {/* Navigation Links - Hidden on mobile */}
             <div className="hidden lg:flex flex-row gap-6 items-center">
-              <a href="#" className="text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors">
+              <Link href="/listings" className="text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors">
                 Browse Listings
-              </a>
+              </Link>
               <a href="#" className="text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors">
                 Post an Ad
               </a>
@@ -66,9 +67,9 @@ export default function Header() {
         {isMobileMenuOpen && (
           <div className="lg:hidden absolute top-full left-0 right-0 bg-[#1b1b1b] border-t border-neutral-800 py-4 px-4">
             <div className="flex flex-col space-y-4">
-              <a href="#" className="text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors">
+              <Link href="/listings" className="text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors">
                 Browse Listings
-              </a>
+              </Link>
               <a href="#" className="text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors">
                 Post an Ad
               </a>
