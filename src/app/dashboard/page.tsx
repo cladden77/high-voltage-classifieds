@@ -1,10 +1,11 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, MessageSquare, Eye, DollarSign } from 'lucide-react'
+import { Plus, Edit, Trash2, MessageSquare, Eye, DollarSign, Send, Clock } from 'lucide-react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { createClientSupabase } from '@/lib/supabase'
+import { getCurrentUser } from '@/lib/auth'
 import { Database } from '@/lib/database.types'
 
 type Listing = Database['public']['Tables']['listings']['Row']
@@ -13,18 +14,42 @@ export default function DashboardPage() {
   const [listings, setListings] = useState<Listing[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'listings' | 'messages' | 'analytics'>('listings')
+  const [currentUser, setCurrentUser] = useState<any>(null)
   const supabase = createClientSupabase()
 
   useEffect(() => {
-    fetchListings()
+    checkAuth()
   }, [])
 
-  const fetchListings = async () => {
+  useEffect(() => {
+    if (currentUser) {
+      fetchListings()
+    }
+  }, [currentUser])
+
+  const checkAuth = async () => {
     try {
-      // TODO: Filter by current user's seller_id when auth is implemented
+      const user = await getCurrentUser()
+      if (!user) {
+        window.location.href = '/auth/signin'
+        return
+      }
+      setCurrentUser(user)
+    } catch (error) {
+      console.error('Error checking auth:', error)
+      window.location.href = '/auth/signin'
+    }
+  }
+
+  const fetchListings = async () => {
+    if (!currentUser) return
+
+    try {
+      setLoading(true)
       const { data, error } = await supabase
         .from('listings')
         .select('*')
+        .eq('seller_id', currentUser.id)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -76,6 +101,169 @@ export default function DashboardPage() {
     activeListing: listings.filter(l => !l.is_sold).length,
     soldListings: listings.filter(l => l.is_sold).length,
     totalValue: listings.reduce((sum, l) => sum + l.price, 0)
+  }
+
+  // Messages Tab Component
+  function MessagesTab({ currentUser }: { currentUser: any }) {
+    const [conversations, setConversations] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+      if (currentUser) {
+        fetchConversations()
+      }
+    }, [currentUser])
+
+    const fetchConversations = async () => {
+      try {
+        setLoading(true)
+        
+        // Fetch messages where current user is sender or recipient
+        const { data, error } = await supabase
+          .from('messages')
+          .select(`
+            *,
+            sender:sender_id(id, full_name, email, role),
+            recipient:recipient_id(id, full_name, email, role),
+            listings:listing_id(id, title, price, category, location)
+          `)
+          .or(`sender_id.eq.${currentUser.id},recipient_id.eq.${currentUser.id}`)
+          .order('created_at', { ascending: false })
+
+        if (error) throw error
+
+        // Group messages into conversations by listing
+        const conversationMap = new Map()
+        
+        data?.forEach((message) => {
+          const conversationKey = `${message.listing_id}`
+          const isCurrentUserSender = message.sender_id === currentUser.id
+          const otherUser = isCurrentUserSender ? message.recipient : message.sender
+
+          if (!conversationMap.has(conversationKey)) {
+            conversationMap.set(conversationKey, {
+              id: conversationKey,
+              otherUser: otherUser,
+              listing: message.listings,
+              lastMessage: message,
+              unreadCount: !message.read && !isCurrentUserSender ? 1 : 0,
+              messageCount: 1
+            })
+          } else {
+            const conv = conversationMap.get(conversationKey)
+            if (!message.read && !isCurrentUserSender) {
+              conv.unreadCount++
+            }
+            conv.messageCount++
+          }
+        })
+
+        setConversations(Array.from(conversationMap.values()))
+      } catch (error) {
+        console.error('Error fetching conversations:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (loading) {
+      return (
+        <div className="animate-pulse space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-20 bg-gray-200 rounded-lg"></div>
+          ))}
+        </div>
+      )
+    }
+
+    if (conversations.length === 0) {
+      return (
+        <div className="text-center py-16">
+          <MessageSquare className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="font-open-sans text-xl font-bold text-gray-900 mb-2">No Messages Yet</h3>
+          <p className="font-open-sans text-gray-500 mb-6">
+            Messages from potential buyers will appear here
+          </p>
+          <a
+            href="/messages"
+            className="bg-orange-500 hover:bg-orange-600 text-white py-3 px-6 rounded-lg font-open-sans font-bold inline-block"
+          >
+            Go to Messages
+          </a>
+        </div>
+      )
+    }
+
+    return (
+      <div>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="font-open-sans text-xl font-bold text-gray-900">Recent Messages</h2>
+          <a
+            href="/messages"
+            className="bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-lg font-open-sans font-bold"
+          >
+            View All Messages
+          </a>
+        </div>
+
+        <div className="space-y-4">
+          {conversations.slice(0, 10).map((conversation) => (
+            <div key={conversation.id} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="font-open-sans font-bold text-lg text-gray-900">
+                      {conversation.otherUser.full_name || 'Unknown User'}
+                    </h3>
+                    {conversation.unreadCount > 0 && (
+                      <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full">
+                        {conversation.unreadCount} new
+                      </span>
+                    )}
+                  </div>
+                  <p className="font-open-sans text-sm text-gray-600 mb-2">
+                    Re: {conversation.listing.title}
+                  </p>
+                  <p className="font-open-sans text-sm text-gray-500 mb-3">
+                    {conversation.lastMessage.message_text}
+                  </p>
+                  <div className="flex items-center gap-4 text-xs text-gray-400">
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {new Date(conversation.lastMessage.created_at).toLocaleDateString()}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <MessageSquare className="h-3 w-3" />
+                      {conversation.messageCount} messages
+                    </span>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <a
+                    href="/messages"
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm font-bold flex items-center gap-1"
+                  >
+                    <Send className="h-3 w-3" />
+                    Reply
+                  </a>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {conversations.length > 10 && (
+          <div className="text-center mt-8">
+            <a
+              href="/messages"
+              className="text-orange-600 hover:text-orange-500 font-open-sans font-bold"
+            >
+              View {conversations.length - 10} more conversations →
+            </a>
+          </div>
+        )}
+      </div>
+    )
   }
 
   return (
@@ -273,13 +461,7 @@ export default function DashboardPage() {
         )}
 
         {activeTab === 'messages' && (
-          <div className="text-center py-16">
-            <MessageSquare className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="font-open-sans text-xl font-bold text-gray-900 mb-2">Messages</h3>
-            <p className="font-open-sans text-gray-500">
-              Message management will be implemented here
-            </p>
-          </div>
+          <MessagesTab currentUser={currentUser} />
         )}
 
         {activeTab === 'analytics' && (
