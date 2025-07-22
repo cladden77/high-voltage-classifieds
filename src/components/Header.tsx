@@ -1,10 +1,46 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { getCurrentUser, signOut } from "@/lib/auth";
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    checkAuthState();
+  }, []);
+
+  const checkAuthState = async () => {
+    try {
+      const user = await getCurrentUser();
+      setCurrentUser(user);
+    } catch (error) {
+      console.error('Error checking auth state:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      const result = await signOut();
+      if (result.success) {
+        setCurrentUser(null);
+        setIsMobileMenuOpen(false);
+        // Redirect to home page after sign out
+        window.location.href = '/';
+      } else {
+        console.error('Sign out error:', result.error);
+        alert('Failed to sign out. Please try again.');
+      }
+    } catch (error) {
+      console.error('Sign out exception:', error);
+      alert('Failed to sign out. Please try again.');
+    }
+  };
 
   return (
     <header className="bg-[#1b1b1b] h-[95px] sticky top-0 z-50 shadow-[0px_10px_15px_-3px_rgba(0,0,0,0.1),0px_4px_6px_-4px_rgba(0,0,0,0.1)]">
@@ -41,11 +77,32 @@ export default function Header() {
           
           {/* Right side navigation */}
           <div className="flex flex-row gap-4 items-center">
-            <Link href="/auth/signin" className="hidden lg:block text-neutral-100 text-base font-bold hover:text-[#f37121] transition-colors">
-              Sign In
-            </Link>
+            {/* Dynamic Auth Link - Desktop */}
+            {!loading && (
+              <>
+                {currentUser ? (
+                  <div className="hidden lg:flex items-center gap-4">
+                    <span className="text-neutral-100 text-sm">
+                      Hi, {currentUser.name || currentUser.email}
+                    </span>
+                    <button 
+                      onClick={handleSignOut}
+                      className="text-neutral-100 text-base font-bold hover:text-[#f37121] transition-colors"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                ) : (
+                  <Link href="/auth/signin" className="hidden lg:block text-neutral-100 text-base font-bold hover:text-[#f37121] transition-colors">
+                    Sign In
+                  </Link>
+                )}
+              </>
+            )}
+            
+            {/* Post Listing Button */}
             <Link href="/dashboard" className="bg-[#f37121] text-white px-3 lg:px-5 py-2 rounded shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)] text-xs lg:text-base font-bold uppercase hover:bg-[#e55a0a] transition-colors">
-              Post Listing
+              {currentUser?.role === 'seller' ? 'Dashboard' : 'Post Listing'}
             </Link>
             
             {/* Mobile menu button */}
@@ -64,18 +121,68 @@ export default function Header() {
         {isMobileMenuOpen && (
           <div className="lg:hidden absolute top-full left-0 right-0 bg-[#1b1b1b] border-t border-neutral-800 py-4 px-4">
             <div className="flex flex-col space-y-4">
-              <Link href="/listings" className="text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors">
+              <Link 
+                href="/listings" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors"
+              >
                 Browse Listings
               </Link>
-              <Link href="/blog" className="text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors">
+              <Link 
+                href="/blog" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors"
+              >
                 Blog
               </Link>
-              <Link href="/contact" className="text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors">
+              <Link 
+                href="/contact" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors"
+              >
                 Contact
               </Link>
-              <Link href="/auth/signin" className="text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors border-t border-neutral-800 pt-4">
-                Sign In
-              </Link>
+              
+              {/* Dynamic Auth Link - Mobile */}
+              {!loading && (
+                <>
+                  {currentUser ? (
+                    <div className="border-t border-neutral-800 pt-4 space-y-3">
+                      <div className="text-neutral-100 text-sm">
+                        Hi, {currentUser.name || currentUser.email}
+                      </div>
+                      <Link 
+                        href="/messages" 
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors"
+                      >
+                        Messages
+                      </Link>
+                      <Link 
+                        href="/account" 
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors"
+                      >
+                        Account
+                      </Link>
+                      <button 
+                        onClick={handleSignOut}
+                        className="text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
+                  ) : (
+                    <Link 
+                      href="/auth/signin" 
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors border-t border-neutral-800 pt-4"
+                    >
+                      Sign In
+                    </Link>
+                  )}
+                </>
+              )}
             </div>
           </div>
         )}
