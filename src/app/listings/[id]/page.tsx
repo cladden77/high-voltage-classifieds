@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { Heart, MessageCircle, ArrowLeft, Star } from 'lucide-react'
+import { Heart, MessageCircle, ArrowLeft, Star, AlertCircle, CheckCircle } from 'lucide-react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { createClientSupabase } from '@/lib/supabase'
+import { getCurrentUser } from '@/lib/auth'
 import { Database } from '@/lib/database.types'
 
 type Listing = Database['public']['Tables']['listings']['Row'] & {
@@ -21,12 +22,26 @@ export default function ListingDetailPage() {
   const [showMessageModal, setShowMessageModal] = useState(false)
   const [messageText, setMessageText] = useState('')
   const [isFavorited, setIsFavorited] = useState(false)
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [sendingMessage, setSendingMessage] = useState(false)
+  const [messageError, setMessageError] = useState<string | null>(null)
+  const [messageSuccess, setMessageSuccess] = useState(false)
 
   const supabase = createClientSupabase()
 
   useEffect(() => {
+    checkAuth()
     fetchListing()
   }, [listingId])
+
+  const checkAuth = async () => {
+    try {
+      const user = await getCurrentUser()
+      setCurrentUser(user)
+    } catch (error) {
+      console.error('Error checking auth:', error)
+    }
+  }
 
   const fetchListing = async () => {
     try {
@@ -49,17 +64,127 @@ export default function ListingDetailPage() {
   }
 
   const toggleFavorite = async () => {
-    // TODO: Implement favorite toggle with authentication
-    setIsFavorited(!isFavorited)
+    if (!currentUser) {
+      alert('Please sign in to save favorites')
+      return
+    }
+    
+    try {
+      if (isFavorited) {
+        // Remove from favorites
+        await supabase
+          .from('favorites')
+          .delete()
+          .eq('user_id', currentUser.id)
+          .eq('listing_id', listingId)
+      } else {
+        // Add to favorites
+        await supabase
+          .from('favorites')
+          .insert({
+            user_id: currentUser.id,
+            listing_id: listingId
+          })
+      }
+      setIsFavorited(!isFavorited)
+    } catch (error) {
+      console.error('Error toggling favorite:', error)
+      alert('Failed to update favorites')
+    }
   }
 
   const handleSendMessage = async () => {
-    // TODO: Implement message sending
-    setShowMessageModal(false)
-    setMessageText('')
+    if (!currentUser) {
+      setMessageError('Please sign in to send messages')
+      return
+    }
+
+    if (!messageText.trim()) {
+      setMessageError('Please enter a message')
+      return
+    }
+
+    if (currentUser.id === listing?.seller_id) {
+      setMessageError('You cannot message yourself')
+      return
+    }
+
+    if (!listing) {
+      setMessageError('Listing information not available')
+      return
+    }
+
+    try {
+      setSendingMessage(true)
+      setMessageError(null)
+
+      console.log('🔄 Sending message from listing page:', {
+        sender_id: currentUser.id,
+        recipient_id: listing.seller_id,
+        listing_id: listingId,
+        message_text: messageText.trim()
+      })
+
+      const { data, error } = await supabase
+        .from('messages')
+        .insert({
+          sender_id: currentUser.id,
+          recipient_id: listing.seller_id,
+          listing_id: listingId,
+          message_text: messageText.trim(),
+          read: false
+        })
+        .select()
+
+      if (error) {
+        console.error('❌ Message send error:', error)
+        throw error
+      }
+
+      console.log('✅ Message sent successfully:', data)
+      
+      setMessageSuccess(true)
+      setMessageText('')
+      
+      // Close modal after 2 seconds and redirect to messages
+      setTimeout(() => {
+        setShowMessageModal(false)
+        setMessageSuccess(false)
+        window.location.href = '/messages'
+      }, 2000)
+
+    } catch (error) {
+      console.error('Error sending message:', error)
+      setMessageError('Failed to send message. Please try again.')
+    } finally {
+      setSendingMessage(false)
+    }
+  }
+
+  const openMessageModal = () => {
+    if (!currentUser) {
+      alert('Please sign in to send messages')
+      window.location.href = '/auth/signin'
+      return
+    }
+
+    if (currentUser.id === listing?.seller_id) {
+      alert('You cannot message yourself')
+      return
+    }
+
+    setShowMessageModal(true)
+    setMessageError(null)
+    setMessageSuccess(false)
   }
 
   const handlePayment = (method: 'stripe' | 'paypal') => {
+    if (!currentUser) {
+      alert('Please sign in to make a purchase')
+      window.location.href = '/auth/signin'
+      return
+    }
+
     // TODO: Implement payment processing
     console.log(`Processing payment with ${method}`)
   }
@@ -195,11 +320,11 @@ export default function ListingDetailPage() {
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
                   <span className="font-open-sans font-bold text-gray-600">
-                    {listing.users?.name?.charAt(0) || 'S'}
+                    {listing.users?.full_name?.charAt(0) || 'S'}
                   </span>
                 </div>
                 <div>
-                  <p className="font-open-sans font-bold">{listing.users?.name || 'Seller'}</p>
+                  <p className="font-open-sans font-bold">{listing.users?.full_name || 'Seller'}</p>
                   <div className="flex items-center gap-1">
                     <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                     <span className="font-open-sans text-sm text-gray-600">4.8 (127 reviews)</span>
@@ -211,7 +336,7 @@ export default function ListingDetailPage() {
             {/* Action Buttons */}
             <div className="space-y-4">
               <button 
-                onClick={() => setShowMessageModal(true)}
+                onClick={openMessageModal}
                 className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 px-6 rounded-lg font-open-sans font-bold flex items-center justify-center gap-2"
               >
                 <MessageCircle className="h-5 w-5" />
@@ -243,25 +368,57 @@ export default function ListingDetailPage() {
       {showMessageModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h3 className="font-open-sans font-bold text-lg mb-4">Message Seller</h3>
+            <h3 className="font-open-sans font-bold text-lg mb-4">
+              Message {listing.users?.full_name || 'Seller'}
+            </h3>
+            
+            {/* Error Message */}
+            {messageError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
+                <p className="font-open-sans text-sm text-red-700">{messageError}</p>
+              </div>
+            )}
+
+            {/* Success Message */}
+            {messageSuccess && (
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                <p className="font-open-sans text-sm text-green-700">
+                  Message sent successfully! Redirecting to your messages...
+                </p>
+              </div>
+            )}
+
             <textarea
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
-              placeholder="Type your message..."
-              className="w-full h-32 p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-orange-500"
+              placeholder={`Hi! I'm interested in your ${listing.title}. Is it still available?`}
+              disabled={sendingMessage || messageSuccess}
+              className="w-full h-32 p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
             />
+            
             <div className="flex gap-3 mt-4">
               <button
                 onClick={() => setShowMessageModal(false)}
-                className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-open-sans font-bold"
+                disabled={sendingMessage}
+                className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-open-sans font-bold disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSendMessage}
-                className="flex-1 bg-orange-500 text-white py-2 px-4 rounded-lg font-open-sans font-bold"
+                disabled={sendingMessage || messageSuccess || !messageText.trim()}
+                className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg font-open-sans font-bold flex items-center justify-center gap-2"
               >
-                Send Message
+                {sendingMessage ? (
+                  <>
+                    <div className="animate-spin h-4 w-4 border border-white border-t-transparent rounded-full"></div>
+                    Sending...
+                  </>
+                ) : (
+                  'Send Message'
+                )}
               </button>
             </div>
           </div>
