@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 
 export default function Footer() {
   return (
@@ -7,18 +8,24 @@ export default function Footer() {
         <div>
           <h3 className="text-[#f37121] text-xl font-bold mb-4">Quick Links</h3>
           <div className="space-y-2">
-            <a href="#" className="block text-white hover:text-[#f37121] transition-colors">Browse</a>
-            <a href="#" className="block text-white hover:text-[#f37121] transition-colors">Post</a>
-            <a href="#" className="block text-white hover:text-[#f37121] transition-colors">Blog</a>
-            <a href="#" className="block text-white hover:text-[#f37121] transition-colors">Terms</a>
+            <Link href="/listings" className="block text-white hover:text-[#f37121] transition-colors">Browse Listings</Link>
+            <Link href="/dashboard" className="block text-white hover:text-[#f37121] transition-colors">Post Listing</Link>
+            <Link href="/blog" className="block text-white hover:text-[#f37121] transition-colors">Blog</Link>
+            <Link href="/contact" className="block text-white hover:text-[#f37121] transition-colors">Contact</Link>
+            <Link href="/terms" className="block text-white hover:text-[#f37121] transition-colors">Terms</Link>
+            <Link href="/privacy" className="block text-white hover:text-[#f37121] transition-colors">Privacy</Link>
           </div>
         </div>
         
         <div>
-          <h3 className="text-[#f37121] text-xl font-bold mb-4">Contact</h3>
+          <h3 className="text-[#f37121] text-xl font-bold mb-4">Contact Info</h3>
           <div className="space-y-2">
-            <p className="text-white">info@highvoltage.com</p>
-            <p className="text-white">(123) 456-7890</p>
+            <p className="text-white">support@highvoltageclassifieds.com</p>
+            <p className="text-white">(555) 123-4567</p>
+            <p className="text-gray-300 text-sm">
+              Monday - Friday: 8:00 AM - 6:00 PM CT<br />
+              Saturday: 9:00 AM - 2:00 PM CT
+            </p>
           </div>
         </div>
         
