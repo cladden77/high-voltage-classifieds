@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Send, MessageCircle, Search, ArrowLeft } from 'lucide-react'
+import { Send, MessageCircle, Search, ArrowLeft, AlertCircle } from 'lucide-react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { createClientSupabase } from '@/lib/supabase'
@@ -11,7 +11,7 @@ import { Database } from '@/lib/database.types'
 type MessageWithDetails = Database['public']['Tables']['messages']['Row'] & {
   sender: Database['public']['Tables']['users']['Row']
   recipient: Database['public']['Tables']['users']['Row']
-  listings: Database['public']['Tables']['listings']['Row']
+  listing: Database['public']['Tables']['listings']['Row']
 }
 
 type Conversation = {
@@ -20,6 +20,7 @@ type Conversation = {
   listing: Database['public']['Tables']['listings']['Row']
   lastMessage: MessageWithDetails
   unreadCount: number
+  totalMessages: number
 }
 
 export default function MessagesPage() {
@@ -28,6 +29,8 @@ export default function MessagesPage() {
   const [messages, setMessages] = useState<MessageWithDetails[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(true)
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [currentUser, setCurrentUser] = useState<any>(null)
 
@@ -51,15 +54,20 @@ export default function MessagesPage() {
 
   const checkAuth = async () => {
     try {
+      setError(null)
       const user = await getCurrentUser()
       if (!user) {
         window.location.href = '/auth/signin'
         return
       }
+      console.log('Current user:', user)
       setCurrentUser(user)
     } catch (error) {
       console.error('Error checking auth:', error)
-      window.location.href = '/auth/signin'
+      setError('Authentication failed. Please sign in again.')
+      setTimeout(() => {
+        window.location.href = '/auth/signin'
+      }, 2000)
     }
   }
 
@@ -68,43 +76,129 @@ export default function MessagesPage() {
 
     try {
       setLoading(true)
+      setError(null)
+      console.log('Fetching conversations for user:', currentUser.id)
       
-      // Fetch messages where current user is sender or recipient
-      const { data, error } = await supabase
+      // First, get all messages involving the current user
+      const { data: messageData, error: messageError } = await supabase
         .from('messages')
         .select(`
-          *,
-          sender:sender_id(id, full_name, email, role),
-          recipient:recipient_id(id, full_name, email, role),
-          listings:listing_id(id, title, price, category, location, seller_id)
+          id,
+          sender_id,
+          recipient_id,
+          listing_id,
+          message_text,
+          read,
+          created_at
         `)
         .or(`sender_id.eq.${currentUser.id},recipient_id.eq.${currentUser.id}`)
         .order('created_at', { ascending: false })
 
-      if (error) throw error
+      if (messageError) {
+        console.error('Message fetch error:', messageError)
+        throw messageError
+      }
+
+      console.log('Raw messages:', messageData?.length || 0)
+
+      if (!messageData || messageData.length === 0) {
+        setConversations([])
+        setLoading(false)
+        return
+      }
+
+      // Get unique user IDs and listing IDs
+      const userIds = new Set<string>()
+      const listingIds = new Set<string>()
+      
+      messageData.forEach(msg => {
+        userIds.add(msg.sender_id)
+        userIds.add(msg.recipient_id)
+        listingIds.add(msg.listing_id)
+      })
+
+      // Fetch users and listings separately
+      const [usersResponse, listingsResponse] = await Promise.all([
+        supabase
+          .from('users')
+          .select('*')
+          .in('id', Array.from(userIds)),
+        supabase
+          .from('listings')
+          .select('*')
+          .in('id', Array.from(listingIds))
+      ])
+
+      if (usersResponse.error) {
+        console.error('Users fetch error:', usersResponse.error)
+        throw usersResponse.error
+      }
+
+      if (listingsResponse.error) {
+        console.error('Listings fetch error:', listingsResponse.error)
+        throw listingsResponse.error
+      }
+
+      const usersMap = new Map(usersResponse.data?.map(user => [user.id, user]) || [])
+      const listingsMap = new Map(listingsResponse.data?.map(listing => [listing.id, listing]) || [])
+
+      console.log('Users loaded:', usersMap.size)
+      console.log('Listings loaded:', listingsMap.size)
 
       // Group messages into conversations by listing
       const conversationMap = new Map<string, Conversation>()
       
-      data?.forEach((message) => {
-        const conversationKey = `${message.listing_id}`
+      messageData.forEach((message) => {
+        const conversationKey = message.listing_id
         const isCurrentUserSender = message.sender_id === currentUser.id
-        const otherUser = isCurrentUserSender ? message.recipient : message.sender
+        const otherUserId = isCurrentUserSender ? message.recipient_id : message.sender_id
+        
+        const sender = usersMap.get(message.sender_id)
+        const recipient = usersMap.get(message.recipient_id)
+        const listing = listingsMap.get(message.listing_id)
+        const otherUser = usersMap.get(otherUserId)
+
+        if (!sender || !recipient || !listing || !otherUser) {
+          console.warn('Missing data for message:', message.id)
+          return
+        }
+
+        const messageWithDetails: MessageWithDetails = {
+          ...message,
+          sender,
+          recipient,
+          listing
+        }
 
         if (!conversationMap.has(conversationKey)) {
           conversationMap.set(conversationKey, {
             id: conversationKey,
-            otherUser: otherUser,
-            listing: message.listings,
-            lastMessage: message,
-            unreadCount: !message.read && !isCurrentUserSender ? 1 : 0
+            otherUser,
+            listing,
+            lastMessage: messageWithDetails,
+            unreadCount: !message.read && !isCurrentUserSender ? 1 : 0,
+            totalMessages: 1
           })
+        } else {
+          const conversation = conversationMap.get(conversationKey)!
+          // Update unread count
+          if (!message.read && !isCurrentUserSender) {
+            conversation.unreadCount++
+          }
+          conversation.totalMessages++
+          // Keep the most recent message as the last message
+          if (new Date(message.created_at) > new Date(conversation.lastMessage.created_at)) {
+            conversation.lastMessage = messageWithDetails
+          }
         }
       })
 
-      setConversations(Array.from(conversationMap.values()))
+      const conversationsList = Array.from(conversationMap.values())
+      console.log('Conversations loaded:', conversationsList.length)
+      setConversations(conversationsList)
     } catch (error) {
       console.error('Error fetching conversations:', error)
+      setError('Failed to load conversations. Please try refreshing the page.')
     } finally {
       setLoading(false)
     }
@@ -114,59 +208,141 @@ export default function MessagesPage() {
     if (!currentUser) return
 
     try {
-      const { data, error } = await supabase
+      setError(null)
+      console.log('Fetching messages for listing:', listingId)
+
+      // Get messages for this listing
+      const { data: messageData, error: messageError } = await supabase
         .from('messages')
         .select(`
-          *,
-          sender:sender_id(id, full_name, email, role),
-          recipient:recipient_id(id, full_name, email, role),
-          listings:listing_id(id, title, price, category, location)
+          id,
+          sender_id,
+          recipient_id,
+          listing_id,
+          message_text,
+          read,
+          created_at
         `)
         .eq('listing_id', listingId)
         .or(`sender_id.eq.${currentUser.id},recipient_id.eq.${currentUser.id}`)
         .order('created_at', { ascending: true })
 
-      if (error) throw error
+      if (messageError) {
+        console.error('Messages fetch error:', messageError)
+        throw messageError
+      }
 
-      setMessages(data || [])
+      if (!messageData || messageData.length === 0) {
+        setMessages([])
+        return
+      }
+
+      // Get user and listing data
+      const userIds = new Set<string>()
+      messageData.forEach(msg => {
+        userIds.add(msg.sender_id)
+        userIds.add(msg.recipient_id)
+      })
+
+      const [usersResponse, listingResponse] = await Promise.all([
+        supabase
+          .from('users')
+          .select('*')
+          .in('id', Array.from(userIds)),
+        supabase
+          .from('listings')
+          .select('*')
+          .eq('id', listingId)
+          .single()
+      ])
+
+      if (usersResponse.error) throw usersResponse.error
+      if (listingResponse.error) throw listingResponse.error
+
+      const usersMap = new Map(usersResponse.data?.map(user => [user.id, user]) || [])
+
+      const messagesWithDetails: MessageWithDetails[] = messageData.map(message => ({
+        ...message,
+        sender: usersMap.get(message.sender_id)!,
+        recipient: usersMap.get(message.recipient_id)!,
+        listing: listingResponse.data
+      })).filter(msg => msg.sender && msg.recipient)
+
+      console.log('Messages loaded:', messagesWithDetails.length)
+      setMessages(messagesWithDetails)
 
       // Mark messages as read
-      await supabase
-        .from('messages')
-        .update({ read: true })
-        .eq('listing_id', listingId)
-        .eq('recipient_id', currentUser.id)
-        .eq('read', false)
+      const unreadMessages = messageData.filter(msg => 
+        !msg.read && msg.recipient_id === currentUser.id
+      )
+
+      if (unreadMessages.length > 0) {
+        await supabase
+          .from('messages')
+          .update({ read: true })
+          .eq('listing_id', listingId)
+          .eq('recipient_id', currentUser.id)
+          .eq('read', false)
+
+        // Refresh conversations to update unread counts
+        fetchConversations()
+      }
 
     } catch (error) {
       console.error('Error fetching messages:', error)
+      setError('Failed to load messages.')
     }
   }
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversation || !currentUser) return
+    if (!newMessage.trim() || !selectedConversation || !currentUser || sending) return
 
     try {
-      const conversation = conversations.find(c => c.id === selectedConversation)
-      if (!conversation) return
+      setSending(true)
+      setError(null)
 
-      const { error } = await supabase
+      const conversation = conversations.find(c => c.id === selectedConversation)
+      if (!conversation) {
+        throw new Error('Conversation not found')
+      }
+
+      console.log('Sending message:', {
+        sender_id: currentUser.id,
+        recipient_id: conversation.otherUser.id,
+        listing_id: selectedConversation,
+        message_text: newMessage.trim()
+      })
+
+      const { data, error } = await supabase
         .from('messages')
         .insert({
           sender_id: currentUser.id,
           recipient_id: conversation.otherUser.id,
           listing_id: selectedConversation,
           message_text: newMessage.trim(),
+          read: false
         })
+        .select()
 
-      if (error) throw error
+      if (error) {
+        console.error('Send message error:', error)
+        throw error
+      }
 
+      console.log('Message sent successfully:', data)
       setNewMessage('')
-      fetchMessages(selectedConversation)
-      fetchConversations() // Refresh to update last message
+      
+      // Refresh messages and conversations
+      await Promise.all([
+        fetchMessages(selectedConversation),
+        fetchConversations()
+      ])
 
     } catch (error) {
       console.error('Error sending message:', error)
+      setError('Failed to send message. Please try again.')
+    } finally {
+      setSending(false)
     }
   }
 
@@ -202,7 +378,26 @@ export default function MessagesPage() {
           <p className="font-open-sans text-lg text-gray-500">
             Communicate with buyers and sellers
           </p>
+          {currentUser && (
+            <p className="font-open-sans text-sm text-gray-400 mt-2">
+              Logged in as: {currentUser.name} ({currentUser.role})
+            </p>
+          )}
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
+            <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
+            <p className="font-open-sans text-red-700">{error}</p>
+            <button 
+              onClick={() => setError(null)}
+              className="ml-auto text-red-500 hover:text-red-700"
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm h-[600px] flex">
           {/* Conversations List */}
@@ -232,7 +427,14 @@ export default function MessagesPage() {
               ) : filteredConversations.length === 0 ? (
                 <div className="p-8 text-center">
                   <MessageCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                  <p className="font-open-sans text-gray-500">No conversations yet</p>
+                  <p className="font-open-sans text-gray-500">
+                    {conversations.length === 0 ? 'No conversations yet' : 'No conversations match your search'}
+                  </p>
+                  {conversations.length === 0 && (
+                    <p className="font-open-sans text-sm text-gray-400 mt-2">
+                      Visit a listing and click "Message Seller" to start a conversation
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div className="divide-y divide-gray-200">
@@ -248,9 +450,16 @@ export default function MessagesPage() {
                         <h3 className="font-open-sans font-bold text-sm text-gray-900 truncate">
                           {conversation.otherUser.full_name || 'Unknown User'}
                         </h3>
-                        <span className="font-open-sans text-xs text-gray-500">
-                          {new Date(conversation.lastMessage.created_at).toLocaleDateString()}
-                        </span>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="font-open-sans text-xs text-gray-500">
+                            {new Date(conversation.lastMessage.created_at).toLocaleDateString()}
+                          </span>
+                          {conversation.unreadCount > 0 && (
+                            <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full">
+                              {conversation.unreadCount}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <p className="font-open-sans text-sm text-gray-600 mb-2 truncate">
                         Re: {conversation.listing.title}
@@ -258,13 +467,9 @@ export default function MessagesPage() {
                       <p className="font-open-sans text-sm text-gray-500 truncate">
                         {conversation.lastMessage.message_text}
                       </p>
-                      {conversation.unreadCount > 0 && (
-                        <div className="mt-2">
-                          <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full">
-                            {conversation.unreadCount}
-                          </span>
-                        </div>
-                      )}
+                      <p className="font-open-sans text-xs text-gray-400 mt-1">
+                        {conversation.totalMessages} message{conversation.totalMessages !== 1 ? 's' : ''}
+                      </p>
                     </button>
                   ))}
                 </div>
@@ -298,35 +503,49 @@ export default function MessagesPage() {
 
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                  {messages.map((message) => {
-                    const isCurrentUser = message.sender_id === currentUser?.id
-                    return (
-                      <div
-                        key={message.id}
-                        className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
-                      >
+                  {messages.length === 0 ? (
+                    <div className="text-center text-gray-500">
+                      <MessageCircle className="h-8 w-8 mx-auto mb-2" />
+                      <p>No messages yet. Start the conversation!</p>
+                    </div>
+                  ) : (
+                    messages.map((message) => {
+                      const isCurrentUser = message.sender_id === currentUser?.id
+                      return (
                         <div
-                          className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg ${
-                            isCurrentUser
-                              ? 'bg-orange-500 text-white'
-                              : 'bg-gray-100 text-gray-900'
-                          }`}
+                          key={message.id}
+                          className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
                         >
-                          <p className="font-open-sans text-sm whitespace-pre-wrap">
-                            {message.message_text}
-                          </p>
-                          <p className={`font-open-sans text-xs mt-2 ${
-                            isCurrentUser ? 'text-orange-100' : 'text-gray-500'
-                          }`}>
-                            {new Date(message.created_at).toLocaleTimeString([], { 
-                              hour: '2-digit', 
-                              minute: '2-digit' 
-                            })}
-                          </p>
+                          <div
+                            className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg ${
+                              isCurrentUser
+                                ? 'bg-orange-500 text-white'
+                                : 'bg-gray-100 text-gray-900'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between mb-1">
+                              <span className={`font-open-sans text-xs ${
+                                isCurrentUser ? 'text-orange-100' : 'text-gray-500'
+                              }`}>
+                                {isCurrentUser ? 'You' : message.sender.full_name || 'Unknown'}
+                              </span>
+                            </div>
+                            <p className="font-open-sans text-sm whitespace-pre-wrap">
+                              {message.message_text}
+                            </p>
+                            <p className={`font-open-sans text-xs mt-2 ${
+                              isCurrentUser ? 'text-orange-100' : 'text-gray-500'
+                            }`}>
+                              {new Date(message.created_at).toLocaleTimeString([], { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    )
-                  })}
+                      )
+                    })
+                  )}
                 </div>
 
                 {/* Message Input */}
@@ -338,14 +557,18 @@ export default function MessagesPage() {
                       onChange={(e) => setNewMessage(e.target.value)}
                       onKeyPress={handleKeyPress}
                       placeholder="Type your message..."
-                      className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      disabled={sending}
+                      className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                     />
                     <button
                       onClick={sendMessage}
-                      disabled={!newMessage.trim()}
-                      className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg transition-colors"
+                      disabled={!newMessage.trim() || sending}
+                      className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
                     >
                       <Send className="h-4 w-4" />
+                      {sending && (
+                        <div className="animate-spin h-3 w-3 border border-white border-t-transparent rounded-full"></div>
+                      )}
                     </button>
                   </div>
                 </div>

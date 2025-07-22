@@ -16,101 +16,193 @@ export const authConfig = {
 
 // User authentication functions (for client components)
 export async function signInWithCredentials(email: string, password: string, role?: 'buyer' | 'seller') {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
+  try {
+    console.log('🔐 Signing in user:', email)
+    
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
 
-  if (error || !data.user) {
-    return { success: false, error: error?.message }
-  }
+    if (error || !data.user) {
+      console.error('❌ Sign in error:', error?.message)
+      return { success: false, error: error?.message }
+    }
 
-  // Get user profile from database
-  const { data: profile } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', data.user.id)
-    .single()
+    console.log('✅ Auth successful, fetching profile for:', data.user.id)
 
-  return { 
-    success: true, 
-    user: {
+    // Get user profile from database
+    const { data: profile, error: profileError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', data.user.id)
+      .single()
+
+    if (profileError) {
+      console.error('⚠️ Profile fetch error:', profileError)
+    }
+
+    console.log('👤 User profile:', profile)
+
+    const user = {
       id: data.user.id,
       email: data.user.email!,
       name: profile?.full_name || data.user.user_metadata?.full_name || '',
       role: profile?.role || role || 'buyer',
     }
+
+    console.log('✅ Final user object:', user)
+
+    return { 
+      success: true, 
+      user
+    }
+  } catch (error) {
+    console.error('💥 Sign in exception:', error)
+    return { success: false, error: 'An unexpected error occurred' }
   }
 }
 
 export async function signUpWithCredentials(email: string, password: string, name: string, role: 'buyer' | 'seller') {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        full_name: name,
+  try {
+    console.log('📝 Signing up user:', email, 'as', role)
+    
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: name,
+        }
       }
-    }
-  })
-
-  if (error || !data.user) {
-    return { success: false, error: error?.message }
-  }
-
-  // Create user profile in database
-  const { error: profileError } = await supabase
-    .from('users')
-    .insert({
-      id: data.user.id,
-      email: email,
-      full_name: name,
-      role: role,
     })
 
-  if (profileError) {
-    // If profile creation fails, still return success since auth succeeded
-    console.error('Profile creation error:', profileError)
-  }
+    if (error || !data.user) {
+      console.error('❌ Sign up error:', error?.message)
+      return { success: false, error: error?.message }
+    }
 
-  return { 
-    success: true, 
-    user: {
+    console.log('✅ Auth signup successful, creating profile for:', data.user.id)
+
+    // Create user profile in database
+    const { error: profileError } = await supabase
+      .from('users')
+      .insert({
+        id: data.user.id,
+        email: email,
+        full_name: name,
+        role: role,
+      })
+
+    if (profileError) {
+      console.error('⚠️ Profile creation error:', profileError)
+      // If profile creation fails, still return success since auth succeeded
+    } else {
+      console.log('✅ Profile created successfully')
+    }
+
+    const user = {
       id: data.user.id,
       email: email,
       name: name,
       role: role,
     }
+
+    console.log('✅ Final signup user object:', user)
+
+    return { 
+      success: true, 
+      user
+    }
+  } catch (error) {
+    console.error('💥 Sign up exception:', error)
+    return { success: false, error: 'An unexpected error occurred' }
   }
 }
 
 // Function to get current user (client-side)
 export async function getCurrentUser() {
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) {
+  try {
+    console.log('🔍 Getting current user...')
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError) {
+      console.error('❌ Auth getUser error:', authError)
+      return null
+    }
+
+    if (!user) {
+      console.log('ℹ️ No authenticated user found')
+      return null
+    }
+
+    console.log('✅ Auth user found:', user.id, user.email)
+
+    // Get user profile
+    const { data: profile, error: profileError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError) {
+      console.error('⚠️ Profile fetch error:', profileError)
+      // Continue with basic user data from auth
+    }
+
+    console.log('👤 User profile from DB:', profile)
+
+    const currentUser = {
+      id: user.id,
+      email: user.email!,
+      name: profile?.full_name || user.user_metadata?.full_name || '',
+      role: profile?.role || 'buyer',
+    }
+
+    console.log('✅ Final current user object:', currentUser)
+    return currentUser
+
+  } catch (error) {
+    console.error('💥 getCurrentUser exception:', error)
     return null
-  }
-
-  // Get user profile
-  const { data: profile } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', user.id)
-    .single()
-
-  return {
-    id: user.id,
-    email: user.email!,
-    name: profile?.full_name || user.user_metadata?.full_name || '',
-    role: profile?.role || 'buyer',
   }
 }
 
 // Function to sign out
 export async function signOut() {
-  const { error } = await supabase.auth.signOut()
-  return { success: !error, error: error?.message }
+  try {
+    console.log('🚪 Signing out user...')
+    const { error } = await supabase.auth.signOut()
+    
+    if (error) {
+      console.error('❌ Sign out error:', error)
+      return { success: false, error: error.message }
+    }
+
+    console.log('✅ Sign out successful')
+    return { success: true }
+  } catch (error) {
+    console.error('💥 Sign out exception:', error)
+    return { success: false, error: 'An unexpected error occurred' }
+  }
+}
+
+// Debug function to check auth state
+export async function debugAuthState() {
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    const currentUser = await getCurrentUser()
+    
+    console.log('🔍 Auth Debug Info:')
+    console.log('Session:', session)
+    console.log('Current User:', currentUser)
+    
+    return { session, currentUser }
+  } catch (error) {
+    console.error('💥 Debug auth state error:', error)
+    return { session: null, currentUser: null }
+  }
 }
 
 // User type definitions
