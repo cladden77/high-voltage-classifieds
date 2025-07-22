@@ -8,6 +8,9 @@ import { createClientSupabase } from '@/lib/supabase'
 import { getCurrentUser } from '@/lib/auth'
 import { Database } from '@/lib/database.types'
 
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic'
+
 type Listing = Database['public']['Tables']['listings']['Row']
 type FavoriteWithListing = {
   id: string
@@ -22,7 +25,6 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'listings' | 'messages' | 'analytics' | 'favorites'>('listings')
   const [currentUser, setCurrentUser] = useState<any>(null)
-  const supabase = createClientSupabase()
 
   useEffect(() => {
     checkAuth()
@@ -58,6 +60,7 @@ export default function DashboardPage() {
 
     try {
       setLoading(true)
+      const supabase = createClientSupabase()
       const { data, error } = await supabase
         .from('listings')
         .select('*')
@@ -78,6 +81,7 @@ export default function DashboardPage() {
 
     try {
       setLoading(true)
+      const supabase = createClientSupabase()
       const { data, error } = await supabase
         .from('favorites')
         .select(`
@@ -98,6 +102,7 @@ export default function DashboardPage() {
 
   const removeFavorite = async (favoriteId: string) => {
     try {
+      const supabase = createClientSupabase()
       const { error } = await supabase
         .from('favorites')
         .delete()
@@ -113,6 +118,7 @@ export default function DashboardPage() {
   const deleteListing = async (listingId: string) => {
     if (confirm('Are you sure you want to delete this listing?')) {
       try {
+        const supabase = createClientSupabase()
         const { error } = await supabase
           .from('listings')
           .delete()
@@ -128,6 +134,7 @@ export default function DashboardPage() {
 
   const toggleSoldStatus = async (listingId: string, currentStatus: boolean) => {
     try {
+      const supabase = createClientSupabase()
       const { error } = await supabase
         .from('listings')
         .update({ is_sold: !currentStatus })
@@ -174,6 +181,7 @@ export default function DashboardPage() {
     const fetchConversations = async () => {
       try {
         setLoading(true)
+        const supabase = createClientSupabase()
         
         // Fetch messages where current user is sender or recipient
         const { data, error } = await supabase
