@@ -97,7 +97,7 @@ export default function Header() {
                   </div>
                 ) : (
                   <Link href="/auth/signin" className="hidden lg:block text-neutral-100 text-base font-bold hover:text-[#f37121] transition-colors">
-                    Sign In
+                    Sign In | Sign Up
                   </Link>
                 )}
               </>
