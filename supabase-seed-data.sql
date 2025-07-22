@@ -20,7 +20,7 @@
 -- Sample user profiles (replace UUIDs with real auth user IDs)
 -- Uncomment and modify these after creating real auth users:
 
-/*
+
 -- Sample Seller Profile
 INSERT INTO public.users (
     id, 
@@ -33,9 +33,9 @@ INSERT INTO public.users (
     phone,
     is_verified
 ) VALUES (
-    '00000000-0000-0000-0000-000000000001', -- Replace with real auth user ID
-    'John Smith', 
-    'john.smith@example.com', 
+    '675cc100-36ff-451d-af54-334ad1237dd2', -- Replace with real auth user ID
+    'Seller Chris', 
+    'chris.ladden+seller@gmail.com', 
     'seller', 
     'Los Angeles, CA', 
     'Electrical contractor with 15+ years experience in high voltage equipment. Specializing in industrial transformers and switchgear.',
@@ -55,16 +55,16 @@ INSERT INTO public.users (
     company_name,
     phone
 ) VALUES (
-    '00000000-0000-0000-0000-000000000002', -- Replace with real auth user ID
-    'Sarah Johnson',
-    'sarah.johnson@example.com',
+    'd1b4016b-28f7-4c98-bc3f-5eda70f933ef', -- Replace with real auth user ID
+    'Buyer Chris',
+    'chris.ladden+buyer@gmail.com',
     'buyer', 
     'Phoenix, AZ',
     'Procurement manager for solar installations. Always looking for quality used equipment.',
     'SolarTech Solutions',
     '+1 (555) 987-6543'
 );
-*/
+
 
 -- Sample listings (update seller_id with real UUIDs)
 INSERT INTO public.listings (
@@ -84,7 +84,7 @@ INSERT INTO public.listings (
     'Los Angeles, CA',
     'Transformers',
     'good',
-    '00000000-0000-0000-0000-000000000001', -- Replace with real seller ID
+    '675cc100-36ff-451d-af54-334ad1237dd2', -- Replace with real seller ID
     true
 ),
 (
@@ -94,7 +94,7 @@ INSERT INTO public.listings (
     'Dallas, TX', 
     'Switchgear',
     'like_new',
-    '00000000-0000-0000-0000-000000000001', -- Replace with real seller ID
+    '675cc100-36ff-451d-af54-334ad1237dd2', -- Replace with real seller ID
     false
 ),
 (
@@ -104,7 +104,7 @@ INSERT INTO public.listings (
     'Houston, TX',
     'Motors', 
     'good',
-    '00000000-0000-0000-0000-000000000001', -- Replace with real seller ID
+    '675cc100-36ff-451d-af54-334ad1237dd2', -- Replace with real seller ID
     false
 ),
 (
@@ -114,7 +114,7 @@ INSERT INTO public.listings (
     'Chicago, IL',
     'Panels',
     'new',
-    '00000000-0000-0000-0000-000000000001', -- Replace with real seller ID
+    '675cc100-36ff-451d-af54-334ad1237dd2', -- Replace with real seller ID
     true
 ),
 (
@@ -124,7 +124,7 @@ INSERT INTO public.listings (
     'Denver, CO',
     'Cables',
     'new',
-    '00000000-0000-0000-0000-000000000001', -- Replace with real seller ID
+    '675cc100-36ff-451d-af54-334ad1237dd2', -- Replace with real seller ID
     false
 ),
 (
@@ -134,14 +134,14 @@ INSERT INTO public.listings (
     'Miami, FL',
     'Generators',
     'good',
-    '00000000-0000-0000-0000-000000000001', -- Replace with real seller ID
+    '675cc100-36ff-451d-af54-334ad1237dd2', -- Replace with real seller ID
     true
 );
 
 -- Sample favorites (buyer favoriting some listings)
 INSERT INTO public.favorites (user_id, listing_id) 
 SELECT 
-    '00000000-0000-0000-0000-000000000002', -- Replace with real buyer ID
+    'd1b4016b-28f7-4c98-bc3f-5eda70f933ef', -- Replace with real buyer ID
     id 
 FROM public.listings 
 WHERE title IN ('500 kVA Padmount Transformer', 'Caterpillar 500kW Generator')
@@ -150,26 +150,26 @@ LIMIT 2;
 -- Sample messages (conversation between buyer and seller)
 INSERT INTO public.messages (sender_id, recipient_id, listing_id, message_text) VALUES
 (
-    '00000000-0000-0000-0000-000000000002', -- Buyer ID
-    '00000000-0000-0000-0000-000000000001', -- Seller ID  
+    'd1b4016b-28f7-4c98-bc3f-5eda70f933ef', -- Buyer ID
+    '675cc100-36ff-451d-af54-334ad1237dd2', -- Seller ID  
     (SELECT id FROM public.listings WHERE title = '500 kVA Padmount Transformer' LIMIT 1),
     'Hi! I''m interested in this transformer. Can you provide more details about the test reports and when it was last in service?'
 ),
 (
-    '00000000-0000-0000-0000-000000000001', -- Seller ID
-    '00000000-0000-0000-0000-000000000002', -- Buyer ID
+    '675cc100-36ff-451d-af54-334ad1237dd2', -- Seller ID
+    'd1b4016b-28f7-4c98-bc3f-5eda70f933ef', -- Buyer ID
     (SELECT id FROM public.listings WHERE title = '500 kVA Padmount Transformer' LIMIT 1), 
     'Hello! Thanks for your interest. The transformer was removed from service just 3 months ago due to a facility upgrade. All test reports are current and show excellent insulation resistance. I can email you the detailed reports if you''d like.'
 ),
 (
-    '00000000-0000-0000-0000-000000000002', -- Buyer ID
-    '00000000-0000-0000-0000-000000000001', -- Seller ID
+    'd1b4016b-28f7-4c98-bc3f-5eda70f933ef', -- Buyer ID
+    '675cc100-36ff-451d-af54-334ad1237dd2', -- Seller ID
     (SELECT id FROM public.listings WHERE title = '500 kVA Padmount Transformer' LIMIT 1),
     'That would be great! My email is sarah.johnson@example.com. Also, would you be open to a site inspection before purchase?'
 ),
 (
-    '00000000-0000-0000-0000-000000000001', -- Seller ID  
-    '00000000-0000-0000-0000-000000000002', -- Buyer ID
+    '675cc100-36ff-451d-af54-334ad1237dd2', -- Seller ID  
+    'd1b4016b-28f7-4c98-bc3f-5eda70f933ef', -- Buyer ID
     (SELECT id FROM public.listings WHERE title = '500 kVA Padmount Transformer' LIMIT 1),
     'Absolutely! Site inspections are always welcome. I''ll send the reports to your email within the hour. When would work best for you to visit?'
 );
@@ -177,7 +177,7 @@ INSERT INTO public.messages (sender_id, recipient_id, listing_id, message_text) 
 -- Sample user analytics
 INSERT INTO public.user_analytics (user_id, listings_count, sales_count, total_revenue) VALUES
 (
-    '00000000-0000-0000-0000-000000000001', -- Seller ID
+    '675cc100-36ff-451d-af54-334ad1237dd2', -- Seller ID
     6, -- Number of listings
     0, -- Sales count (no sales yet)
     0.00 -- Total revenue
