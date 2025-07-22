@@ -10,7 +10,6 @@ export default function ContactPage() {
     name: '',
     email: '',
     phone: '',
-    subject: '',
     message: ''
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -38,7 +37,6 @@ export default function ContactPage() {
         name: '',
         email: '',
         phone: '',
-        subject: '',
         message: ''
       })
     } catch (error) {
@@ -72,7 +70,6 @@ export default function ContactPage() {
               <h2 className="font-open-sans text-2xl font-bold text-gray-900">
                 Get in Touch
               </h2>
-              <ExternalLink className="h-5 w-5 text-orange-500" />
             </div>
             
             {/* HubSpot Form Placeholder */}
@@ -153,15 +150,6 @@ export default function ContactPage() {
                   />
                 </div>
                 
-                <input
-                  type="text"
-                  required
-                  value={formData.subject}
-                  onChange={(e) => handleInputChange('subject', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
-                  placeholder="Subject"
-                />
-                
                 <textarea
                   required
                   rows={3}
@@ -216,18 +204,6 @@ export default function ContactPage() {
                       123 Industrial Blvd<br />
                       Houston, TX 77001<br />
                       United States
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-3">
-                  <Clock className="h-5 w-5 text-orange-500 mt-1" />
-                  <div>
-                    <p className="font-open-sans font-bold text-gray-900">Business Hours</p>
-                    <p className="font-open-sans text-gray-600">
-                      Monday - Friday: 8:00 AM - 6:00 PM CT<br />
-                      Saturday: 9:00 AM - 2:00 PM CT<br />
-                      Sunday: Closed
                     </p>
                   </div>
                 </div>
