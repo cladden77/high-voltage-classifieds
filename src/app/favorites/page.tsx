@@ -7,6 +7,9 @@ import Footer from '@/components/Footer'
 import { createClientSupabase } from '@/lib/supabase'
 import { Database } from '@/lib/database.types'
 
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic'
+
 type FavoriteWithListing = {
   id: string
   listing_id: string
@@ -17,7 +20,6 @@ type FavoriteWithListing = {
 export default function FavoritesPage() {
   const [favorites, setFavorites] = useState<FavoriteWithListing[]>([])
   const [loading, setLoading] = useState(true)
-  const supabase = createClientSupabase()
 
   useEffect(() => {
     fetchFavorites()
@@ -25,6 +27,7 @@ export default function FavoritesPage() {
 
   const fetchFavorites = async () => {
     try {
+      const supabase = createClientSupabase()
       // TODO: Get current user and filter by user_id
       const { data, error } = await supabase
         .from('favorites')
@@ -45,6 +48,7 @@ export default function FavoritesPage() {
 
   const removeFavorite = async (favoriteId: string) => {
     try {
+      const supabase = createClientSupabase()
       const { error } = await supabase
         .from('favorites')
         .delete()
