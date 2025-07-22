@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, MessageSquare, Eye, DollarSign, Send, Clock } from 'lucide-react'
+import { Plus, Edit, Trash2, MessageSquare, Eye, DollarSign, Send, Clock, Heart } from 'lucide-react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { createClientSupabase } from '@/lib/supabase'
@@ -9,11 +9,18 @@ import { getCurrentUser } from '@/lib/auth'
 import { Database } from '@/lib/database.types'
 
 type Listing = Database['public']['Tables']['listings']['Row']
+type FavoriteWithListing = {
+  id: string
+  listing_id: string
+  created_at: string
+  listings: Database['public']['Tables']['listings']['Row']
+}
 
 export default function DashboardPage() {
   const [listings, setListings] = useState<Listing[]>([])
+  const [favorites, setFavorites] = useState<FavoriteWithListing[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'listings' | 'messages' | 'analytics'>('listings')
+  const [activeTab, setActiveTab] = useState<'listings' | 'messages' | 'analytics' | 'favorites'>('listings')
   const [currentUser, setCurrentUser] = useState<any>(null)
   const supabase = createClientSupabase()
 
@@ -23,7 +30,12 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (currentUser) {
-      fetchListings()
+      if (currentUser.role === 'seller') {
+        fetchListings()
+      } else {
+        fetchFavorites()
+        setActiveTab('favorites') // Default to favorites for buyers
+      }
     }
   }, [currentUser])
 
@@ -58,6 +70,43 @@ export default function DashboardPage() {
       console.error('Error fetching listings:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchFavorites = async () => {
+    if (!currentUser) return
+
+    try {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('favorites')
+        .select(`
+          *,
+          listings (*)
+        `)
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setFavorites(data || [])
+    } catch (error) {
+      console.error('Error fetching favorites:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const removeFavorite = async (favoriteId: string) => {
+    try {
+      const { error } = await supabase
+        .from('favorites')
+        .delete()
+        .eq('id', favoriteId)
+
+      if (error) throw error
+      setFavorites(favorites.filter(fav => fav.id !== favoriteId))
+    } catch (error) {
+      console.error('Error removing favorite:', error)
     }
   }
 
@@ -101,6 +150,14 @@ export default function DashboardPage() {
     activeListing: listings.filter(l => !l.is_sold).length,
     soldListings: listings.filter(l => l.is_sold).length,
     totalValue: listings.reduce((sum, l) => sum + l.price, 0)
+  }
+
+  const buyerStats = {
+    totalFavorites: favorites.length,
+    recentFavorites: favorites.filter(f => {
+      const daysSinceAdded = Math.floor((Date.now() - new Date(f.created_at).getTime()) / (1000 * 60 * 60 * 24))
+      return daysSinceAdded <= 7
+    }).length
   }
 
   // Messages Tab Component
@@ -182,7 +239,9 @@ export default function DashboardPage() {
           <MessageSquare className="h-16 w-16 text-gray-300 mx-auto mb-4" />
           <h3 className="font-open-sans text-xl font-bold text-gray-900 mb-2">No Messages Yet</h3>
           <p className="font-open-sans text-gray-500 mb-6">
-            Messages from potential buyers will appear here
+            {currentUser.role === 'seller' 
+              ? "Messages from potential buyers will appear here"
+              : "Messages to sellers will appear here"}
           </p>
           <a
             href="/messages"
@@ -266,6 +325,112 @@ export default function DashboardPage() {
     )
   }
 
+  // Favorites Tab Component (for buyers)
+  function FavoritesTab() {
+    if (loading) {
+      return (
+        <div className="animate-pulse space-y-4">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-32 bg-gray-200 rounded-lg"></div>
+          ))}
+        </div>
+      )
+    }
+
+    if (favorites.length === 0) {
+      return (
+        <div className="text-center py-16">
+          <Heart className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="font-open-sans text-xl font-bold text-gray-900 mb-2">No favorites yet</h3>
+          <p className="font-open-sans text-gray-500 mb-6">
+            Start browsing listings and save the ones you like
+          </p>
+          <a
+            href="/listings"
+            className="bg-orange-500 hover:bg-orange-600 text-white py-3 px-6 rounded-lg font-open-sans font-bold inline-block"
+          >
+            Browse Listings
+          </a>
+        </div>
+      )
+    }
+
+    return (
+      <div>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="font-open-sans text-xl font-bold text-gray-900">My Favorites</h2>
+          <a
+            href="/favorites"
+            className="bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-lg font-open-sans font-bold"
+          >
+            View All Favorites
+          </a>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {favorites.slice(0, 6).map((favorite) => (
+            <div key={favorite.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+              <div className="aspect-video bg-gray-200 flex items-center justify-center">
+                {favorite.listings.images && favorite.listings.images.length > 0 ? (
+                  <img 
+                    src={favorite.listings.images[0]} 
+                    alt={favorite.listings.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="text-gray-500 font-open-sans">No Image</div>
+                )}
+              </div>
+              <div className="p-4">
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="font-open-sans font-bold text-lg text-gray-900 truncate">
+                    {favorite.listings.title}
+                  </h3>
+                  <button
+                    onClick={() => removeFavorite(favorite.id)}
+                    className="text-red-500 hover:text-red-700 ml-2"
+                    title="Remove from favorites"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+                <p className="font-open-sans text-2xl font-bold text-gray-900 mb-2">
+                  ${favorite.listings.price.toLocaleString()}
+                </p>
+                <p className="font-open-sans text-sm text-gray-600 mb-2 line-clamp-2">
+                  {favorite.listings.description}
+                </p>
+                <div className="flex justify-between items-center text-sm text-gray-500">
+                  <span>{favorite.listings.location}</span>
+                  <span>{favorite.listings.category}</span>
+                </div>
+                <div className="mt-4">
+                  <a
+                    href={`/listings/${favorite.listings.id}`}
+                    className="block w-full text-center bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-lg font-open-sans font-bold"
+                  >
+                    View Details
+                  </a>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {favorites.length > 6 && (
+          <div className="text-center mt-8">
+            <a
+              href="/favorites"
+              className="text-orange-600 hover:text-orange-500 font-open-sans font-bold"
+            >
+              View {favorites.length - 6} more favorites →
+            </a>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <Header />
@@ -273,72 +438,119 @@ export default function DashboardPage() {
       <div className="max-w-7xl mx-auto px-8 py-8">
         <div className="mb-8">
           <h1 className="font-staatliches text-[54px] leading-[48px] tracking-[-1.2px] text-gray-900 mb-2">
-            Seller Dashboard
+            {currentUser?.role === 'seller' ? 'Seller Dashboard' : 'Buyer Dashboard'}
           </h1>
           <p className="font-open-sans text-lg text-gray-500">
-            Manage your listings and track performance
+            {currentUser?.role === 'seller' 
+              ? 'Manage your listings and track performance'
+              : 'Manage your favorites and messages'}
           </p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Eye className="h-6 w-6 text-blue-600" />
+        {currentUser?.role === 'seller' ? (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Eye className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="font-open-sans text-sm text-gray-500">Total Listings</p>
+                  <p className="font-open-sans text-2xl font-bold text-gray-900">{stats.totalListings}</p>
+                </div>
               </div>
-              <div>
-                <p className="font-open-sans text-sm text-gray-500">Total Listings</p>
-                <p className="font-open-sans text-2xl font-bold text-gray-900">{stats.totalListings}</p>
+            </div>
+            
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Plus className="h-6 w-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="font-open-sans text-sm text-gray-500">Active</p>
+                  <p className="font-open-sans text-2xl font-bold text-gray-900">{stats.activeListing}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <DollarSign className="h-6 w-6 text-orange-600" />
+                </div>
+                <div>
+                  <p className="font-open-sans text-sm text-gray-500">Sold</p>
+                  <p className="font-open-sans text-2xl font-bold text-gray-900">{stats.soldListings}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <DollarSign className="h-6 w-6 text-purple-600" />
+                </div>
+                <div>
+                  <p className="font-open-sans text-sm text-gray-500">Total Value</p>
+                  <p className="font-open-sans text-2xl font-bold text-gray-900">${stats.totalValue.toLocaleString()}</p>
+                </div>
               </div>
             </div>
           </div>
-          
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Plus className="h-6 w-6 text-green-600" />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <Heart className="h-6 w-6 text-red-600" />
+                </div>
+                <div>
+                  <p className="font-open-sans text-sm text-gray-500">Total Favorites</p>
+                  <p className="font-open-sans text-2xl font-bold text-gray-900">{buyerStats.totalFavorites}</p>
+                </div>
               </div>
-              <div>
-                <p className="font-open-sans text-sm text-gray-500">Active</p>
-                <p className="font-open-sans text-2xl font-bold text-gray-900">{stats.activeListing}</p>
+            </div>
+            
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Plus className="h-6 w-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="font-open-sans text-sm text-gray-500">Added This Week</p>
+                  <p className="font-open-sans text-2xl font-bold text-gray-900">{buyerStats.recentFavorites}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <MessageSquare className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="font-open-sans text-sm text-gray-500">Messages</p>
+                  <p className="font-open-sans text-2xl font-bold text-gray-900">
+                    <a href="/messages" className="hover:text-orange-600">View All</a>
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-          
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <DollarSign className="h-6 w-6 text-orange-600" />
-              </div>
-              <div>
-                <p className="font-open-sans text-sm text-gray-500">Sold</p>
-                <p className="font-open-sans text-2xl font-bold text-gray-900">{stats.soldListings}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <DollarSign className="h-6 w-6 text-purple-600" />
-              </div>
-              <div>
-                <p className="font-open-sans text-sm text-gray-500">Total Value</p>
-                <p className="font-open-sans text-2xl font-bold text-gray-900">${stats.totalValue.toLocaleString()}</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        )}
 
         {/* Tabs */}
         <div className="border-b border-gray-200 mb-8">
           <nav className="flex space-x-8">
-            {[
+            {(currentUser?.role === 'seller' ? [
               { id: 'listings', label: 'My Listings', icon: Eye },
               { id: 'messages', label: 'Messages', icon: MessageSquare },
               { id: 'analytics', label: 'Analytics', icon: DollarSign }
-            ].map((tab) => {
+            ] : [
+              { id: 'favorites', label: 'My Favorites', icon: Heart },
+              { id: 'messages', label: 'Messages', icon: MessageSquare }
+            ]).map((tab) => {
               const Icon = tab.icon
               return (
                 <button
@@ -359,7 +571,11 @@ export default function DashboardPage() {
         </div>
 
         {/* Tab Content */}
-        {activeTab === 'listings' && (
+        {activeTab === 'favorites' && currentUser?.role === 'buyer' && (
+          <FavoritesTab />
+        )}
+
+        {activeTab === 'listings' && currentUser?.role === 'seller' && (
           <div>
             <div className="flex justify-between items-center mb-6">
               <h2 className="font-open-sans text-xl font-bold text-gray-900">My Listings</h2>
@@ -464,7 +680,7 @@ export default function DashboardPage() {
           <MessagesTab currentUser={currentUser} />
         )}
 
-        {activeTab === 'analytics' && (
+        {activeTab === 'analytics' && currentUser?.role === 'seller' && (
           <div className="text-center py-16">
             <DollarSign className="h-16 w-16 text-gray-300 mx-auto mb-4" />
             <h3 className="font-open-sans text-xl font-bold text-gray-900 mb-2">Analytics</h3>
