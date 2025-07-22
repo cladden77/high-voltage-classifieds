@@ -13,6 +13,7 @@ const nextConfig: NextConfig = {
     // !! WARN !!
     ignoreBuildErrors: true,
   },
+  // Force Vercel redeploy - dependencies fixed
 };
 
 export default nextConfig;
