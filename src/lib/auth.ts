@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { createGeneralSupabase } from './supabase'
 
 // Basic auth configuration - will be enhanced once packages are compatible
 export const authConfig = {
@@ -19,6 +19,7 @@ export async function signInWithCredentials(email: string, password: string, rol
   try {
     console.log('🔐 Signing in user:', email)
     
+    const supabase = createGeneralSupabase()
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -67,6 +68,7 @@ export async function signUpWithCredentials(email: string, password: string, nam
   try {
     console.log('📝 Signing up user:', email, 'as', role)
     
+    const supabase = createGeneralSupabase()
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -125,6 +127,7 @@ export async function getCurrentUser() {
   try {
     console.log('🔍 Getting current user...')
     
+    const supabase = createGeneralSupabase()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (authError) {
@@ -173,6 +176,7 @@ export async function getCurrentUser() {
 export async function signOut() {
   try {
     console.log('🚪 Signing out user...')
+    const supabase = createGeneralSupabase()
     const { error } = await supabase.auth.signOut()
     
     if (error) {
@@ -191,6 +195,7 @@ export async function signOut() {
 // Debug function to check auth state
 export async function debugAuthState() {
   try {
+    const supabase = createGeneralSupabase()
     const { data: { session } } = await supabase.auth.getSession()
     const currentUser = await getCurrentUser()
     

@@ -16,7 +16,10 @@ export interface UploadProgress {
 
 // Image upload utilities
 export class ImageUploadService {
-  private static supabase = createClientSupabase()
+  // Get supabase client when needed instead of storing as static property
+  private static getSupabase() {
+    return createClientSupabase()
+  }
 
   // Validate image file
   static validateImage(file: File): { valid: boolean; error?: string } {
@@ -69,7 +72,7 @@ export class ImageUploadService {
       const filePath = `${folder}/${fileName}`
 
       // Upload to Supabase Storage
-      const { data, error } = await this.supabase.storage
+      const { data, error } = await this.getSupabase().storage
         .from(STORAGE_BUCKETS.LISTING_IMAGES)
         .upload(filePath, file, {
           cacheControl: '3600',
@@ -84,7 +87,7 @@ export class ImageUploadService {
       }
 
       // Get public URL
-      const { data: urlData } = this.supabase.storage
+      const { data: urlData } = this.getSupabase().storage
         .from(STORAGE_BUCKETS.LISTING_IMAGES)
         .getPublicUrl(data.path)
 
@@ -130,7 +133,7 @@ export class ImageUploadService {
       const folder = urlParts[urlParts.length - 2]
       const filePath = `${folder}/${fileName}`
 
-      const { error } = await this.supabase.storage
+      const { error } = await this.getSupabase().storage
         .from(STORAGE_BUCKETS.LISTING_IMAGES)
         .remove([filePath])
 
@@ -153,7 +156,7 @@ export class ImageUploadService {
     sizeFormatted: string
   }> {
     try {
-      const { data, error } = await this.supabase.storage
+      const { data, error } = await this.getSupabase().storage
         .from(STORAGE_BUCKETS.LISTING_IMAGES)
         .list()
 
