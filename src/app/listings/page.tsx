@@ -148,63 +148,79 @@ function ListingsContent() {
   // Check if any filters are applied
   const hasActiveFilters = searchTerm || selectedCategory !== 'All Categories' || selectedLocation !== 'All Locations' || sortBy !== 'newest'
 
-  if (loading) {
-    return (
-      <div>
-        <Header />
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex justify-center items-center min-h-[400px]">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f37121] mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading listings...</p>
+      if (loading) {
+      return (
+        <div className="min-h-screen bg-white">
+          <Header />
+          <div className="max-w-7xl mx-auto px-8 py-8">
+            <div className="animate-pulse">
+              <div className="h-8 bg-gray-200 rounded w-1/3 mb-8"></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="bg-gray-200 h-64 rounded-lg"></div>
+                ))}
+              </div>
             </div>
           </div>
+          <Footer />
         </div>
-        <Footer />
-      </div>
-    )
-  }
+      )
+    }
 
-  return (
-    <div>
-      <Header />
-      
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Browse Listings</h1>
-          <p className="text-gray-600">
-            {filteredListings.length} {filteredListings.length === 1 ? 'listing' : 'listings'} found
-            {searchTerm && ` for "${searchTerm}"`}
-          </p>
-        </div>
-
-        {/* Filters */}
-        <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Filter Listings</h2>
-            {hasActiveFilters && (
-              <button
-                onClick={clearAllFilters}
-                className="flex items-center gap-1 text-sm text-[#f37121] hover:text-[#e55a0a] font-medium transition-colors"
-              >
-                <RotateCcw className="w-4 h-4" />
-                Clear All Filters
-              </button>
-            )}
+      return (
+      <div className="min-h-screen bg-white">
+        <Header />
+        
+        {/* Main Content */}
+        <div className="max-w-7xl mx-auto px-8 py-8">
+          {/* Page Header */}
+          <div className="mb-8">
+            <h1 className="font-staatliches text-[54px] leading-[48px] tracking-[-1.2px] text-gray-900 mb-2">
+              Equipment Listings
+            </h1>
+            <p className="font-open-sans text-lg text-gray-500">
+              Find the perfect equipment for your business
+            </p>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Search */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
-              <div className="relative">
+
+                  {/* Search Section */}
+          <div className="bg-white border border-gray-200 rounded-md shadow-sm p-6 mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="font-open-sans text-lg font-bold text-gray-900">Filter Equipment</h2>
+              {hasActiveFilters && (
+                <button
+                  onClick={clearAllFilters}
+                  className="flex items-center gap-1 text-sm text-orange-500 hover:text-orange-600 font-open-sans font-bold transition-colors"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Clear All Filters
+                </button>
+              )}
+            </div>
+            
+                        <div className="flex gap-4 items-center">
+              {/* Search Input */}
+              <div className="flex-1 relative">
                 <input
                   type="text"
-                  placeholder="Search listings..."
+                  placeholder="Search equipment..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f37121]"
+                  className="w-full h-10 pl-10 pr-8 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent font-open-sans text-sm"
                 />
+                <svg
+                  className="absolute left-3 top-3 h-4 w-4 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
                 {searchTerm && (
                   <button
                     onClick={() => setSearchTerm('')}
@@ -214,146 +230,181 @@ function ListingsContent() {
                   </button>
                 )}
               </div>
-            </div>
 
-            {/* Category Filter */}
-            <div>
-              <label className="flex items-center justify-between text-sm font-medium text-gray-700 mb-2">
-                Category
+              {/* Category Filter */}
+              <div className="relative">
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="h-10 px-3 pr-8 border border-gray-200 rounded bg-white font-open-sans text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none"
+                >
+                  {categories.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+                <svg
+                  className="absolute right-2 top-3 h-4 w-4 text-gray-500 pointer-events-none"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
                 {selectedCategory !== 'All Categories' && (
                   <button
                     onClick={() => setSelectedCategory('All Categories')}
-                    className="text-xs text-[#f37121] hover:text-[#e55a0a] font-normal"
+                    className="absolute -top-2 -right-2 bg-orange-500 text-white rounded-full p-1 hover:bg-orange-600 transition-colors"
                   >
-                    Clear
+                    <X className="w-3 h-3" />
                   </button>
                 )}
-              </label>
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f37121]"
-              >
-                {categories.map(category => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
-            </div>
+              </div>
 
-            {/* Location Filter */}
-            <div>
-              <label className="flex items-center justify-between text-sm font-medium text-gray-700 mb-2">
-                Location
+              {/* Location Filter */}
+              <div className="relative">
+                <select
+                  value={selectedLocation}
+                  onChange={(e) => setSelectedLocation(e.target.value)}
+                  className="h-10 px-3 pr-8 border border-gray-200 rounded bg-white font-open-sans text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none"
+                >
+                  {locations.map(location => (
+                    <option key={location} value={location}>{location}</option>
+                  ))}
+                </select>
+                <svg
+                  className="absolute right-2 top-3 h-4 w-4 text-gray-500 pointer-events-none"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
                 {selectedLocation !== 'All Locations' && (
                   <button
                     onClick={() => setSelectedLocation('All Locations')}
-                    className="text-xs text-[#f37121] hover:text-[#e55a0a] font-normal"
+                    className="absolute -top-2 -right-2 bg-orange-500 text-white rounded-full p-1 hover:bg-orange-600 transition-colors"
                   >
-                    Clear
+                    <X className="w-3 h-3" />
                   </button>
                 )}
-              </label>
-              <select
-                value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f37121]"
-              >
-                {locations.map(location => (
-                  <option key={location} value={location}>{location}</option>
-                ))}
-              </select>
-            </div>
+              </div>
 
-            {/* Sort */}
-            <div>
-              <label className="flex items-center justify-between text-sm font-medium text-gray-700 mb-2">
-                Sort by
+              {/* Sort Filter */}
+              <div className="relative">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="h-10 px-3 pr-8 border border-gray-200 rounded bg-white font-open-sans text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none"
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="price_low">Price: Low to High</option>
+                  <option value="price_high">Price: High to Low</option>
+                </select>
+                <svg
+                  className="absolute right-2 top-3 h-4 w-4 text-gray-500 pointer-events-none"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
                 {sortBy !== 'newest' && (
                   <button
                     onClick={() => setSortBy('newest')}
-                    className="text-xs text-[#f37121] hover:text-[#e55a0a] font-normal"
+                    className="absolute -top-2 -right-2 bg-orange-500 text-white rounded-full p-1 hover:bg-orange-600 transition-colors"
                   >
-                    Clear
+                    <X className="w-3 h-3" />
                   </button>
                 )}
-              </label>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f37121]"
-              >
-                <option value="newest">Newest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="price_low">Price: Low to High</option>
-                <option value="price_high">Price: High to Low</option>
-              </select>
+              </div>
             </div>
-          </div>
         </div>
 
-        {/* Results */}
-        {filteredListings.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">🔍</div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No listings found</h3>
-            <p className="text-gray-600 mb-4">Try adjusting your search criteria or browse all categories.</p>
-            <button
-              onClick={clearAllFilters}
-              className="bg-[#f37121] text-white px-6 py-2 rounded-md hover:bg-[#e55a0a] transition-colors"
-            >
-              Clear Filters
-            </button>
+                  {/* Results Header */}
+          <div className="flex justify-between items-center mb-6">
+            <p className="font-open-sans text-gray-500">
+              Showing {filteredListings.length} results
+              {searchTerm && ` for "${searchTerm}"`}
+            </p>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+          {/* Equipment Grid */}
+          {filteredListings.length === 0 ? (
+            <div className="text-center py-16">
+              <h3 className="font-open-sans text-xl font-bold text-gray-900 mb-2">No listings found</h3>
+              <p className="font-open-sans text-gray-500">Try adjusting your search criteria</p>
+            </div>
+          ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
             {filteredListings.map((listing) => (
-              <div key={listing.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+              <div key={listing.id} className="bg-white border border-gray-200 rounded-md shadow-sm overflow-hidden">
                 {/* Image */}
-                <div className="h-48 bg-gray-200 relative">
+                <div className="h-48 bg-gray-200 flex items-center justify-center">
                   {listing.images && listing.images.length > 0 ? (
-                    <img
-                      src={listing.images[0]}
+                    <img 
+                      src={listing.images[0]} 
                       alt={listing.title}
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400">
-                      <div className="text-center">
-                        <div className="text-4xl mb-2">📷</div>
-                        <div className="text-sm">No Image</div>
-                      </div>
-                    </div>
+                    <span className="text-gray-500 font-open-sans">No Image</span>
                   )}
-                  <div className="absolute top-2 right-2">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getConditionColor(listing.condition)}`}>
+                </div>
+                
+                {/* Card Content */}
+                <div className="p-6">
+                  {/* Condition and Date */}
+                  <div className="flex justify-between items-center mb-2">
+                    <span className={`px-3 py-1 rounded-full text-xs font-open-sans font-bold ${getConditionColor(listing.condition)}`}>
                       {listing.condition}
                     </span>
+                    <span className="text-sm font-open-sans font-bold text-gray-500">
+                      {new Date(listing.created_at).toLocaleDateString()}
+                    </span>
                   </div>
-                </div>
 
-                {/* Content */}
-                <div className="p-6">
-                  <h3 className="font-semibold text-lg text-gray-900 mb-2 line-clamp-2">{listing.title}</h3>
-                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">{listing.description}</p>
-                  
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-2xl font-bold text-[#f37121]">${listing.price.toLocaleString()}</span>
-                    <span className="text-sm text-gray-500">{listing.category}</span>
+                  {/* Title */}
+                  <h3 className="font-open-sans font-bold text-lg text-gray-900 mb-2 leading-7">
+                    {listing.title}
+                  </h3>
+
+                  {/* Description */}
+                  <p className="font-open-sans text-sm text-gray-500 mb-3 leading-5">
+                    {listing.description.length > 100 
+                      ? `${listing.description.substring(0, 100)}...` 
+                      : listing.description
+                    }
+                  </p>
+
+                  {/* Price and Location */}
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="font-open-sans font-bold text-2xl text-gray-900">
+                      ${listing.price.toLocaleString()}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      <span className="font-open-sans font-bold text-sm text-gray-500">
+                        {listing.location}
+                      </span>
+                    </div>
                   </div>
-                  
-                  <div className="flex items-center text-sm text-gray-500 mb-4">
-                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                    </svg>
-                    {listing.location}
+
+                  {/* Category and View Details */}
+                  <div className="flex justify-between items-center">
+                    <span className="font-open-sans font-bold text-sm text-gray-500">
+                      {listing.category}
+                    </span>
+                    <a
+                      href={`/listings/${listing.id}`}
+                      className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded font-open-sans font-bold text-sm uppercase transition-colors"
+                    >
+                      View Details
+                    </a>
                   </div>
-                  
-                  <a
-                    href={`/listings/${listing.id}`}
-                    className="block w-full bg-[#f37121] text-white text-center py-2 rounded-md hover:bg-[#e55a0a] transition-colors"
-                  >
-                    View Details
-                  </a>
                 </div>
               </div>
             ))}
@@ -369,13 +420,15 @@ function ListingsContent() {
 // Loading fallback component
 function ListingsLoading() {
   return (
-    <div>
+    <div className="min-h-screen bg-white">
       <Header />
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-center items-center min-h-[400px]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f37121] mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading listings...</p>
+      <div className="max-w-7xl mx-auto px-8 py-8">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/3 mb-8"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-gray-200 h-64 rounded-lg"></div>
+            ))}
           </div>
         </div>
       </div>
