@@ -7,6 +7,9 @@ import Footer from '@/components/Footer'
 import { createClientSupabase } from '@/lib/supabase'
 import { Database } from '@/lib/database.types'
 
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic'
+
 type UserProfile = Database['public']['Tables']['users']['Row']
 
 export default function AccountPage() {
@@ -21,14 +24,15 @@ export default function AccountPage() {
     role: 'buyer' as 'buyer' | 'seller'
   })
 
-  const supabase = createClientSupabase()
-
   useEffect(() => {
     fetchProfile()
   }, [])
 
   const fetchProfile = async () => {
     try {
+      // Initialize Supabase client inside the function to avoid build-time errors
+      const supabase = createClientSupabase()
+      
       // TODO: Get current user ID when auth is implemented
       const { data, error } = await supabase
         .from('users')
@@ -41,7 +45,7 @@ export default function AccountPage() {
       if (data) {
         setProfile(data)
         setFormData({
-          name: data.name || '',
+          name: data.full_name || '',
           email: data.email,
           phone: data.phone || '',
           location: data.location || '',
@@ -65,17 +69,30 @@ export default function AccountPage() {
   const handleSave = async () => {
     setSaving(true)
     try {
+      const supabase = createClientSupabase()
+      
       const { error } = await supabase
         .from('users')
         .upsert({
           id: 'current-user-id', // TODO: Replace with actual user ID
-          ...formData,
+          full_name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          location: formData.location,
+          role: formData.role,
           updated_at: new Date().toISOString()
         })
 
       if (error) throw error
       
-      setProfile(prev => prev ? { ...prev, ...formData } : null)
+      setProfile(prev => prev ? { 
+        ...prev, 
+        full_name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        location: formData.location,
+        role: formData.role
+      } : null)
       alert('Profile updated successfully!')
     } catch (error) {
       console.error('Error updating profile:', error)
