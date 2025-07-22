@@ -1,139 +1,158 @@
 import React from 'react'
-import Header from '@/components/Header'
-import Footer from '@/components/Footer'
 
 export default function TermsPage() {
   return (
     <div className="min-h-screen bg-white">
-      <Header />
-      
-      <div className="max-w-4xl mx-auto px-8 py-8">
-        <div className="mb-8">
-          <h1 className="font-staatliches text-[54px] leading-[48px] tracking-[-1.2px] text-gray-900 mb-2">
-            Terms of Service
-          </h1>
-          <p className="font-open-sans text-lg text-gray-500">
-            Last updated: January 1, 2024
-          </p>
-        </div>
-
-        <div className="prose prose-lg max-w-none">
-          <div className="font-open-sans space-y-6">
-            
-            <section>
-              <h2 className="font-staatliches text-2xl text-gray-900 mb-4">1. Acceptance of Terms</h2>
-              <p className="text-gray-700 leading-relaxed">
-                By accessing and using High Voltage Classifieds ("the Platform"), you accept and agree to be bound by the terms and provision of this agreement. 
-                If you do not agree to abide by the above, please do not use this service.
+      <main className="py-12 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-3xl">
+          <article className="prose prose-lg prose-gray mx-auto">
+            <header className="mb-8">
+              <h1 className="font-staatliches text-4xl md:text-5xl text-gray-900 mb-4 text-center">
+                Terms & Conditions
+              </h1>
+              <p className="text-sm text-gray-500 text-center font-open-sans">
+                Last Updated: July 22, 2025
               </p>
-            </section>
+            </header>
 
-            <section>
-              <h2 className="font-staatliches text-2xl text-gray-900 mb-4">2. Platform Description</h2>
-              <p className="text-gray-700 leading-relaxed">
-                High Voltage Classifieds is a marketplace platform that connects buyers and sellers of high voltage electrical equipment. 
-                We facilitate transactions but are not a party to the actual sale agreements between users.
-              </p>
-            </section>
+            <div className="space-y-8 font-open-sans">
+              <section>
+                <p className="text-lg text-gray-700 leading-relaxed">
+                  Welcome to High Voltage Classifieds ("Platform", "we", "our", or "us"). These Terms and Conditions ("Terms") govern your use of our website located at highvoltageclassifieds.com and all related services.
+                </p>
+                <p className="text-lg text-gray-700 leading-relaxed">
+                  By accessing or using our Platform, you agree to be bound by these Terms. If you do not agree, please do not use the Platform.
+                </p>
+              </section>
 
-            <section>
-              <h2 className="font-staatliches text-2xl text-gray-900 mb-4">3. User Accounts</h2>
-              <div className="text-gray-700 leading-relaxed space-y-4">
-                <p>
-                  <strong>Buyer Accounts:</strong> Open to any individual or business interested in purchasing equipment.
+              <section>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  1. Eligibility
+                </h2>
+                <p className="text-gray-700 leading-relaxed">
+                  To create a seller account, you must be a registered business operating in the transformer, power, or electrical supply industries. Buyers must be at least 18 years old to create an account or purchase items.
                 </p>
-                <p>
-                  <strong>Seller Accounts:</strong> Limited to verified businesses only. All seller accounts are subject to verification and approval.
-                </p>
-                <p>
-                  You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account.
-                </p>
-              </div>
-            </section>
+              </section>
 
-            <section>
-              <h2 className="font-staatliches text-2xl text-gray-900 mb-4">4. Listing Guidelines</h2>
-              <div className="text-gray-700 leading-relaxed">
-                <p className="mb-4">Sellers must provide accurate information about equipment including:</p>
-                <ul className="list-disc pl-6 space-y-2">
-                  <li>Truthful condition descriptions</li>
-                  <li>Accurate technical specifications</li>
-                  <li>Clear, representative photographs</li>
-                  <li>Honest pricing</li>
-                  <li>Compliance with all applicable safety standards</li>
+              <section>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  2. Accounts
+                </h2>
+                <ul className="space-y-2 text-gray-700 leading-relaxed list-disc pl-6">
+                  <li>Sellers must provide accurate business details and comply with local regulations.</li>
+                  <li>Buyers may browse without registering, but must create an account to favorite listings, message sellers, or make purchases.</li>
+                  <li>You are responsible for safeguarding your login credentials.</li>
                 </ul>
-              </div>
-            </section>
+              </section>
 
-            <section>
-              <h2 className="font-staatliches text-2xl text-gray-900 mb-4">5. Prohibited Activities</h2>
-              <div className="text-gray-700 leading-relaxed">
-                <p className="mb-4">Users may not:</p>
-                <ul className="list-disc pl-6 space-y-2">
-                  <li>Post false or misleading information</li>
-                  <li>Engage in fraudulent activities</li>
-                  <li>Violate any applicable laws or regulations</li>
-                  <li>Infringe on intellectual property rights</li>
-                  <li>Sell stolen or illegally obtained equipment</li>
-                  <li>Use the platform for spam or unauthorized marketing</li>
+              <section>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  3. Listings and Content
+                </h2>
+                <ul className="space-y-2 text-gray-700 leading-relaxed list-disc pl-6">
+                  <li>Sellers may post listings for surplus equipment, parts, and other relevant items.</li>
+                  <li>All listings must be truthful, accurate, and comply with applicable laws.</li>
+                  <li>We reserve the right to remove any listing that violates our policies or is reported as fraudulent.</li>
                 </ul>
-              </div>
-            </section>
+              </section>
 
-            <section>
-              <h2 className="font-staatliches text-2xl text-gray-900 mb-4">6. Payment and Transactions</h2>
-              <div className="text-gray-700 leading-relaxed space-y-4">
-                <p>
-                  All payments are processed through secure third-party payment processors (Stripe and PayPal). 
-                  We do not store payment information on our servers.
+              <section>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  4. Purchases and Payments
+                </h2>
+                <ul className="space-y-2 text-gray-700 leading-relaxed list-disc pl-6">
+                  <li>Buyers can purchase listed items via Stripe or PayPal using credit/debit cards or linked accounts.</li>
+                  <li>All transactions are handled by third-party payment processors. We do not store payment information.</li>
+                  <li>Sellers are responsible for shipping, fulfillment, and customer support for their listings.</li>
+                </ul>
+              </section>
+
+              <section>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  5. Messaging
+                </h2>
+                <p className="text-gray-700 leading-relaxed">
+                  Buyers and sellers may communicate via in-app messaging. No spamming, harassment, or off-platform solicitation is allowed.
                 </p>
-                <p>
-                  Buyers and sellers are responsible for completing transactions according to the terms they agree upon. 
-                  High Voltage Classifieds is not responsible for disputes between parties.
+              </section>
+
+              <section>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  6. Prohibited Conduct
+                </h2>
+                <p className="text-gray-700 leading-relaxed mb-3">
+                  You agree not to:
                 </p>
-              </div>
-            </section>
+                <ul className="space-y-2 text-gray-700 leading-relaxed list-disc pl-6">
+                  <li>Post unlawful, deceptive, or misleading listings</li>
+                  <li>Infringe on any third-party intellectual property</li>
+                  <li>Attempt to hack, scrape, or overload the platform</li>
+                  <li>Use the platform for personal (non-business) sales</li>
+                </ul>
+              </section>
 
-            <section>
-              <h2 className="font-staatliches text-2xl text-gray-900 mb-4">7. Limitation of Liability</h2>
-              <p className="text-gray-700 leading-relaxed">
-                High Voltage Classifieds provides the platform "as is" without warranties of any kind. 
-                We are not liable for any damages arising from the use of our platform or transactions between users. 
-                Users assume full responsibility for verifying equipment condition and suitability for their purposes.
+              <section>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  7. Account Termination
+                </h2>
+                <p className="text-gray-700 leading-relaxed">
+                  We reserve the right to suspend or delete any account that violates these Terms or our community guidelines.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  8. Disclaimers
+                </h2>
+                <ul className="space-y-2 text-gray-700 leading-relaxed list-disc pl-6">
+                  <li>High Voltage Classifieds does not own or inspect any items listed on the platform.</li>
+                  <li>We do not guarantee the accuracy of listings, nor the conduct of buyers or sellers.</li>
+                  <li>All transactions are at your own risk.</li>
+                </ul>
+              </section>
+
+              <section>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  9. Limitation of Liability
+                </h2>
+                <p className="text-gray-700 leading-relaxed">
+                  To the fullest extent permitted by law, High Voltage Classifieds shall not be liable for any damages, including loss of profits, resulting from your use of the platform.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  10. Changes to Terms
+                </h2>
+                <p className="text-gray-700 leading-relaxed">
+                  We may update these Terms at any time. Continued use of the platform after changes are posted constitutes acceptance of the updated Terms.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  11. Contact
+                </h2>
+                <p className="text-gray-700 leading-relaxed">
+                  If you have any questions, please contact us at{' '}
+                  <a 
+                    href="mailto:support@highvoltageclassifieds.com"
+                    className="text-orange-600 hover:text-orange-700 underline font-medium"
+                  >
+                    support@highvoltageclassifieds.com
+                  </a>
+                </p>
+              </section>
+            </div>
+
+            <footer className="mt-12 pt-8 border-t border-gray-200">
+              <p className="text-sm text-gray-500 text-center font-open-sans">
+                These terms are effective as of the date listed above and supersede all prior agreements.
               </p>
-            </section>
-
-            <section>
-              <h2 className="font-staatliches text-2xl text-gray-900 mb-4">8. Privacy</h2>
-              <p className="text-gray-700 leading-relaxed">
-                Your privacy is important to us. Please review our Privacy Policy, which also governs your use of the platform, 
-                to understand our practices.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="font-staatliches text-2xl text-gray-900 mb-4">9. Modifications</h2>
-              <p className="text-gray-700 leading-relaxed">
-                We reserve the right to modify these terms at any time. Changes will be effective immediately upon posting. 
-                Your continued use of the platform constitutes acceptance of the modified terms.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="font-staatliches text-2xl text-gray-900 mb-4">10. Contact Information</h2>
-              <p className="text-gray-700 leading-relaxed">
-                If you have any questions about these Terms of Service, please contact us at{' '}
-                <a href="mailto:legal@highvoltageclassifieds.com" className="text-orange-500 hover:text-orange-600">
-                  legal@highvoltageclassifieds.com
-                </a>
-              </p>
-            </section>
-
-          </div>
+            </footer>
+          </article>
         </div>
-      </div>
-
-      <Footer />
+      </main>
     </div>
   )
 } 
