@@ -42,6 +42,9 @@ export default function Header() {
     }
   };
 
+  // Only show Post Listing for sellers and non-logged-in users
+  const shouldShowPostListing = !loading && (!currentUser || currentUser.role === 'seller');
+
   return (
     <header className="bg-[#1b1b1b] h-[95px] sticky top-0 z-50 shadow-[0px_10px_15px_-3px_rgba(0,0,0,0.1),0px_4px_6px_-4px_rgba(0,0,0,0.1)]">
       <div className="box-border content-stretch flex flex-col items-center justify-center overflow-clip pb-px pt-0 px-4 lg:px-20 relative size-full">
@@ -100,10 +103,12 @@ export default function Header() {
               </>
             )}
             
-            {/* Post Listing Button */}
-            <Link href="/dashboard" className="bg-[#f37121] text-white px-3 lg:px-5 py-2 rounded shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)] text-xs lg:text-base font-bold uppercase hover:bg-[#e55a0a] transition-colors">
-              {currentUser?.role === 'seller' ? 'Dashboard' : 'Post Listing'}
-            </Link>
+            {/* Post Listing Button - Only for Sellers and non-logged-in users */}
+            {shouldShowPostListing && (
+              <Link href="/dashboard" className="bg-[#f37121] text-white px-3 lg:px-5 py-2 rounded shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)] text-xs lg:text-base font-bold uppercase hover:bg-[#e55a0a] transition-colors">
+                {currentUser?.role === 'seller' ? 'Dashboard' : 'Post Listing'}
+              </Link>
+            )}
             
             {/* Mobile menu button */}
             <button 
@@ -165,6 +170,16 @@ export default function Header() {
                       >
                         Account
                       </Link>
+                      {/* Dashboard link for Sellers in mobile menu */}
+                      {currentUser.role === 'seller' && (
+                        <Link 
+                          href="/dashboard" 
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="block text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors"
+                        >
+                          Dashboard
+                        </Link>
+                      )}
                       <button 
                         onClick={handleSignOut}
                         className="text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors"
