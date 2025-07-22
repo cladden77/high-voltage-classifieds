@@ -1,8 +1,12 @@
 import React from 'react'
+import Header from '@/components/Header'
+import Footer from '@/components/Footer'
 
 export default function TermsPage() {
   return (
     <div className="min-h-screen bg-white">
+      <Header />
+      
       <main className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl">
           <article className="prose prose-lg prose-gray mx-auto">
@@ -153,6 +157,8 @@ export default function TermsPage() {
           </article>
         </div>
       </main>
+
+      <Footer />
     </div>
   )
 } 
