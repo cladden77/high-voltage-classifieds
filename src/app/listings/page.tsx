@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { X, RotateCcw } from 'lucide-react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { createClientSupabase } from '@/lib/supabase'
@@ -136,6 +137,17 @@ function ListingsContent() {
   // Get unique locations for filter dropdown
   const locations = ['All Locations', ...Array.from(new Set(listings.map(listing => listing.location)))]
 
+  // Clear all filters function
+  const clearAllFilters = () => {
+    setSearchTerm('')
+    setSelectedCategory('All Categories')
+    setSelectedLocation('All Locations')
+    setSortBy('newest')
+  }
+
+  // Check if any filters are applied
+  const hasActiveFilters = searchTerm || selectedCategory !== 'All Categories' || selectedLocation !== 'All Locations' || sortBy !== 'newest'
+
   if (loading) {
     return (
       <div>
@@ -168,22 +180,55 @@ function ListingsContent() {
 
         {/* Filters */}
         <div className="bg-white p-6 rounded-lg shadow-md mb-8">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Filter Listings</h2>
+            {hasActiveFilters && (
+              <button
+                onClick={clearAllFilters}
+                className="flex items-center gap-1 text-sm text-[#f37121] hover:text-[#e55a0a] font-medium transition-colors"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Clear All Filters
+              </button>
+            )}
+          </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Search */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
-              <input
-                type="text"
-                placeholder="Search listings..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f37121]"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search listings..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f37121]"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Category Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+              <label className="flex items-center justify-between text-sm font-medium text-gray-700 mb-2">
+                Category
+                {selectedCategory !== 'All Categories' && (
+                  <button
+                    onClick={() => setSelectedCategory('All Categories')}
+                    className="text-xs text-[#f37121] hover:text-[#e55a0a] font-normal"
+                  >
+                    Clear
+                  </button>
+                )}
+              </label>
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
@@ -197,7 +242,17 @@ function ListingsContent() {
 
             {/* Location Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+              <label className="flex items-center justify-between text-sm font-medium text-gray-700 mb-2">
+                Location
+                {selectedLocation !== 'All Locations' && (
+                  <button
+                    onClick={() => setSelectedLocation('All Locations')}
+                    className="text-xs text-[#f37121] hover:text-[#e55a0a] font-normal"
+                  >
+                    Clear
+                  </button>
+                )}
+              </label>
               <select
                 value={selectedLocation}
                 onChange={(e) => setSelectedLocation(e.target.value)}
@@ -211,7 +266,17 @@ function ListingsContent() {
 
             {/* Sort */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Sort by</label>
+              <label className="flex items-center justify-between text-sm font-medium text-gray-700 mb-2">
+                Sort by
+                {sortBy !== 'newest' && (
+                  <button
+                    onClick={() => setSortBy('newest')}
+                    className="text-xs text-[#f37121] hover:text-[#e55a0a] font-normal"
+                  >
+                    Clear
+                  </button>
+                )}
+              </label>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
@@ -233,11 +298,7 @@ function ListingsContent() {
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No listings found</h3>
             <p className="text-gray-600 mb-4">Try adjusting your search criteria or browse all categories.</p>
             <button
-              onClick={() => {
-                setSearchTerm('')
-                setSelectedCategory('All Categories')
-                setSelectedLocation('All Locations')
-              }}
+              onClick={clearAllFilters}
               className="bg-[#f37121] text-white px-6 py-2 rounded-md hover:bg-[#e55a0a] transition-colors"
             >
               Clear Filters
