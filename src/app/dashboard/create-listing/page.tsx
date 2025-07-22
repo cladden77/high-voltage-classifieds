@@ -7,6 +7,9 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { createClientSupabase } from '@/lib/supabase'
 
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic'
+
 export default function CreateListingPage() {
   const [formData, setFormData] = useState({
     title: '',
@@ -23,7 +26,6 @@ export default function CreateListingPage() {
   const [error, setError] = useState('')
 
   const router = useRouter()
-  const supabase = createClientSupabase()
 
   const categories = [
     'Transformers',
@@ -72,6 +74,7 @@ export default function CreateListingPage() {
   }
 
   const uploadImages = async (): Promise<string[]> => {
+    const supabase = createClientSupabase()
     const uploadedUrls: string[] = []
     
     for (const image of images) {
@@ -120,6 +123,7 @@ export default function CreateListingPage() {
       const sellerId = 'current-seller-id' // TODO: Replace with actual seller ID
 
       // Create listing
+      const supabase = createClientSupabase()
       const { data, error } = await supabase
         .from('listings')
         .insert({
