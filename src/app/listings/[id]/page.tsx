@@ -118,6 +118,25 @@ export default function ListingDetailPage() {
       setSendingMessage(true)
       setMessageError(null)
 
+      // Debug: Check auth state
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      console.log('🔍 Auth Debug Info:')
+      console.log('Current User ID (from our system):', currentUser.id)
+      console.log('Auth User ID (from Supabase):', authUser?.id)
+      console.log('Auth User Object:', authUser)
+      console.log('Current User Object:', currentUser)
+
+      if (!authUser) {
+        setMessageError('Authentication session expired. Please sign in again.')
+        return
+      }
+
+      if (authUser.id !== currentUser.id) {
+        console.error('❌ ID MISMATCH! Auth ID !== Current User ID')
+        setMessageError('Authentication mismatch. Please sign out and sign in again.')
+        return
+      }
+
       console.log('🔄 Sending message from listing page:', {
         sender_id: currentUser.id,
         recipient_id: listing.seller_id,
@@ -138,7 +157,22 @@ export default function ListingDetailPage() {
 
       if (error) {
         console.error('❌ Message send error:', error)
-        throw error
+        console.error('Error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        })
+        
+        // Provide more specific error messages
+        if (error.message.includes('row-level security')) {
+          setMessageError('Permission denied. Please sign out and sign in again to refresh your session.')
+        } else if (error.message.includes('foreign key')) {
+          setMessageError('Invalid user or listing reference. Please refresh the page.')
+        } else {
+          setMessageError(`Database error: ${error.message}`)
+        }
+        return
       }
 
       console.log('✅ Message sent successfully:', data)
@@ -154,7 +188,7 @@ export default function ListingDetailPage() {
       }, 2000)
 
     } catch (error) {
-      console.error('Error sending message:', error)
+      console.error('💥 Unexpected error sending message:', error)
       setMessageError('Failed to send message. Please try again.')
     } finally {
       setSendingMessage(false)
@@ -428,4 +462,4 @@ export default function ListingDetailPage() {
       <Footer />
     </div>
   )
-} 
+}
