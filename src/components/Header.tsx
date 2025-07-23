@@ -19,6 +19,8 @@ export default function Header() {
       setCurrentUser(user);
     } catch (error) {
       console.error('Error checking auth state:', error);
+      // Don't treat this as a critical error - user might just not be logged in
+      setCurrentUser(null);
     } finally {
       setLoading(false);
     }

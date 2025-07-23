@@ -128,15 +128,25 @@ export async function getCurrentUser() {
     console.log('🔍 Getting current user...')
     
     const supabase = createGeneralSupabase()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
     
-    if (authError) {
-      console.error('❌ Auth getUser error:', authError)
+    // First check if there's an active session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    
+    if (sessionError) {
+      console.error('❌ Session check error:', sessionError)
       return null
     }
 
-    if (!user) {
-      console.log('ℹ️ No authenticated user found')
+    if (!session) {
+      console.log('ℹ️ No active session found')
+      return null
+    }
+
+    // Now we can safely get the user since we have a session
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      console.error('❌ Auth getUser error:', authError)
       return null
     }
 
@@ -189,6 +199,24 @@ export async function signOut() {
   } catch (error) {
     console.error('💥 Sign out exception:', error)
     return { success: false, error: 'An unexpected error occurred' }
+  }
+}
+
+// Function to safely check if user is authenticated
+export async function isAuthenticated() {
+  try {
+    const supabase = createGeneralSupabase()
+    const { data: { session }, error } = await supabase.auth.getSession()
+    
+    if (error) {
+      console.error('❌ Session check error:', error)
+      return false
+    }
+
+    return !!session
+  } catch (error) {
+    console.error('💥 isAuthenticated exception:', error)
+    return false
   }
 }
 

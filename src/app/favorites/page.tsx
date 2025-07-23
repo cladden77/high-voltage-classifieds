@@ -28,14 +28,23 @@ export default function FavoritesPage() {
   const fetchFavorites = async () => {
     try {
       const supabase = createClientSupabase()
-      // TODO: Get current user and filter by user_id
+      const { getCurrentUser } = await import('@/lib/auth')
+      
+      // Get current user
+      const currentUser = await getCurrentUser()
+      if (!currentUser) {
+        // Redirect to sign in if not authenticated
+        window.location.href = '/auth/signin'
+        return
+      }
+      
       const { data, error } = await supabase
         .from('favorites')
         .select(`
           *,
           listings (*)
         `)
-        // .eq('user_id', user.id) // Add when auth is implemented
+        .eq('user_id', currentUser.id)
 
       if (error) throw error
       setFavorites(data || [])

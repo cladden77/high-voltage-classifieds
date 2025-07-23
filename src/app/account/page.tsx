@@ -32,12 +32,20 @@ export default function AccountPage() {
     try {
       // Initialize Supabase client inside the function to avoid build-time errors
       const supabase = createClientSupabase()
+      const { getCurrentUser } = await import('@/lib/auth')
       
-      // TODO: Get current user ID when auth is implemented
+      // Get current user
+      const currentUser = await getCurrentUser()
+      if (!currentUser) {
+        // Redirect to sign in if not authenticated
+        window.location.href = '/auth/signin'
+        return
+      }
+      
       const { data, error } = await supabase
         .from('users')
         .select('*')
-        .eq('id', 'current-user-id') // TODO: Replace with actual user ID
+        .eq('id', currentUser.id)
         .single()
 
       if (error && error.code !== 'PGRST116') throw error
@@ -70,11 +78,20 @@ export default function AccountPage() {
     setSaving(true)
     try {
       const supabase = createClientSupabase()
+      const { getCurrentUser } = await import('@/lib/auth')
+      
+      // Get current user
+      const currentUser = await getCurrentUser()
+      if (!currentUser) {
+        alert('Please sign in to update your profile')
+        window.location.href = '/auth/signin'
+        return
+      }
       
       const { error } = await supabase
         .from('users')
         .upsert({
-          id: 'current-user-id', // TODO: Replace with actual user ID
+          id: currentUser.id,
           full_name: formData.name,
           email: formData.email,
           phone: formData.phone,

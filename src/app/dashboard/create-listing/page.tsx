@@ -119,8 +119,19 @@ export default function CreateListingPage() {
       // Upload images
       const imageUrls = await uploadImages()
 
-      // Get current user (this would come from authentication context in a real app)
-      const sellerId = 'current-seller-id' // TODO: Replace with actual seller ID
+      // Get current user
+      const { getCurrentUser } = await import('@/lib/auth')
+      const currentUser = await getCurrentUser()
+      
+      if (!currentUser) {
+        setError('Please sign in to create a listing')
+        return
+      }
+
+      if (currentUser.role !== 'seller') {
+        setError('Only sellers can create listings')
+        return
+      }
 
       // Create listing
       const supabase = createClientSupabase()
@@ -134,7 +145,7 @@ export default function CreateListingPage() {
           category: formData.category,
           condition: formData.condition,
           images: imageUrls,
-          seller_id: sellerId,
+          seller_id: currentUser.id,
           featured: formData.featured,
           is_sold: false
         })
