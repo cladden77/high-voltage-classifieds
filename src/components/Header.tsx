@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { getCurrentUser, signOut } from "@/lib/auth";
 
 export default function Header() {
@@ -54,15 +55,14 @@ export default function Header() {
           <div className="box-border content-stretch flex flex-row gap-4 lg:gap-[38px] items-center justify-start p-0 relative shrink-0">
             {/* Logo */}
             <div className="box-border content-stretch flex flex-row gap-2 items-center justify-start p-0 relative shrink-0">
-              <Link href="/" className="h-12 overflow-clip relative shrink-0 w-44">
-                <div className="flex items-center h-full">
-                  <span className="text-white font-staatliches text-xl lg:text-2xl font-bold">
-                    HIGH VOLTAGE
-                  </span>
-                </div>
-                <div className="text-[#928c8e] text-xs mt-1">
-                  CLASSIFIEDS
-                </div>
+              <Link href="/" className="flex items-center h-12 relative shrink-0">
+                <Image
+                  src="/assets/high-voltage-classifieds-logo.svg"
+                  alt="High Voltage Classifieds"
+                  width={180}
+                  height={48}
+                  className="h-12 w-auto object-contain"
+                />
               </Link>
             </div>
             
