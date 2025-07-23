@@ -38,7 +38,11 @@ export default function FeaturedListings() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {listings.map((listing) => (
-            <div key={listing.id} className="bg-white rounded-lg shadow-[0px_10px_15px_-3px_rgba(0,0,0,0.1),0px_4px_6px_-4px_rgba(0,0,0,0.1)] border border-neutral-200 overflow-hidden hover:shadow-lg transition-shadow">
+            <Link 
+              key={listing.id} 
+              href={`/listings/${listing.id}`}
+              className="block bg-white rounded-lg shadow-[0px_10px_15px_-3px_rgba(0,0,0,0.1),0px_4px_6px_-4px_rgba(0,0,0,0.1)] border border-neutral-200 overflow-hidden hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer"
+            >
               <div className="bg-neutral-100 h-40 flex items-center justify-center">
                 <span className="text-[#666] opacity-80 text-center px-4">{listing.title}</span>
               </div>
@@ -47,7 +51,7 @@ export default function FeaturedListings() {
                 <p className="text-[#928c8e] text-sm mb-2">{listing.location}</p>
                 <p className="text-[#f37121] text-xl font-bold">{listing.price}</p>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
         
