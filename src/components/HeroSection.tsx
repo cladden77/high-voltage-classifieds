@@ -48,8 +48,8 @@ export default function HeroSection() {
       <div className="relative bg-gradient-to-b from-[#1b1b1b] to-[#1b1b1b] min-h-[540px] flex items-center justify-center px-4 py-16">
         <div className="max-w-[672px] text-center">
           <h1 className="font-staatliches text-white text-4xl md:text-6xl lg:text-8xl leading-tight tracking-[-1.8px] mb-4">
-            <span className="block">Buy & Sell Surplus</span>
-            <span className="text-[#f37121]">High Voltage</span> Equipment
+            <span className="block">BUY & SELL SURPLUS</span>
+            <span className="block text-[#f37121]">HIGH VOLTAGE EQUIPMENT</span>
           </h1>
           <p className="text-white text-lg md:text-xl lg:text-2xl mb-8 max-w-[546px] mx-auto">
             A trusted platform for contractors, utilities, and solar providers
