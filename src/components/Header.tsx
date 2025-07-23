@@ -98,9 +98,14 @@ export default function Header() {
                     </button>
                   </div>
                 ) : (
-                  <Link href="/auth/signin" className="hidden lg:block text-neutral-100 text-base font-bold hover:text-[#f37121] transition-colors">
-                    Sign In | Sign Up
-                  </Link>
+                  <div className="hidden lg:flex items-center gap-4">
+                    <Link href="/auth/signin" className="text-neutral-100 text-base font-bold hover:text-[#f37121] transition-colors">
+                      Sign In
+                    </Link> | 
+                    <Link href="/auth/signup" className="text-neutral-100 text-base font-bold hover:text-[#f37121] transition-colors">
+                      Sign Up
+                    </Link>
+                  </div>
                 )}
               </>
             )}
@@ -190,13 +195,22 @@ export default function Header() {
                       </button>
                     </div>
                   ) : (
-                    <Link 
-                      href="/auth/signin" 
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors border-t border-neutral-800 pt-4"
-                    >
-                      Sign In
-                    </Link>
+                    <div className="border-t border-neutral-800 pt-4 space-y-3">
+                      <Link 
+                        href="/auth/signin" 
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors"
+                      >
+                        Sign In
+                      </Link>
+                      <Link 
+                        href="/auth/signup" 
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors"
+                      >
+                        Sign Up
+                      </Link>
+                    </div>
                   )}
                 </>
               )}
