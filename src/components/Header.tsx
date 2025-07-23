@@ -101,7 +101,8 @@ export default function Header() {
                   <div className="hidden lg:flex items-center gap-4">
                     <Link href="/auth/signin" className="text-neutral-100 text-base font-bold hover:text-[#f37121] transition-colors">
                       Sign In
-                    </Link> | 
+                    </Link>
+                    <span className="text-neutral-100 text-base">|</span>
                     <Link href="/auth/signup" className="text-neutral-100 text-base font-bold hover:text-[#f37121] transition-colors">
                       Sign Up
                     </Link>
