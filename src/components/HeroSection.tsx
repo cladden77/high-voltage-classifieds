@@ -46,17 +46,20 @@ export default function HeroSection() {
     <section className="bg-[#ffffff] relative">
       <div className="absolute inset-0 bg-[#1b1b1b] opacity-80"></div>
       <div className="relative bg-gradient-to-b from-[#1b1b1b] to-[#1b1b1b] min-h-[540px] flex items-center justify-center px-4 py-16">
-        <div className="max-w-[672px] text-center">
-          <h1 className="font-staatliches text-white text-4xl md:text-6xl lg:text-8xl leading-tight tracking-[-1.8px] mb-4">
+        <div className="text-center">
+          <h1 className="font-staatliches text-white text-4xl md:text-6xl lg:text-8xl tracking-[-1.8px] mb-4">
             <span className="block">BUY & SELL SURPLUS</span>
-            <span className="block text-[#f37121]">HIGH VOLTAGE EQUIPMENT</span>
+            <div className="flex">
+              <span className="block text-[#f37121]">HIGH VOLTAGE</span>
+              <span className="pl-2">EQUIPMENT</span>
+              </div>
           </h1>
-          <p className="text-white text-lg md:text-xl lg:text-2xl mb-8 max-w-[546px] mx-auto">
+          <p className="text-white text-lg md:text-xl lg:text-2xl mb-8 mx-auto">
             A trusted platform for contractors, utilities, and solar providers
           </p>
           
           {/* Search Form */}
-          <form onSubmit={handleSearch} className="bg-[rgba(255,255,255,0.9)] rounded-lg p-4">
+          <form onSubmit={handleSearch} className="bg-[rgba(255,255,255,0.9)] rounded-lg p-4 max-w-[672px] mx-auto">
             <div className="flex flex-col lg:flex-row gap-3">
               <input
                 type="text"
