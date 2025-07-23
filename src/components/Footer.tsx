@@ -22,10 +22,6 @@ export default function Footer() {
           <div className="space-y-2">
             <p className="text-white">support@highvoltageclassifieds.com</p>
             <p className="text-white">(555) 123-4567</p>
-            <p className="text-gray-300 text-sm">
-              Monday - Friday: 8:00 AM - 6:00 PM CT<br />
-              Saturday: 9:00 AM - 2:00 PM CT
-            </p>
           </div>
         </div>
         
