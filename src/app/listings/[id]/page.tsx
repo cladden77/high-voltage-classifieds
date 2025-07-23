@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import { Heart, MessageCircle, ArrowLeft, Star, AlertCircle, CheckCircle } from 'lucide-react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import AuthModal from '@/components/AuthModal'
 import { createClientSupabase } from '@/lib/supabase'
 import { getCurrentUser } from '@/lib/auth'
 import { Database } from '@/lib/database.types'
@@ -26,8 +27,16 @@ export default function ListingDetailPage() {
   const [sendingMessage, setSendingMessage] = useState(false)
   const [messageError, setMessageError] = useState<string | null>(null)
   const [messageSuccess, setMessageSuccess] = useState(false)
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [authModalAction, setAuthModalAction] = useState('')
 
   const supabase = createClientSupabase()
+
+  // Helper function to show auth modal
+  const showAuthPrompt = (action: string) => {
+    setAuthModalAction(action)
+    setShowAuthModal(true)
+  }
 
   useEffect(() => {
     checkAuth()
@@ -65,7 +74,7 @@ export default function ListingDetailPage() {
 
   const toggleFavorite = async () => {
     if (!currentUser) {
-      alert('Please sign in to save favorites')
+      showAuthPrompt('save favorites')
       return
     }
     
@@ -197,8 +206,7 @@ export default function ListingDetailPage() {
 
   const openMessageModal = () => {
     if (!currentUser) {
-      alert('Please sign in to send messages')
-      window.location.href = '/auth/signin'
+      showAuthPrompt('send messages')
       return
     }
 
@@ -214,8 +222,7 @@ export default function ListingDetailPage() {
 
   const handlePayment = (method: 'stripe' | 'paypal') => {
     if (!currentUser) {
-      alert('Please sign in to make a purchase')
-      window.location.href = '/auth/signin'
+      showAuthPrompt('make purchases')
       return
     }
 
@@ -458,6 +465,13 @@ export default function ListingDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Authentication Modal */}
+      <AuthModal 
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        action={authModalAction}
+      />
 
       <Footer />
     </div>
