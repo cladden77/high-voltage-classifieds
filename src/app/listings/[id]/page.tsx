@@ -232,9 +232,9 @@ export default function ListingDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-white flex flex-col">
         <Header />
-        <div className="max-w-7xl mx-auto px-8 py-8">
+        <div className="flex-grow max-w-7xl mx-auto px-8 py-8 w-full">
           <div className="animate-pulse">
             <div className="h-96 bg-gray-200 rounded-lg mb-8"></div>
             <div className="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
@@ -248,9 +248,9 @@ export default function ListingDetailPage() {
 
   if (!listing) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-white flex flex-col">
         <Header />
-        <div className="max-w-7xl mx-auto px-8 py-8">
+        <div className="flex-grow max-w-7xl mx-auto px-8 py-8 w-full">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">Listing Not Found</h1>
             <p className="text-gray-600">The listing you're looking for doesn't exist.</p>
@@ -262,10 +262,10 @@ export default function ListingDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white flex flex-col">
       <Header />
       
-      <div className="max-w-7xl mx-auto px-8 py-8">
+      <div className="flex-grow max-w-7xl mx-auto px-8 py-8 w-full">
         {/* Back Button */}
         <button 
           onClick={() => window.history.back()}
