@@ -417,9 +417,9 @@ export default function MessagesPage() {
           </div>
         )}
 
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm h-[600px] flex">
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm h-[70vh] lg:h-[600px] flex">
           {/* Conversations List */}
-          <div className="w-1/3 border-r border-gray-200 flex flex-col">
+          <div className={`${selectedConversation ? 'hidden lg:flex' : 'flex'} w-full lg:w-1/3 lg:border-r border-gray-200 flex-col`}>
             <div className="p-4 border-b border-gray-200">
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -428,7 +428,7 @@ export default function MessagesPage() {
                   placeholder="Search conversations..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full pl-10 pr-3 py-3 lg:py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-base lg:text-sm"
                 />
               </div>
             </div>
@@ -460,8 +460,8 @@ export default function MessagesPage() {
                     <button
                       key={conversation.id}
                       onClick={() => setSelectedConversation(conversation.id)}
-                      className={`w-full p-4 text-left hover:bg-gray-50 transition-colors ${
-                        selectedConversation === conversation.id ? 'bg-orange-50 border-r-2 border-orange-500' : ''
+                      className={`w-full p-4 text-left hover:bg-gray-50 active:bg-gray-100 transition-colors ${
+                        selectedConversation === conversation.id ? 'bg-orange-50 lg:border-r-2 border-orange-500' : ''
                       }`}
                     >
                       <div className="flex justify-between items-start mb-2">
@@ -496,7 +496,7 @@ export default function MessagesPage() {
           </div>
 
           {/* Messages Area */}
-          <div className="w-2/3 flex flex-col">
+          <div className={`${selectedConversation ? 'flex' : 'hidden lg:flex'} w-full lg:w-2/3 flex-col`}>
             {selectedConversation ? (
               <>
                 {/* Message Header */}
@@ -512,9 +512,10 @@ export default function MessagesPage() {
                     </div>
                     <button 
                       onClick={() => setSelectedConversation(null)}
-                      className="lg:hidden p-2 text-gray-400 hover:text-gray-600"
+                      className="lg:hidden p-2 text-gray-400 hover:text-gray-600 flex items-center gap-2"
                     >
                       <ArrowLeft className="h-5 w-5" />
+                      <span className="font-open-sans text-sm">Back</span>
                     </button>
                   </div>
                 </div>
