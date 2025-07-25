@@ -47,9 +47,9 @@ export default function HeroSection() {
       <div className="absolute inset-0 bg-[#1b1b1b] opacity-80"></div>
       <div className="relative bg-gradient-to-b from-[#1b1b1b] to-[#1b1b1b] min-h-[540px] flex items-center justify-center px-4 py-16">
         <div className="text-center">
-          <h1 className="font-staatliches text-white text-4xl md:text-6xl lg:text-8xl tracking-[-1.8px] mb-4">
+          <h1 className="font-staatliches text-white text-6xl lg:text-8xl tracking-[-1.8px] mb-4">
             <span className="block">BUY & SELL SURPLUS</span>
-            <div className="flex">
+            <div className="justify-center block md:flex">
               <span className="block text-[#f37121]">HIGH VOLTAGE</span>
               <span className="pl-2">EQUIPMENT</span>
               </div>

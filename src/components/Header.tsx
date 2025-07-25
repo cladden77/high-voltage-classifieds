@@ -45,6 +45,10 @@ export default function Header() {
     }
   };
 
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
+
   // Only show Post Listing for sellers and non-logged-in users
   const shouldShowPostListing = !loading && (!currentUser || currentUser.role === 'seller');
 
@@ -55,7 +59,7 @@ export default function Header() {
           <div className="box-border content-stretch flex flex-row gap-4 lg:gap-[38px] items-center justify-start p-0 relative shrink-0">
             {/* Logo */}
             <div className="box-border content-stretch flex flex-row gap-2 items-center justify-start p-0 relative shrink-0">
-              <Link href="/" className="flex items-center h-12 relative shrink-0">
+              <Link href="/" className="flex items-center h-12 relative shrink-0" onClick={closeMobileMenu}>
                 <Image
                   src="/assets/high-voltage-classifieds-logo.svg"
                   alt="High Voltage Classifieds"
@@ -111,113 +115,161 @@ export default function Header() {
               </>
             )}
             
-            {/* Post Listing Button - Only for Sellers and non-logged-in users */}
+            {/* Post Listing Button - Only for Sellers and non-logged-in users - Hidden on mobile */}
             {shouldShowPostListing && (
-              <Link href="/dashboard" className="bg-[#f37121] text-white px-3 lg:px-5 py-2 rounded shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)] text-xs lg:text-base font-bold uppercase hover:bg-[#e55a0a] transition-colors">
+              <Link 
+                href="/dashboard" 
+                onClick={closeMobileMenu}
+                className="hidden lg:inline-block bg-[#f37121] text-white px-5 py-2 rounded shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)] text-base font-bold uppercase hover:bg-[#e55a0a] transition-colors"
+              >
                 {currentUser?.role === 'seller' ? 'Dashboard' : 'Post Listing'}
               </Link>
             )}
             
             {/* Mobile menu button */}
             <button 
-              className="lg:hidden text-white p-2"
+              className="lg:hidden text-white p-2 relative z-50 transition-colors hover:text-[#f37121]"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label="Toggle mobile menu"
+              aria-expanded={isMobileMenuOpen}
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+              <div className="w-6 h-6 relative">
+                {/* Hamburger/Close Icon */}
+                <span 
+                  className={`absolute left-0 top-1 w-6 h-0.5 bg-current transition-all duration-300 ${
+                    isMobileMenuOpen ? 'rotate-45 top-2.5' : ''
+                  }`}
+                />
+                <span 
+                  className={`absolute left-0 top-2.5 w-6 h-0.5 bg-current transition-all duration-300 ${
+                    isMobileMenuOpen ? 'opacity-0' : ''
+                  }`}
+                />
+                <span 
+                  className={`absolute left-0 top-4 w-6 h-0.5 bg-current transition-all duration-300 ${
+                    isMobileMenuOpen ? '-rotate-45 top-2.5' : ''
+                  }`}
+                />
+              </div>
             </button>
           </div>
         </nav>
+      </div>
         
-        {/* Mobile Menu */}
-        {isMobileMenuOpen && (
-          <div className="lg:hidden absolute top-full left-0 right-0 bg-[#1b1b1b] border-t border-neutral-800 py-4 px-4">
-            <div className="flex flex-col space-y-4">
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={closeMobileMenu}
+        />
+      )}
+        
+      {/* Mobile Menu */}
+      <div className={`lg:hidden fixed top-[95px] left-0 right-0 bg-[#1b1b1b] border-t border-neutral-800 z-40 transform transition-transform duration-300 ease-in-out ${
+        isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
+        <div className="px-4 py-6 max-h-[calc(100vh-95px)] overflow-y-auto">
+          <div className="flex flex-col space-y-6">
+            {/* Main Navigation */}
+            <div className="space-y-4">
               <Link 
                 href="/listings" 
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors"
+                onClick={closeMobileMenu}
+                className="block text-neutral-100 text-base font-bold uppercase hover:text-[#f37121] transition-colors py-2 border-b border-neutral-800"
               >
                 Browse Listings
               </Link>
               <Link 
                 href="/blog" 
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors"
+                onClick={closeMobileMenu}
+                className="block text-neutral-100 text-base font-bold uppercase hover:text-[#f37121] transition-colors py-2 border-b border-neutral-800"
               >
                 Blog
               </Link>
               <Link 
                 href="/contact" 
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors"
+                onClick={closeMobileMenu}
+                className="block text-neutral-100 text-base font-bold uppercase hover:text-[#f37121] transition-colors py-2 border-b border-neutral-800"
               >
                 Contact
               </Link>
+            </div>
               
-              {/* Dynamic Auth Link - Mobile */}
-              {!loading && (
-                <>
-                  {currentUser ? (
-                    <div className="border-t border-neutral-800 pt-4 space-y-3">
-                      <div className="text-neutral-100 text-sm">
-                        Hi, {currentUser.name || currentUser.email}
-                      </div>
+            {/* User Section */}
+            {!loading && (
+              <div className="border-t border-neutral-700 pt-6">
+                {currentUser ? (
+                  <div className="space-y-4">
+                    <div className="text-neutral-100 text-sm font-medium">
+                      Hi, {currentUser.name || currentUser.email}
+                    </div>
+                    
+                    {/* User Navigation Links */}
+                    <div className="space-y-3">
                       <Link 
                         href="/messages" 
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="block text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors"
+                        onClick={closeMobileMenu}
+                        className="block text-neutral-100 text-base font-bold uppercase hover:text-[#f37121] transition-colors py-2"
                       >
                         Messages
                       </Link>
                       <Link 
                         href="/account" 
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="block text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors"
+                        onClick={closeMobileMenu}
+                        className="block text-neutral-100 text-base font-bold uppercase hover:text-[#f37121] transition-colors py-2"
                       >
                         Account
                       </Link>
-                      {/* Dashboard link for Sellers in mobile menu */}
+                      <Link 
+                        href="/favorites" 
+                        onClick={closeMobileMenu}
+                        className="block text-neutral-100 text-base font-bold uppercase hover:text-[#f37121] transition-colors py-2"
+                      >
+                        Favorites
+                      </Link>
+                      
+                      {/* Dashboard link for Sellers */}
                       {currentUser.role === 'seller' && (
                         <Link 
                           href="/dashboard" 
-                          onClick={() => setIsMobileMenuOpen(false)}
-                          className="block text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors"
+                          onClick={closeMobileMenu}
+                          className="block text-neutral-100 text-base font-bold uppercase hover:text-[#f37121] transition-colors py-2"
                         >
                           Dashboard
                         </Link>
                       )}
-                      <button 
-                        onClick={handleSignOut}
-                        className="text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors"
-                      >
-                        Sign Out
-                      </button>
                     </div>
-                  ) : (
-                    <div className="border-t border-neutral-800 pt-4 space-y-3">
-                      <Link 
-                        href="/auth/signin" 
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="block text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors"
-                      >
-                        Sign In
-                      </Link>
-                      <Link 
-                        href="/auth/signup" 
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="block text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors"
-                      >
-                        Sign Up
-                      </Link>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+                    
+                    {/* Sign Out Button */}
+                    <button 
+                      onClick={handleSignOut}
+                      className="w-full text-left text-red-400 text-base font-bold uppercase hover:text-red-300 transition-colors py-2 mt-4 border-t border-neutral-700 pt-4"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <Link 
+                      href="/auth/signin" 
+                      onClick={closeMobileMenu}
+                      className="block text-neutral-100 text-base font-bold uppercase hover:text-[#f37121] transition-colors py-2"
+                    >
+                      Sign In
+                    </Link>
+                    <Link 
+                      href="/auth/signup" 
+                      onClick={closeMobileMenu}
+                      className="block bg-[#f37121] text-white text-center px-4 py-3 rounded font-bold uppercase hover:bg-[#e55a0a] transition-colors"
+                    >
+                      Sign Up
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </header>
   );
