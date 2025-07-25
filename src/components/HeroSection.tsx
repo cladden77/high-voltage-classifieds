@@ -54,12 +54,12 @@ export default function HeroSection() {
               <span className="pl-2">EQUIPMENT</span>
               </div>
           </h1>
-          <p className="text-white text-lg md:text-xl lg:text-2xl mb-8 mx-auto">
+          <p className="text-white text-xl md:text-xl lg:text-2xl mb-8 mx-auto">
             A trusted platform for contractors, utilities, and solar providers
           </p>
           
           {/* Search Form */}
-          <form onSubmit={handleSearch} className="bg-[rgba(255,255,255,0.9)] rounded-lg p-4 max-w-[672px] mx-auto">
+          <form onSubmit={handleSearch} className="bg-[rgba(255,255,255,0.9)] rounded-lg p-4 max-w-[672px] mx-[25px] md:mx-auto">
             <div className="flex flex-col lg:flex-row gap-3">
               <input
                 type="text"
