@@ -156,7 +156,7 @@ export interface Database {
           recipient_id: string
           listing_id: string
           message_text: string
-          read: boolean
+          is_read: boolean
           created_at: string
         }
         Insert: {
@@ -165,7 +165,7 @@ export interface Database {
           recipient_id: string
           listing_id: string
           message_text: string
-          read?: boolean
+          is_read?: boolean
           created_at?: string
         }
         Update: {
@@ -174,7 +174,7 @@ export interface Database {
           recipient_id?: string
           listing_id?: string
           message_text?: string
-          read?: boolean
+          is_read?: boolean
           created_at?: string
         }
         Relationships: [

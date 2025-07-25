@@ -88,15 +88,21 @@ export default function MessagesPage() {
           recipient_id,
           listing_id,
           message_text,
-          read,
+          is_read,
           created_at
         `)
         .or(`sender_id.eq.${currentUser.id},recipient_id.eq.${currentUser.id}`)
         .order('created_at', { ascending: false })
 
       if (messageError) {
-        console.error('Message fetch error:', messageError)
-        throw messageError
+        console.error('Message fetch error:', {
+          message: messageError.message,
+          details: messageError.details,
+          hint: messageError.hint,
+          code: messageError.code,
+          error: messageError
+        })
+        throw new Error(`Database error: ${messageError.message}`)
       }
 
       console.log('Raw messages:', messageData?.length || 0)
@@ -130,13 +136,25 @@ export default function MessagesPage() {
       ])
 
       if (usersResponse.error) {
-        console.error('Users fetch error:', usersResponse.error)
-        throw usersResponse.error
+        console.error('Users fetch error:', {
+          message: usersResponse.error.message,
+          details: usersResponse.error.details,
+          hint: usersResponse.error.hint,
+          code: usersResponse.error.code,
+          error: usersResponse.error
+        })
+        throw new Error(`Users fetch error: ${usersResponse.error.message}`)
       }
 
       if (listingsResponse.error) {
-        console.error('Listings fetch error:', listingsResponse.error)
-        throw listingsResponse.error
+        console.error('Listings fetch error:', {
+          message: listingsResponse.error.message,
+          details: listingsResponse.error.details,
+          hint: listingsResponse.error.hint,
+          code: listingsResponse.error.code,
+          error: listingsResponse.error
+        })
+        throw new Error(`Listings fetch error: ${listingsResponse.error.message}`)
       }
 
       const usersMap = new Map(usersResponse.data?.map(user => [user.id, user]) || [])
@@ -176,13 +194,13 @@ export default function MessagesPage() {
             otherUser,
             listing,
             lastMessage: messageWithDetails,
-            unreadCount: !message.read && !isCurrentUserSender ? 1 : 0,
+            unreadCount: !message.is_read && !isCurrentUserSender ? 1 : 0,
             totalMessages: 1
           })
         } else {
           const conversation = conversationMap.get(conversationKey)!
           // Update unread count
-          if (!message.read && !isCurrentUserSender) {
+          if (!message.is_read && !isCurrentUserSender) {
             conversation.unreadCount++
           }
           conversation.totalMessages++
@@ -196,9 +214,9 @@ export default function MessagesPage() {
       const conversationsList = Array.from(conversationMap.values())
       console.log('Conversations loaded:', conversationsList.length)
       setConversations(conversationsList)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching conversations:', error)
-      setError('Failed to load conversations. Please try refreshing the page.')
+      setError(error?.message || 'Failed to load conversations. Please try refreshing the page.')
     } finally {
       setLoading(false)
     }
@@ -220,7 +238,7 @@ export default function MessagesPage() {
           recipient_id,
           listing_id,
           message_text,
-          read,
+          is_read,
           created_at
         `)
         .eq('listing_id', listingId)
@@ -273,16 +291,16 @@ export default function MessagesPage() {
 
       // Mark messages as read
       const unreadMessages = messageData.filter(msg => 
-        !msg.read && msg.recipient_id === currentUser.id
+        !msg.is_read && msg.recipient_id === currentUser.id
       )
 
       if (unreadMessages.length > 0) {
         await supabase
           .from('messages')
-          .update({ read: true })
+          .update({ is_read: true })
           .eq('listing_id', listingId)
           .eq('recipient_id', currentUser.id)
-          .eq('read', false)
+          .eq('is_read', false)
 
         // Refresh conversations to update unread counts
         fetchConversations()
@@ -320,7 +338,7 @@ export default function MessagesPage() {
           recipient_id: conversation.otherUser.id,
           listing_id: selectedConversation,
           message_text: newMessage.trim(),
-          read: false
+          is_read: false
         })
         .select()
 

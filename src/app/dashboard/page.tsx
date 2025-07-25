@@ -231,12 +231,12 @@ function DashboardContent() {
               otherUser: otherUser,
               listing: message.listings,
               lastMessage: message,
-              unreadCount: !message.read && !isCurrentUserSender ? 1 : 0,
+              unreadCount: !message.is_read && !isCurrentUserSender ? 1 : 0,
               messageCount: 1
             })
           } else {
             const conv = conversationMap.get(conversationKey)
-            if (!message.read && !isCurrentUserSender) {
+            if (!message.is_read && !isCurrentUserSender) {
               conv.unreadCount++
             }
             conv.messageCount++
