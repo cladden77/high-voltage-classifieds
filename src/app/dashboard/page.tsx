@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
 import { Plus, Edit, Trash2, MessageSquare, Eye, DollarSign, Send, Clock, Heart, CheckCircle, X } from 'lucide-react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
@@ -20,7 +20,7 @@ type FavoriteWithListing = {
   listings: Database['public']['Tables']['listings']['Row']
 }
 
-export default function DashboardPage() {
+function DashboardContent() {
   const [listings, setListings] = useState<Listing[]>([])
   const [favorites, setFavorites] = useState<FavoriteWithListing[]>([])
   const [loading, setLoading] = useState(true)
@@ -737,5 +737,35 @@ export default function DashboardPage() {
 
       <Footer />
     </div>
+  )
+}
+
+// Loading component for Suspense fallback
+function DashboardLoading() {
+  return (
+    <div className="min-h-screen bg-white">
+      <Header />
+      <div className="max-w-7xl mx-auto px-8 py-8">
+        <div className="animate-pulse space-y-8">
+          <div className="h-16 bg-gray-200 rounded-lg w-1/2"></div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-24 bg-gray-200 rounded-lg"></div>
+            ))}
+          </div>
+          <div className="h-64 bg-gray-200 rounded-lg"></div>
+        </div>
+      </div>
+      <Footer />
+    </div>
+  )
+}
+
+// Main page component with Suspense boundary
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardLoading />}>
+      <DashboardContent />
+    </Suspense>
   )
 } 
