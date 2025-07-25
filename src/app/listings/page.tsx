@@ -198,18 +198,18 @@ function ListingsContent() {
               )}
             </div>
             
-                        <div className="flex gap-4 items-center">
-              {/* Search Input */}
-              <div className="flex-1 relative">
+                        <div className="space-y-4">
+              {/* Search Input - Full width on all devices */}
+              <div className="relative">
                 <input
                   type="text"
                   placeholder="Search equipment..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full h-10 pl-10 pr-8 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent font-open-sans text-sm"
+                  className="w-full h-12 pl-10 pr-8 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent font-open-sans text-sm"
                 />
                 <svg
-                  className="absolute left-3 top-3 h-4 w-4 text-gray-400"
+                  className="absolute left-3 top-4 h-4 w-4 text-gray-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -231,92 +231,95 @@ function ListingsContent() {
                 )}
               </div>
 
-              {/* Category Filter */}
-              <div className="relative">
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="h-10 px-3 pr-8 border border-gray-200 rounded bg-white font-open-sans text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none"
-                >
-                  {categories.map(category => (
-                    <option key={category} value={category}>{category}</option>
-                  ))}
-                </select>
-                <svg
-                  className="absolute right-2 top-3 h-4 w-4 text-gray-500 pointer-events-none"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-                {selectedCategory !== 'All Categories' && (
-                  <button
-                    onClick={() => setSelectedCategory('All Categories')}
-                    className="absolute -top-2 -right-2 bg-orange-500 text-white rounded-full p-1 hover:bg-orange-600 transition-colors"
+              {/* Filter Dropdowns - Mobile: 1 column, Tablet: 2 columns, Desktop: 3 columns */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Category Filter */}
+                <div className="relative">
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="w-full h-12 px-3 pr-8 border border-gray-200 rounded-lg bg-white font-open-sans text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none"
                   >
-                    <X className="w-3 h-3" />
-                  </button>
-                )}
-              </div>
+                    {categories.map(category => (
+                      <option key={category} value={category}>{category}</option>
+                    ))}
+                  </select>
+                  <svg
+                    className="absolute right-2 top-4 h-4 w-4 text-gray-500 pointer-events-none"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                  {selectedCategory !== 'All Categories' && (
+                    <button
+                      onClick={() => setSelectedCategory('All Categories')}
+                      className="absolute -top-2 -right-2 bg-orange-500 text-white rounded-full p-1 hover:bg-orange-600 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
 
-              {/* Location Filter */}
-              <div className="relative">
-                <select
-                  value={selectedLocation}
-                  onChange={(e) => setSelectedLocation(e.target.value)}
-                  className="h-10 px-3 pr-8 border border-gray-200 rounded bg-white font-open-sans text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none"
-                >
-                  {locations.map(location => (
-                    <option key={location} value={location}>{location}</option>
-                  ))}
-                </select>
-                <svg
-                  className="absolute right-2 top-3 h-4 w-4 text-gray-500 pointer-events-none"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-                {selectedLocation !== 'All Locations' && (
-                  <button
-                    onClick={() => setSelectedLocation('All Locations')}
-                    className="absolute -top-2 -right-2 bg-orange-500 text-white rounded-full p-1 hover:bg-orange-600 transition-colors"
+                {/* Location Filter */}
+                <div className="relative">
+                  <select
+                    value={selectedLocation}
+                    onChange={(e) => setSelectedLocation(e.target.value)}
+                    className="w-full h-12 px-3 pr-8 border border-gray-200 rounded-lg bg-white font-open-sans text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none"
                   >
-                    <X className="w-3 h-3" />
-                  </button>
-                )}
-              </div>
+                    {locations.map(location => (
+                      <option key={location} value={location}>{location}</option>
+                    ))}
+                  </select>
+                  <svg
+                    className="absolute right-2 top-4 h-4 w-4 text-gray-500 pointer-events-none"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                  {selectedLocation !== 'All Locations' && (
+                    <button
+                      onClick={() => setSelectedLocation('All Locations')}
+                      className="absolute -top-2 -right-2 bg-orange-500 text-white rounded-full p-1 hover:bg-orange-600 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
 
-              {/* Sort Filter */}
-              <div className="relative">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="h-10 px-3 pr-8 border border-gray-200 rounded bg-white font-open-sans text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none"
-                >
-                  <option value="newest">Newest First</option>
-                  <option value="oldest">Oldest First</option>
-                  <option value="price_low">Price: Low to High</option>
-                  <option value="price_high">Price: High to Low</option>
-                </select>
-                <svg
-                  className="absolute right-2 top-3 h-4 w-4 text-gray-500 pointer-events-none"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-                {sortBy !== 'newest' && (
-                  <button
-                    onClick={() => setSortBy('newest')}
-                    className="absolute -top-2 -right-2 bg-orange-500 text-white rounded-full p-1 hover:bg-orange-600 transition-colors"
+                {/* Sort Filter */}
+                <div className="relative sm:col-span-2 lg:col-span-1">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="w-full h-12 px-3 pr-8 border border-gray-200 rounded-lg bg-white font-open-sans text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none"
                   >
-                    <X className="w-3 h-3" />
-                  </button>
-                )}
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="price_low">Price: Low to High</option>
+                    <option value="price_high">Price: High to Low</option>
+                  </select>
+                  <svg
+                    className="absolute right-2 top-4 h-4 w-4 text-gray-500 pointer-events-none"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                  {sortBy !== 'newest' && (
+                    <button
+                      onClick={() => setSortBy('newest')}
+                      className="absolute -top-2 -right-2 bg-orange-500 text-white rounded-full p-1 hover:bg-orange-600 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
         </div>
