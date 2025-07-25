@@ -123,9 +123,9 @@ export default function FavoritesPage() {
               <div key={favorite.id} className="bg-white border border-gray-200 rounded-md shadow-sm overflow-hidden">
                 {/* Image */}
                 <div className="h-48 bg-gray-200 flex items-center justify-center relative">
-                  {favorite.listings.images && favorite.listings.images.length > 0 ? (
+                  {favorite.listings.image_urls && favorite.listings.image_urls.length > 0 ? (
                     <img 
-                      src={favorite.listings.images[0]} 
+                      src={favorite.listings.image_urls[0]} 
                       alt={favorite.listings.title}
                       className="w-full h-full object-cover"
                     />
@@ -148,10 +148,16 @@ export default function FavoritesPage() {
                   <div className="mb-2">
                     <span className={`px-3 py-1 rounded-full text-xs font-open-sans font-bold ${
                       favorite.listings.condition === 'new' ? 'bg-green-100 text-green-800' :
-                      favorite.listings.condition === 'used' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-blue-100 text-blue-800'
+                      favorite.listings.condition === 'like_new' ? 'bg-green-100 text-green-800' :
+                      favorite.listings.condition === 'good' ? 'bg-yellow-100 text-yellow-800' :
+                      favorite.listings.condition === 'fair' ? 'bg-orange-100 text-orange-800' :
+                      'bg-red-100 text-red-800'
                     }`}>
-                      {favorite.listings.condition}
+                      {favorite.listings.condition === 'like_new' ? 'Like New' : 
+                       favorite.listings.condition === 'good' ? 'Good' :
+                       favorite.listings.condition === 'fair' ? 'Fair' :
+                       favorite.listings.condition === 'poor' ? 'Poor' :
+                       favorite.listings.condition}
                     </span>
                   </div>
 

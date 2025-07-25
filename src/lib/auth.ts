@@ -1,4 +1,4 @@
-import { createGeneralSupabase } from './supabase'
+import { createClientSupabase } from './supabase'
 
 // Basic auth configuration - will be enhanced once packages are compatible
 export const authConfig = {
@@ -19,7 +19,7 @@ export async function signInWithCredentials(email: string, password: string, rol
   try {
     console.log('🔐 Signing in user:', email)
     
-    const supabase = createGeneralSupabase()
+    const supabase = createClientSupabase()
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -68,7 +68,7 @@ export async function signUpWithCredentials(email: string, password: string, nam
   try {
     console.log('📝 Signing up user:', email, 'as', role)
     
-    const supabase = createGeneralSupabase()
+    const supabase = createClientSupabase()
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -127,7 +127,7 @@ export async function getCurrentUser() {
   try {
     console.log('🔍 Getting current user...')
     
-    const supabase = createGeneralSupabase()
+    const supabase = createClientSupabase()
     
     // First check if there's an active session
     const { data: { session }, error: sessionError } = await supabase.auth.getSession()
@@ -186,7 +186,7 @@ export async function getCurrentUser() {
 export async function signOut() {
   try {
     console.log('🚪 Signing out user...')
-    const supabase = createGeneralSupabase()
+    const supabase = createClientSupabase()
     const { error } = await supabase.auth.signOut()
     
     if (error) {
@@ -205,7 +205,7 @@ export async function signOut() {
 // Function to safely check if user is authenticated
 export async function isAuthenticated() {
   try {
-    const supabase = createGeneralSupabase()
+    const supabase = createClientSupabase()
     const { data: { session }, error } = await supabase.auth.getSession()
     
     if (error) {
@@ -223,7 +223,7 @@ export async function isAuthenticated() {
 // Debug function to check auth state
 export async function debugAuthState() {
   try {
-    const supabase = createGeneralSupabase()
+    const supabase = createClientSupabase()
     const { data: { session } } = await supabase.auth.getSession()
     const currentUser = await getCurrentUser()
     

@@ -1,17 +1,16 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { ArrowLeft, Upload, X, Plus, DollarSign, MapPin, Tag, FileText } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { createClientSupabase } from '@/lib/supabase'
-import { debugStorage } from '@/lib/debug'
 
 // Force dynamic rendering for this page
 export const dynamic = 'force-dynamic'
 
-export default function CreateListingPage() {
+export default function EditListingPage() {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -23,10 +22,14 @@ export default function CreateListingPage() {
   })
   const [images, setImages] = useState<File[]>([])
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
+  const [existingImages, setExistingImages] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   const router = useRouter()
+  const params = useParams()
+  const listingId = params.id as string
 
   const categories = [
     'Transformers',
@@ -42,10 +45,64 @@ export default function CreateListingPage() {
     'Other'
   ]
 
+  useEffect(() => {
+    loadListingData()
+  }, [listingId])
+
+  const loadListingData = async () => {
+    try {
+      const { getCurrentUser } = await import('@/lib/auth')
+      const currentUser = await getCurrentUser()
+      
+      if (!currentUser) {
+        router.push('/auth/signin')
+        return
+      }
+
+      const supabase = createClientSupabase()
+      const { data: listing, error } = await supabase
+        .from('listings')
+        .select('*')
+        .eq('id', listingId)
+        .eq('seller_id', currentUser.id) // Ensure user owns this listing
+        .single()
+
+      if (error) {
+        setError('Listing not found or you do not have permission to edit it')
+        return
+      }
+
+      // Cast to any to handle database schema differences
+      const listingData = listing as any
+
+      // Populate form with existing data
+      setFormData({
+        title: listingData.title || '',
+        description: listingData.description || '',
+        price: listingData.price?.toString() || '',
+        location: listingData.location || '',
+        category: listingData.category || '',
+        condition: (listingData.condition as any) || 'good',
+        featured: listingData.is_featured || false
+      })
+
+      // Set existing images (database column is image_urls)
+      if (listingData.image_urls && Array.isArray(listingData.image_urls)) {
+        setExistingImages(listingData.image_urls)
+      }
+
+    } catch (error) {
+      console.error('Error loading listing:', error)
+      setError('Failed to load listing data')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: field === 'condition' ? (value as any) : value
     }))
     if (error) setError('')
   }
@@ -53,8 +110,9 @@ export default function CreateListingPage() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     
-    // Limit to 5 images total
-    const remainingSlots = 5 - images.length
+    // Limit to 5 images total (including existing ones)
+    const totalImages = existingImages.length + images.length
+    const remainingSlots = 5 - totalImages
     const filesToAdd = files.slice(0, remainingSlots)
     
     setImages(prev => [...prev, ...filesToAdd])
@@ -69,9 +127,13 @@ export default function CreateListingPage() {
     })
   }
 
-  const removeImage = (index: number) => {
+  const removeNewImage = (index: number) => {
     setImages(prev => prev.filter((_, i) => i !== index))
     setImagePreviews(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const removeExistingImage = (index: number) => {
+    setExistingImages(prev => prev.filter((_, i) => i !== index))
   }
 
   const uploadImages = async (): Promise<string[]> => {
@@ -126,61 +188,87 @@ export default function CreateListingPage() {
         return
       }
 
-      // Upload images
-      const imageUrls = await uploadImages()
+      // Upload new images
+      const newImageUrls = await uploadImages()
 
-      // Get current user
-      const { getCurrentUser } = await import('@/lib/auth')
-      const currentUser = await getCurrentUser()
-      
-      if (!currentUser) {
-        setError('Please sign in to create a listing')
-        return
-      }
+      // Combine existing images with new ones
+      const allImageUrls = [...existingImages, ...newImageUrls]
 
-      if (currentUser.role !== 'seller') {
-        setError('Only sellers can create listings')
-        return
-      }
-
-      // Create listing
+      // Update listing
       const supabase = createClientSupabase()
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('listings')
-        .insert({
+        .update({
           title: formData.title,
           description: formData.description,
           price: price,
           location: formData.location,
           category: formData.category,
           condition: formData.condition as any,
-          image_urls: imageUrls,
-          seller_id: currentUser.id,
-          is_featured: formData.featured,
-          is_sold: false
+          image_urls: allImageUrls,
+          is_featured: formData.featured
+          // Don't set updated_at manually - it's handled by database trigger
         })
-        .select()
-        .single()
+        .eq('id', listingId)
 
       if (error) {
-        console.error('Database error creating listing:', {
+        console.error('Database error updating listing:', {
           message: error.message,
           details: error.details,
           hint: error.hint,
           code: error.code,
           error: error
         })
-        throw new Error(`Failed to create listing: ${error.message}`)
+        throw new Error(`Failed to update listing: ${error.message}`)
       }
 
       // Redirect to dashboard with success message
-      router.push('/dashboard?success=listing-created')
+      router.push('/dashboard?success=listing-updated')
     } catch (error: any) {
-      console.error('Error creating listing:', error)
-      setError(error?.message || 'Failed to create listing. Please try again.')
+      console.error('Error updating listing:', error)
+      setError(error?.message || 'Failed to update listing. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white">
+        <Header />
+        <div className="max-w-4xl mx-auto px-8 py-8">
+          <div className="animate-pulse space-y-8">
+            <div className="h-8 bg-gray-200 rounded-lg w-1/3"></div>
+            <div className="h-64 bg-gray-200 rounded-lg"></div>
+            <div className="h-64 bg-gray-200 rounded-lg"></div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    )
+  }
+
+  if (error && !formData.title) {
+    return (
+      <div className="min-h-screen bg-white">
+        <Header />
+        <div className="max-w-4xl mx-auto px-8 py-8">
+          <div className="text-center">
+            <h1 className="font-staatliches text-[54px] leading-[48px] tracking-[-1.2px] text-gray-900 mb-4">
+              Listing Not Found
+            </h1>
+            <p className="font-open-sans text-lg text-gray-500 mb-8">{error}</p>
+            <button 
+              onClick={() => router.push('/dashboard')}
+              className="bg-orange-500 hover:bg-orange-600 text-white py-3 px-6 rounded-lg font-open-sans font-bold"
+            >
+              Back to Dashboard
+            </button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    )
   }
 
   return (
@@ -191,7 +279,7 @@ export default function CreateListingPage() {
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <button 
-            onClick={() => router.back()}
+            onClick={() => router.push('/dashboard')}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -201,10 +289,10 @@ export default function CreateListingPage() {
 
         <div className="mb-8">
           <h1 className="font-staatliches text-[54px] leading-[48px] tracking-[-1.2px] text-gray-900 mb-2">
-            Create New Listing
+            Edit Listing
           </h1>
           <p className="font-open-sans text-lg text-gray-500">
-            List your high voltage equipment for sale
+            Update your high voltage equipment listing
           </p>
         </div>
 
@@ -214,24 +302,6 @@ export default function CreateListingPage() {
               <p className="font-open-sans text-sm">{error}</p>
             </div>
           )}
-
-          {/* Temporary Debug Section */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <h3 className="font-open-sans font-bold text-yellow-800 mb-2">Debug Tools (Temporary)</h3>
-            <p className="font-open-sans text-sm text-yellow-700 mb-3">
-              If you're having upload issues, click below to run diagnostics:
-            </p>
-            <button
-              type="button"
-              onClick={() => debugStorage()}
-              className="bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded-lg font-open-sans font-bold text-sm"
-            >
-              Run Storage Diagnostics
-            </button>
-            <p className="font-open-sans text-xs text-yellow-600 mt-2">
-              Check browser console for debug output
-            </p>
-          </div>
 
           {/* Basic Information */}
           <div className="bg-white border border-gray-200 rounded-lg p-6">
@@ -278,7 +348,7 @@ export default function CreateListingPage() {
                 <select
                   required
                   value={formData.condition}
-                  onChange={(e) => handleInputChange('condition', e.target.value)}
+                  onChange={(e) => handleInputChange('condition', e.target.value as any)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                 >
                   <option value="new">New</option>
@@ -356,15 +426,40 @@ export default function CreateListingPage() {
             <h2 className="font-open-sans text-xl font-bold text-gray-900 mb-6">Equipment Images</h2>
             
             <div className="space-y-4">
+              {/* Existing Images */}
+              {existingImages.length > 0 && (
+                <div>
+                  <h3 className="font-open-sans font-bold text-gray-700 mb-4">Current Images</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+                    {existingImages.map((imageUrl, index) => (
+                      <div key={index} className="relative">
+                        <img
+                          src={imageUrl}
+                          alt={`Existing ${index + 1}`}
+                          className="w-full h-24 object-cover rounded-lg border border-gray-200"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeExistingImage(index)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Upload Area */}
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                 <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <div className="space-y-2">
                   <p className="font-open-sans text-lg text-gray-600">
-                    Upload equipment photos
+                    Add more equipment photos
                   </p>
                   <p className="font-open-sans text-sm text-gray-500">
-                    JPG, PNG up to 10MB each. Maximum 5 images.
+                    JPG, PNG up to 10MB each. Maximum 5 images total.
                   </p>
                   <label className="inline-block">
                     <input
@@ -373,34 +468,41 @@ export default function CreateListingPage() {
                       accept="image/*"
                       onChange={handleImageUpload}
                       className="hidden"
-                      disabled={images.length >= 5}
+                      disabled={existingImages.length + images.length >= 5}
                     />
-                    <span className="bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-lg font-open-sans font-bold cursor-pointer inline-block">
-                      {images.length >= 5 ? 'Maximum images reached' : 'Choose Files'}
+                    <span className={`py-2 px-4 rounded-lg font-open-sans font-bold cursor-pointer inline-block ${
+                      existingImages.length + images.length >= 5
+                        ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                        : 'bg-orange-500 hover:bg-orange-600 text-white'
+                    }`}>
+                      {existingImages.length + images.length >= 5 ? 'Maximum images reached' : 'Add More Images'}
                     </span>
                   </label>
                 </div>
               </div>
 
-              {/* Image Previews */}
+              {/* New Image Previews */}
               {imagePreviews.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                  {imagePreviews.map((preview, index) => (
-                    <div key={index} className="relative">
-                      <img
-                        src={preview}
-                        alt={`Preview ${index + 1}`}
-                        className="w-full h-24 object-cover rounded-lg border border-gray-200"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeImage(index)}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
+                <div>
+                  <h3 className="font-open-sans font-bold text-gray-700 mb-4">New Images to Add</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    {imagePreviews.map((preview, index) => (
+                      <div key={index} className="relative">
+                        <img
+                          src={preview}
+                          alt={`New preview ${index + 1}`}
+                          className="w-full h-24 object-cover rounded-lg border border-gray-200"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeNewImage(index)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -410,7 +512,7 @@ export default function CreateListingPage() {
           <div className="flex justify-end gap-4">
             <button
               type="button"
-              onClick={() => router.back()}
+              onClick={() => router.push('/dashboard')}
               className="bg-gray-200 text-gray-800 py-3 px-6 rounded-lg font-open-sans font-bold hover:bg-gray-300"
             >
               Cancel
@@ -420,7 +522,7 @@ export default function CreateListingPage() {
               disabled={isSubmitting}
               className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 text-white py-3 px-6 rounded-lg font-open-sans font-bold"
             >
-              {isSubmitting ? 'Creating Listing...' : 'Create Listing'}
+              {isSubmitting ? 'Updating Listing...' : 'Update Listing'}
             </button>
           </div>
         </form>

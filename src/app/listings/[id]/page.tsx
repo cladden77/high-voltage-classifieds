@@ -279,9 +279,9 @@ export default function ListingDetailPage() {
           {/* Image Gallery */}
           <div>
             <div className="aspect-square bg-gray-200 rounded-lg mb-4 overflow-hidden">
-              {listing.images && listing.images.length > 0 ? (
+              {listing.image_urls && listing.image_urls.length > 0 ? (
                 <img 
-                  src={listing.images[currentImageIndex]} 
+                  src={listing.image_urls[currentImageIndex]} 
                   alt={listing.title}
                   className="w-full h-full object-cover"
                 />
@@ -293,9 +293,9 @@ export default function ListingDetailPage() {
             </div>
             
             {/* Thumbnail Gallery */}
-            {listing.images && listing.images.length > 1 && (
+            {listing.image_urls && listing.image_urls.length > 1 && (
               <div className="flex gap-2 overflow-x-auto">
-                {listing.images.map((image, index) => (
+                {listing.image_urls.map((image, index) => (
                   <button
                     key={index}
                     onClick={() => setCurrentImageIndex(index)}

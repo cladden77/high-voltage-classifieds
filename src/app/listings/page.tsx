@@ -341,9 +341,9 @@ function ListingsContent() {
               <div key={listing.id} className="bg-white border border-gray-200 rounded-md shadow-sm overflow-hidden">
                 {/* Image */}
                 <div className="h-48 bg-gray-200 flex items-center justify-center">
-                  {listing.images && listing.images.length > 0 ? (
+                  {listing.image_urls && listing.image_urls.length > 0 ? (
                     <img 
-                      src={listing.images[0]} 
+                      src={listing.image_urls[0]} 
                       alt={listing.title}
                       className="w-full h-full object-cover"
                     />

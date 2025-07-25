@@ -1,12 +1,13 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, MessageSquare, Eye, DollarSign, Send, Clock, Heart } from 'lucide-react'
+import { Plus, Edit, Trash2, MessageSquare, Eye, DollarSign, Send, Clock, Heart, CheckCircle, X } from 'lucide-react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { createClientSupabase } from '@/lib/supabase'
 import { getCurrentUser } from '@/lib/auth'
 import { Database } from '@/lib/database.types'
+import { useSearchParams } from 'next/navigation'
 
 // Force dynamic rendering for this page
 export const dynamic = 'force-dynamic'
@@ -25,10 +26,29 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'listings' | 'messages' | 'analytics' | 'favorites'>('listings')
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const [successMessage, setSuccessMessage] = useState('')
+
+  const searchParams = useSearchParams()
 
   useEffect(() => {
     checkAuth()
   }, [])
+
+  useEffect(() => {
+    // Check for success messages in URL params
+    const success = searchParams.get('success')
+    if (success === 'listing-created') {
+      setSuccessMessage('Listing created successfully!')
+    } else if (success === 'listing-updated') {
+      setSuccessMessage('Listing updated successfully!')
+    }
+    
+    // Clear success message after 5 seconds
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(''), 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [searchParams, successMessage])
 
   useEffect(() => {
     if (currentUser) {
@@ -379,9 +399,9 @@ export default function DashboardPage() {
           {favorites.slice(0, 6).map((favorite) => (
             <div key={favorite.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
               <div className="aspect-video bg-gray-200 flex items-center justify-center">
-                {favorite.listings.images && favorite.listings.images.length > 0 ? (
+                {favorite.listings.image_urls && favorite.listings.image_urls.length > 0 ? (
                   <img 
-                    src={favorite.listings.images[0]} 
+                    src={favorite.listings.image_urls[0]} 
                     alt={favorite.listings.title}
                     className="w-full h-full object-cover"
                   />
@@ -454,6 +474,22 @@ export default function DashboardPage() {
               : 'Manage your favorites and messages'}
           </p>
         </div>
+
+        {/* Success Message */}
+        {successMessage && (
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-8 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5" />
+              <p className="font-open-sans text-sm">{successMessage}</p>
+            </div>
+            <button
+              onClick={() => setSuccessMessage('')}
+              className="text-green-700 hover:text-green-900"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
 
         {/* Stats Cards */}
         {currentUser?.role === 'seller' ? (
@@ -651,13 +687,13 @@ export default function DashboardPage() {
                         >
                           <Eye className="h-4 w-4" />
                         </a>
-                        <button
-                          onClick={() => {/* TODO: Implement edit */}}
+                        <a
+                          href={`/dashboard/edit-listing/${listing.id}`}
                           className="p-2 text-gray-500 hover:text-gray-700"
                           title="Edit"
                         >
                           <Edit className="h-4 w-4" />
-                        </button>
+                        </a>
                         <button
                           onClick={() => toggleSoldStatus(listing.id, listing.is_sold)}
                           className={`px-3 py-1 rounded text-sm font-bold ${

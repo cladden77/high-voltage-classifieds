@@ -65,11 +65,11 @@ export interface Database {
           price: number
           location: string
           category: string
-          condition: 'new' | 'used' | 'refurbished'
-          images: string[]
+          condition: 'new' | 'like_new' | 'good' | 'fair' | 'poor'
+          image_urls: string[]
           seller_id: string
           is_sold: boolean
-          featured: boolean
+          is_featured: boolean
           created_at: string
           updated_at: string
         }
@@ -80,11 +80,11 @@ export interface Database {
           price: number
           location: string
           category: string
-          condition: 'new' | 'used' | 'refurbished'
-          images?: string[]
+          condition: 'new' | 'like_new' | 'good' | 'fair' | 'poor'
+          image_urls?: string[]
           seller_id: string
           is_sold?: boolean
-          featured?: boolean
+          is_featured?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -95,11 +95,11 @@ export interface Database {
           price?: number
           location?: string
           category?: string
-          condition?: 'new' | 'used' | 'refurbished'
-          images?: string[]
+          condition?: 'new' | 'like_new' | 'good' | 'fair' | 'poor'
+          image_urls?: string[]
           seller_id?: string
           is_sold?: boolean
-          featured?: boolean
+          is_featured?: boolean
           created_at?: string
           updated_at?: string
         }
