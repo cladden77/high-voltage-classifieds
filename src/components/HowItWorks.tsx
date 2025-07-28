@@ -4,7 +4,7 @@ export default function HowItWorks() {
   return (
     <section className="bg-white px-4 lg:px-20 py-16">
       <div className="max-w-[1280px] mx-auto">
-        <h2 className="font-staatliches text-gray-900 text-3xl md:text-4xl lg:text-5xl text-center tracking-[-1.2px] leading-tight mb-10">
+        <h2 className="font-staatliches text-gray-900 text-4xl md:text-5xl text-center tracking-[-1.2px] leading-tight mb-10">
           How It Works
         </h2>
         

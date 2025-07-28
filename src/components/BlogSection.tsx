@@ -25,7 +25,7 @@ export default function BlogSection() {
   return (
     <section className="bg-neutral-50 px-4 lg:px-20 py-16">
       <div className="max-w-[1280px] mx-auto">
-        <h2 className="font-staatliches text-[#1b1b1b] text-3xl md:text-4xl lg:text-5xl text-center tracking-[-1.2px] leading-tight mb-10">
+        <h2 className="font-staatliches text-[#1b1b1b] text-4xl md:text-5xl text-center tracking-[-1.2px] leading-tight mb-10">
           From the Blog
         </h2>
         

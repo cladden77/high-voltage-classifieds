@@ -10,7 +10,7 @@ export default function TrustSection() {
           </svg>
           Powered by Professionals
         </div>
-        <h2 className="font-staatliches text-[#f37121] text-3xl md:text-4xl lg:text-5xl tracking-[-1.2px] leading-tight mb-4">
+        <h2 className="font-staatliches text-[#f37121] text-4xl md:text-5xl tracking-[-1.2px] leading-tight mb-4">
           Built for Trust, Speed, and Reliability
         </h2>
         <p className="text-white text-base lg:text-lg leading-7 max-w-[668px] mx-auto">
