@@ -9,6 +9,7 @@ import AuthModal from '@/components/AuthModal'
 import { createClientSupabase } from '@/lib/supabase'
 import { getCurrentUser } from '@/lib/auth'
 import { Database } from '@/lib/database.types'
+import { formatCondition } from '@/lib/utils'
 
 type Listing = Database['public']['Tables']['listings']['Row'] & {
   users: Database['public']['Tables']['users']['Row'] | null
@@ -316,10 +317,12 @@ export default function ListingDetailPage() {
             <div className="flex justify-between items-start mb-4">
               <span className={`px-3 py-1 rounded-full text-sm font-bold ${
                 listing.condition === 'new' ? 'bg-green-100 text-green-800' :
-                listing.condition === 'used' ? 'bg-yellow-100 text-yellow-800' :
-                'bg-blue-100 text-blue-800'
+                listing.condition === 'like_new' ? 'bg-green-100 text-green-800' :
+                listing.condition === 'good' ? 'bg-yellow-100 text-yellow-800' :
+                listing.condition === 'fair' ? 'bg-orange-100 text-orange-800' :
+                'bg-red-100 text-red-800'
               }`}>
-                {listing.condition}
+                {formatCondition(listing.condition)}
               </span>
               <button 
                 onClick={toggleFavorite}

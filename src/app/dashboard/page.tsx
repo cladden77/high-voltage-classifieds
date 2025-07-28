@@ -8,6 +8,7 @@ import { createClientSupabase } from '@/lib/supabase'
 import { getCurrentUser } from '@/lib/auth'
 import { Database } from '@/lib/database.types'
 import { useSearchParams } from 'next/navigation'
+import { formatCondition } from '@/lib/utils'
 
 // Force dynamic rendering for this page
 export const dynamic = 'force-dynamic'

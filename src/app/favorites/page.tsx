@@ -6,6 +6,7 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { createClientSupabase } from '@/lib/supabase'
 import { Database } from '@/lib/database.types'
+import { formatCondition } from '@/lib/utils'
 
 // Force dynamic rendering for this page
 export const dynamic = 'force-dynamic'
@@ -153,11 +154,7 @@ export default function FavoritesPage() {
                       favorite.listings.condition === 'fair' ? 'bg-orange-100 text-orange-800' :
                       'bg-red-100 text-red-800'
                     }`}>
-                      {favorite.listings.condition === 'like_new' ? 'Like New' : 
-                       favorite.listings.condition === 'good' ? 'Good' :
-                       favorite.listings.condition === 'fair' ? 'Fair' :
-                       favorite.listings.condition === 'poor' ? 'Poor' :
-                       favorite.listings.condition}
+                      {formatCondition(favorite.listings.condition)}
                     </span>
                   </div>
 

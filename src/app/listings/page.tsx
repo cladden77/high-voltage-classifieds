@@ -7,6 +7,7 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { createClientSupabase } from '@/lib/supabase'
 import { Database } from '@/lib/database.types'
+import { formatCondition } from '@/lib/utils'
 
 // Force dynamic rendering for this page  
 export const dynamic = 'force-dynamic'
@@ -360,7 +361,7 @@ function ListingsContent() {
                   {/* Condition and Date */}
                   <div className="flex justify-between items-center mb-2">
                     <span className={`px-3 py-1 rounded-full text-xs font-open-sans font-bold ${getConditionColor(listing.condition)}`}>
-                      {listing.condition}
+                      {formatCondition(listing.condition)}
                     </span>
                     <span className="text-sm font-open-sans font-bold text-gray-500">
                       {new Date(listing.created_at).toLocaleDateString()}
