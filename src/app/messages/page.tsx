@@ -389,6 +389,19 @@ export default function MessagesPage() {
       <Header />
       
       <div className="max-w-7xl mx-auto px-8 py-8">
+        {/* Back to Dashboard Link */}
+        {currentUser && (
+          <div className="mb-6">
+            <a 
+              href="/dashboard"
+              className="inline-flex items-center gap-2 text-orange-500 hover:text-orange-600 transition-colors group"
+            >
+              <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
+              <span className="font-open-sans text-sm font-medium">Back to Dashboard</span>
+            </a>
+          </div>
+        )}
+
         <div className="mb-8">
           <h1 className="font-staatliches text-[54px] leading-[48px] tracking-[-1.2px] text-gray-900 mb-2">
             Messages
