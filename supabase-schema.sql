@@ -232,6 +232,15 @@ CREATE POLICY "Users can view their own analytics" ON public.user_analytics
     FOR SELECT USING (auth.uid() = user_id);
 
 -- =============================================
+-- 8.1. VIEW SECURITY POLICIES
+-- =============================================
+
+-- Enable RLS on views (views inherit RLS from underlying tables)
+-- The views will automatically respect the RLS policies of their underlying tables
+-- listing_details view inherits RLS from listings and users tables
+-- message_threads view inherits RLS from messages and listings tables
+
+-- =============================================
 -- 8. CREATE STORAGE BUCKET
 -- =============================================
 INSERT INTO storage.buckets (id, name, public) 
@@ -307,7 +316,7 @@ END $$;
 -- =============================================
 
 -- View for listing details with seller info
-CREATE OR REPLACE VIEW listing_details AS
+CREATE OR REPLACE VIEW listing_details SECURITY INVOKER AS
 SELECT 
     l.*,
     u.full_name as seller_name,
@@ -320,7 +329,7 @@ FROM public.listings l
 JOIN public.users u ON l.seller_id = u.id;
 
 -- View for message threads
-CREATE OR REPLACE VIEW message_threads AS
+CREATE OR REPLACE VIEW message_threads SECURITY INVOKER AS
 SELECT DISTINCT
     CASE 
         WHEN m.sender_id < m.recipient_id 
