@@ -154,16 +154,16 @@ export default function ListingDetailPage() {
         message_text: messageText.trim()
       })
 
-      const { data, error } = await supabase
-        .from('messages')
-        .insert({
-          sender_id: currentUser.id,
-          recipient_id: listing.seller_id,
-          listing_id: listingId,
-          message_text: messageText.trim(),
-          read: false
-        })
-        .select()
+              const { data, error } = await supabase
+          .from('messages')
+          .insert({
+            sender_id: currentUser.id,
+            recipient_id: listing.seller_id,
+            listing_id: listingId,
+            message_text: messageText.trim(),
+            is_read: false
+          })
+          .select()
 
       if (error) {
         console.error('❌ Message send error:', error)

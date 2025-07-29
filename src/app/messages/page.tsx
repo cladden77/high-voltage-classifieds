@@ -7,6 +7,7 @@ import Footer from '@/components/Footer'
 import { createClientSupabase } from '@/lib/supabase'
 import { getCurrentUser } from '@/lib/auth'
 import { Database } from '@/lib/database.types'
+import { useSearchParams } from 'next/navigation'
 
 type MessageWithDetails = Database['public']['Tables']['messages']['Row'] & {
   sender: Database['public']['Tables']['users']['Row']
@@ -33,6 +34,7 @@ export default function MessagesPage() {
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const searchParams = useSearchParams()
 
   const supabase = createClientSupabase()
 
@@ -45,6 +47,14 @@ export default function MessagesPage() {
       fetchConversations()
     }
   }, [currentUser])
+
+  useEffect(() => {
+    // Check for conversation parameter in URL
+    const conversationParam = searchParams.get('conversation')
+    if (conversationParam && conversations.length > 0) {
+      setSelectedConversation(conversationParam)
+    }
+  }, [searchParams, conversations])
 
   useEffect(() => {
     if (selectedConversation && currentUser) {
@@ -371,6 +381,14 @@ export default function MessagesPage() {
     }
   }
 
+  const selectConversation = (conversationId: string) => {
+    setSelectedConversation(conversationId)
+    // Update URL without the conversation parameter
+    const url = new URL(window.location.href)
+    url.searchParams.delete('conversation')
+    window.history.replaceState({}, '', url.toString())
+  }
+
   const filteredConversations = conversations.filter(conversation =>
     conversation.listing.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     conversation.otherUser.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -472,7 +490,7 @@ export default function MessagesPage() {
                   {filteredConversations.map((conversation) => (
                     <button
                       key={conversation.id}
-                      onClick={() => setSelectedConversation(conversation.id)}
+                      onClick={() => selectConversation(conversation.id)}
                       className={`w-full p-4 text-left hover:bg-gray-50 active:bg-gray-100 transition-colors ${
                         selectedConversation === conversation.id ? 'bg-orange-50 lg:border-r-2 border-orange-500' : ''
                       }`}
@@ -524,7 +542,13 @@ export default function MessagesPage() {
                       </p>
                     </div>
                     <button 
-                      onClick={() => setSelectedConversation(null)}
+                      onClick={() => {
+                        setSelectedConversation(null)
+                        // Update URL without the conversation parameter
+                        const url = new URL(window.location.href)
+                        url.searchParams.delete('conversation')
+                        window.history.replaceState({}, '', url.toString())
+                      }}
                       className="lg:hidden p-2 text-gray-400 hover:text-gray-600 flex items-center gap-2"
                     >
                       <ArrowLeft className="h-5 w-5" />

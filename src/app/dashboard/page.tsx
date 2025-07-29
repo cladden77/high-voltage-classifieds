@@ -53,9 +53,14 @@ function DashboardContent() {
 
   useEffect(() => {
     if (currentUser) {
+      console.log('🔍 Dashboard: Current user role:', currentUser.role)
+      console.log('🔍 Dashboard: Current user object:', currentUser)
+      
       if (currentUser.role === 'seller') {
+        console.log('🔍 Dashboard: Loading seller dashboard')
         fetchListings()
       } else {
+        console.log('🔍 Dashboard: Loading buyer dashboard')
         fetchFavorites()
         setActiveTab('favorites') // Default to favorites for buyers
       }
@@ -296,11 +301,15 @@ function DashboardContent() {
 
         <div className="space-y-4">
           {conversations.slice(0, 10).map((conversation) => (
-            <div key={conversation.id} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+            <div 
+              key={conversation.id} 
+              className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md hover:border-orange-300 transition-all duration-200 cursor-pointer group"
+              onClick={() => window.location.href = `/messages?conversation=${conversation.id}`}
+            >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-open-sans font-bold text-lg text-gray-900">
+                    <h3 className="font-open-sans font-bold text-lg text-gray-900 group-hover:text-orange-600 transition-colors">
                       {conversation.otherUser.full_name || 'Unknown User'}
                     </h3>
                     {conversation.unreadCount > 0 && (
@@ -327,13 +336,16 @@ function DashboardContent() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <a
-                    href="/messages"
-                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm font-bold flex items-center gap-1"
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      window.location.href = `/messages?conversation=${conversation.id}`
+                    }}
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm font-bold flex items-center gap-1 group-hover:bg-orange-100 group-hover:text-orange-700 transition-colors"
                   >
                     <Send className="h-3 w-3" />
                     Reply
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>

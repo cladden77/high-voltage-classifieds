@@ -87,7 +87,7 @@ export async function signUpWithCredentials(email: string, password: string, nam
     console.log('✅ Auth signup successful, creating profile for:', data.user.id)
 
     // Create user profile in database
-    const { error: profileError } = await supabase
+    const { data: profileData, error: profileError } = await supabase
       .from('users')
       .insert({
         id: data.user.id,
@@ -95,12 +95,39 @@ export async function signUpWithCredentials(email: string, password: string, nam
         full_name: name,
         role: role,
       })
+      .select()
 
     if (profileError) {
       console.error('⚠️ Profile creation error:', profileError)
-      // If profile creation fails, still return success since auth succeeded
+      console.error('Error details:', {
+        code: profileError.code,
+        message: profileError.message,
+        details: profileError.details,
+        hint: profileError.hint
+      })
+      
+      // If profile creation fails, try again with a delay (sometimes Supabase needs a moment)
+      console.log('🔄 Retrying profile creation after delay...')
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      const { data: retryProfileData, error: retryError } = await supabase
+        .from('users')
+        .insert({
+          id: data.user.id,
+          email: email,
+          full_name: name,
+          role: role,
+        })
+        .select()
+
+      if (retryError) {
+        console.error('❌ Profile creation retry failed:', retryError)
+        // If profile creation fails, still return success since auth succeeded
+      } else {
+        console.log('✅ Profile created successfully on retry:', retryProfileData)
+      }
     } else {
-      console.log('✅ Profile created successfully')
+      console.log('✅ Profile created successfully:', profileData)
     }
 
     const user = {
@@ -153,7 +180,8 @@ export async function getCurrentUser() {
     console.log('✅ Auth user found:', user.id, user.email)
 
     // Get user profile
-    const { data: profile, error: profileError } = await supabase
+    console.log('🔍 Fetching profile for user ID:', user.id)
+    let { data: profile, error: profileError } = await supabase
       .from('users')
       .select('*')
       .eq('id', user.id)
@@ -161,7 +189,34 @@ export async function getCurrentUser() {
 
     if (profileError) {
       console.error('⚠️ Profile fetch error:', profileError)
-      // Continue with basic user data from auth
+      console.error('Error details:', {
+        code: profileError.code,
+        message: profileError.message,
+        details: profileError.details,
+        hint: profileError.hint
+      })
+      
+      // Try to create the profile if it doesn't exist
+      if (profileError.code === 'PGRST116') { // No rows returned
+        console.log('🔄 Profile not found, attempting to create...')
+        const { data: newProfile, error: createError } = await supabase
+          .from('users')
+          .insert({
+            id: user.id,
+            email: user.email!,
+            full_name: user.user_metadata?.full_name || '',
+            role: 'buyer', // Default role
+          })
+          .select()
+          .single()
+
+        if (createError) {
+          console.error('❌ Profile creation failed:', createError)
+        } else {
+          console.log('✅ Profile created successfully:', newProfile)
+          profile = newProfile
+        }
+      }
     }
 
     console.log('👤 User profile from DB:', profile)
@@ -174,6 +229,11 @@ export async function getCurrentUser() {
     }
 
     console.log('✅ Final current user object:', currentUser)
+    console.log('🔍 Role detection:', {
+      profileRole: profile?.role,
+      defaultRole: 'buyer',
+      finalRole: currentUser.role
+    })
     return currentUser
 
   } catch (error) {
@@ -235,6 +295,35 @@ export async function debugAuthState() {
   } catch (error) {
     console.error('💥 Debug auth state error:', error)
     return { session: null, currentUser: null }
+  }
+}
+
+// Utility function to manually create/fix user profile
+export async function createUserProfile(userId: string, email: string, name: string, role: 'buyer' | 'seller' = 'buyer') {
+  try {
+    console.log('🔧 Creating/fixing user profile for:', userId)
+    
+    const supabase = createClientSupabase()
+    const { data, error } = await supabase
+      .from('users')
+      .upsert({
+        id: userId,
+        email: email,
+        full_name: name,
+        role: role,
+      })
+      .select()
+
+    if (error) {
+      console.error('❌ Profile creation/fix failed:', error)
+      return { success: false, error: error.message }
+    }
+
+    console.log('✅ Profile created/fixed successfully:', data)
+    return { success: true, data }
+  } catch (error) {
+    console.error('💥 Profile creation/fix exception:', error)
+    return { success: false, error: 'An unexpected error occurred' }
   }
 }
 

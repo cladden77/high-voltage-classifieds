@@ -49,9 +49,6 @@ export default function Header() {
     setIsMobileMenuOpen(false);
   };
 
-  // Only show Post Listing for sellers and non-logged-in users
-  const shouldShowPostListing = !loading && (!currentUser || currentUser.role === 'seller');
-
   return (
     <header className="bg-[#1b1b1b] h-[95px] sticky top-0 z-50 shadow-[0px_10px_15px_-3px_rgba(0,0,0,0.1),0px_4px_6px_-4px_rgba(0,0,0,0.1)]">
       <div className="box-border content-stretch flex flex-col items-center justify-center overflow-clip pb-px pt-0 px-4 lg:px-20 relative size-full">
@@ -115,14 +112,25 @@ export default function Header() {
               </>
             )}
             
-            {/* Post Listing Button - Only for Sellers and non-logged-in users - Hidden on mobile */}
-            {shouldShowPostListing && (
+            {/* Dashboard Button - For all logged-in users */}
+            {currentUser && (
               <Link 
                 href="/dashboard" 
                 onClick={closeMobileMenu}
                 className="hidden lg:inline-block bg-[#f37121] text-white px-5 py-2 rounded shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)] text-base font-bold uppercase hover:bg-[#e55a0a] transition-colors"
               >
-                {currentUser?.role === 'seller' ? 'Dashboard' : 'Post Listing'}
+                Dashboard
+              </Link>
+            )}
+            
+            {/* Post Listing Button - Only for non-logged-in users */}
+            {!currentUser && !loading && (
+              <Link 
+                href="/auth/signup" 
+                onClick={closeMobileMenu}
+                className="hidden lg:inline-block bg-[#f37121] text-white px-5 py-2 rounded shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)] text-base font-bold uppercase hover:bg-[#e55a0a] transition-colors"
+              >
+                Post Listing
               </Link>
             )}
             
@@ -228,16 +236,14 @@ export default function Header() {
                         Favorites
                       </Link>
                       
-                      {/* Dashboard link for Sellers */}
-                      {currentUser.role === 'seller' && (
-                        <Link 
-                          href="/dashboard" 
-                          onClick={closeMobileMenu}
-                          className="block text-neutral-100 text-base font-bold uppercase hover:text-[#f37121] transition-colors py-2"
-                        >
-                          Dashboard
-                        </Link>
-                      )}
+                      {/* Dashboard link for all logged-in users */}
+                      <Link 
+                        href="/dashboard" 
+                        onClick={closeMobileMenu}
+                        className="block text-neutral-100 text-base font-bold uppercase hover:text-[#f37121] transition-colors py-2"
+                      >
+                        Dashboard
+                      </Link>
                     </div>
                     
                     {/* Sign Out Button */}
