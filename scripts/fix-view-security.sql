@@ -2,14 +2,15 @@
 -- FIX VIEW SECURITY ISSUES
 -- =============================================
 -- This script fixes the Supabase security linter warnings about SECURITY DEFINER views
+-- By recreating the views, they will use the default SECURITY INVOKER behavior
 -- Run this in your Supabase SQL Editor
 
 -- Drop existing views
 DROP VIEW IF EXISTS public.listing_details;
 DROP VIEW IF EXISTS public.message_threads;
 
--- Recreate views with SECURITY INVOKER (default secure behavior)
-CREATE OR REPLACE VIEW public.listing_details SECURITY INVOKER AS
+-- Recreate views (default behavior is SECURITY INVOKER)
+CREATE OR REPLACE VIEW public.listing_details AS
 SELECT 
     l.*,
     u.full_name as seller_name,
@@ -21,8 +22,8 @@ SELECT
 FROM public.listings l
 JOIN public.users u ON l.seller_id = u.id;
 
--- Recreate message threads view with SECURITY INVOKER
-CREATE OR REPLACE VIEW public.message_threads SECURITY INVOKER AS
+-- Recreate message threads view
+CREATE OR REPLACE VIEW public.message_threads AS
 SELECT DISTINCT
     CASE 
         WHEN m.sender_id < m.recipient_id 
@@ -52,7 +53,7 @@ SELECT DISTINCT
 FROM public.messages m
 LEFT JOIN public.listings l ON m.listing_id = l.id;
 
--- Verify the views are now SECURITY INVOKER
+-- Verify the views have been recreated
 SELECT 
     schemaname,
     viewname,
