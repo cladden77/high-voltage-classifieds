@@ -21,7 +21,6 @@ export default function SignUpPage() {
   const router = useRouter()
 
   const handleInputChange = (field: string, value: string) => {
-    console.log('🔍 Form field changed:', field, 'to:', value)
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -48,9 +47,6 @@ export default function SignUpPage() {
     }
 
     try {
-      console.log('🔍 Submitting form with role:', formData.role)
-      console.log('🔍 Full form data:', formData)
-      
       const result = await signUpWithCredentials(
         formData.email,
         formData.password,
@@ -243,18 +239,6 @@ export default function SignUpPage() {
               className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg font-open-sans font-bold transition-colors"
             >
               {isLoading ? 'Creating account...' : 'Create Account'}
-            </button>
-            
-            {/* Debug button - remove after testing */}
-            <button
-              type="button"
-              onClick={() => {
-                console.log('🔍 Current form data:', formData)
-                console.log('🔍 Selected role:', formData.role)
-              }}
-              className="w-full bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg font-open-sans font-bold transition-colors mt-2"
-            >
-              Debug: Check Current Role
             </button>
           </form>
 

@@ -66,8 +66,6 @@ export async function signInWithCredentials(email: string, password: string, rol
 
 export async function signUpWithCredentials(email: string, password: string, name: string, role: 'buyer' | 'seller') {
   try {
-    console.log('📝 Signing up user:', email, 'as', role)
-    
     const supabase = createClientSupabase()
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -81,12 +79,8 @@ export async function signUpWithCredentials(email: string, password: string, nam
     })
 
     if (error || !data.user) {
-      console.error('❌ Sign up error:', error?.message)
       return { success: false, error: error?.message }
     }
-
-    console.log('✅ Auth signup successful, creating profile for:', data.user.id)
-    console.log('🔍 Creating profile with role:', role)
 
     // Create user profile in database
     const { data: profileData, error: profileError } = await supabase
@@ -100,20 +94,9 @@ export async function signUpWithCredentials(email: string, password: string, nam
       .select()
 
     if (profileError) {
-      console.error('⚠️ Profile creation error:', profileError)
-      console.error('Error details:', {
-        code: profileError.code,
-        message: profileError.message,
-        details: profileError.details,
-        hint: profileError.hint
-      })
-      console.error('🔍 Attempted to create profile with role:', role)
-      
       // If profile creation fails, try again with a delay (sometimes Supabase needs a moment)
-      console.log('🔄 Retrying profile creation after delay...')
       await new Promise(resolve => setTimeout(resolve, 1000))
       
-      console.log('🔄 Retrying profile creation with role:', role)
       const { data: retryProfileData, error: retryError } = await supabase
         .from('users')
         .insert({
@@ -125,14 +108,8 @@ export async function signUpWithCredentials(email: string, password: string, nam
         .select()
 
       if (retryError) {
-        console.error('❌ Profile creation retry failed:', retryError)
-        console.error('🔍 Retry attempted with role:', role)
         // If profile creation fails, still return success since auth succeeded
-      } else {
-        console.log('✅ Profile created successfully on retry:', retryProfileData)
       }
-    } else {
-      console.log('✅ Profile created successfully:', profileData)
     }
 
     const user = {
@@ -142,14 +119,11 @@ export async function signUpWithCredentials(email: string, password: string, nam
       role: role,
     }
 
-    console.log('✅ Final signup user object:', user)
-
     return { 
       success: true, 
       user
     }
   } catch (error) {
-    console.error('💥 Sign up exception:', error)
     return { success: false, error: 'An unexpected error occurred' }
   }
 }
@@ -157,20 +131,12 @@ export async function signUpWithCredentials(email: string, password: string, nam
 // Function to get current user (client-side)
 export async function getCurrentUser() {
   try {
-    console.log('🔍 Getting current user...')
-    
     const supabase = createClientSupabase()
     
     // First check if there's an active session
     const { data: { session }, error: sessionError } = await supabase.auth.getSession()
     
-    if (sessionError) {
-      console.error('❌ Session check error:', sessionError)
-      return null
-    }
-
-    if (!session) {
-      console.log('ℹ️ No active session found')
+    if (sessionError || !session) {
       return null
     }
 
@@ -178,14 +144,10 @@ export async function getCurrentUser() {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (authError || !user) {
-      console.error('❌ Auth getUser error:', authError)
       return null
     }
 
-    console.log('✅ Auth user found:', user.id, user.email)
-
     // Get user profile
-    console.log('🔍 Fetching profile for user ID:', user.id)
     let { data: profile, error: profileError } = await supabase
       .from('users')
       .select('*')
@@ -193,26 +155,13 @@ export async function getCurrentUser() {
       .single()
 
     if (profileError) {
-      console.error('⚠️ Profile fetch error:', profileError)
-      console.error('Error details:', {
-        code: profileError.code,
-        message: profileError.message,
-        details: profileError.details,
-        hint: profileError.hint
-      })
-      
       // Try to create the profile if it doesn't exist
       if (profileError.code === 'PGRST116') { // No rows returned
-        console.log('🔄 Profile not found, attempting to create...')
-        console.log('🔍 User metadata:', user.user_metadata)
-        
         // Try to determine the role from user metadata or default to buyer
         let defaultRole: 'buyer' | 'seller' = 'buyer'
         if (user.user_metadata?.role && (user.user_metadata.role === 'buyer' || user.user_metadata.role === 'seller')) {
           defaultRole = user.user_metadata.role as 'buyer' | 'seller'
         }
-        
-        console.log('🔍 Using default role:', defaultRole)
         
         const { data: newProfile, error: createError } = await supabase
           .from('users')
@@ -225,16 +174,11 @@ export async function getCurrentUser() {
           .select()
           .single()
 
-        if (createError) {
-          console.error('❌ Profile creation failed:', createError)
-        } else {
-          console.log('✅ Profile created successfully:', newProfile)
+        if (!createError) {
           profile = newProfile
         }
       }
     }
-
-    console.log('👤 User profile from DB:', profile)
 
     const currentUser = {
       id: user.id,
@@ -243,16 +187,9 @@ export async function getCurrentUser() {
       role: profile?.role || 'buyer',
     }
 
-    console.log('✅ Final current user object:', currentUser)
-    console.log('🔍 Role detection:', {
-      profileRole: profile?.role,
-      defaultRole: 'buyer',
-      finalRole: currentUser.role
-    })
     return currentUser
 
   } catch (error) {
-    console.error('💥 getCurrentUser exception:', error)
     return null
   }
 }
@@ -260,19 +197,15 @@ export async function getCurrentUser() {
 // Function to sign out
 export async function signOut() {
   try {
-    console.log('🚪 Signing out user...')
     const supabase = createClientSupabase()
     const { error } = await supabase.auth.signOut()
     
     if (error) {
-      console.error('❌ Sign out error:', error)
       return { success: false, error: error.message }
     }
 
-    console.log('✅ Sign out successful')
     return { success: true }
   } catch (error) {
-    console.error('💥 Sign out exception:', error)
     return { success: false, error: 'An unexpected error occurred' }
   }
 }
