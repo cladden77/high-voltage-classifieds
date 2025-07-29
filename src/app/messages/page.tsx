@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
 import { Send, MessageCircle, Search, ArrowLeft, AlertCircle } from 'lucide-react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
@@ -24,7 +24,7 @@ type Conversation = {
   totalMessages: number
 }
 
-export default function MessagesPage() {
+function MessagesContent() {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null)
   const [messages, setMessages] = useState<MessageWithDetails[]>([])
@@ -721,5 +721,30 @@ export default function MessagesPage() {
 
       <Footer />
     </div>
+  )
+}
+
+// Loading component for Suspense fallback
+function MessagesLoading() {
+  return (
+    <div className="min-h-screen bg-white">
+      <Header />
+      <div className="max-w-7xl mx-auto px-8 py-8">
+        <div className="animate-pulse space-y-8">
+          <div className="h-16 bg-gray-200 rounded-lg w-1/2"></div>
+          <div className="h-64 bg-gray-200 rounded-lg"></div>
+        </div>
+      </div>
+      <Footer />
+    </div>
+  )
+}
+
+// Main page component with Suspense boundary
+export default function MessagesPage() {
+  return (
+    <Suspense fallback={<MessagesLoading />}>
+      <MessagesContent />
+    </Suspense>
   )
 } 
