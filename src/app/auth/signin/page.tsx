@@ -176,6 +176,11 @@ export default function SignInPage() {
                 Sign up
               </a>
             </p>
+            <p className="font-open-sans text-sm text-gray-600 mt-2">
+              <a href="/" className="font-medium text-gray-500 hover:text-gray-700">
+                ← Cancel and return to home
+              </a>
+            </p>
           </div>
         </div>
       </div>
