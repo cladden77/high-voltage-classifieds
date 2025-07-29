@@ -75,6 +75,7 @@ export async function signUpWithCredentials(email: string, password: string, nam
       options: {
         data: {
           full_name: name,
+          role: role,
         }
       }
     })
@@ -85,6 +86,7 @@ export async function signUpWithCredentials(email: string, password: string, nam
     }
 
     console.log('✅ Auth signup successful, creating profile for:', data.user.id)
+    console.log('🔍 Creating profile with role:', role)
 
     // Create user profile in database
     const { data: profileData, error: profileError } = await supabase
@@ -105,11 +107,13 @@ export async function signUpWithCredentials(email: string, password: string, nam
         details: profileError.details,
         hint: profileError.hint
       })
+      console.error('🔍 Attempted to create profile with role:', role)
       
       // If profile creation fails, try again with a delay (sometimes Supabase needs a moment)
       console.log('🔄 Retrying profile creation after delay...')
       await new Promise(resolve => setTimeout(resolve, 1000))
       
+      console.log('🔄 Retrying profile creation with role:', role)
       const { data: retryProfileData, error: retryError } = await supabase
         .from('users')
         .insert({
@@ -122,6 +126,7 @@ export async function signUpWithCredentials(email: string, password: string, nam
 
       if (retryError) {
         console.error('❌ Profile creation retry failed:', retryError)
+        console.error('🔍 Retry attempted with role:', role)
         // If profile creation fails, still return success since auth succeeded
       } else {
         console.log('✅ Profile created successfully on retry:', retryProfileData)
@@ -199,13 +204,23 @@ export async function getCurrentUser() {
       // Try to create the profile if it doesn't exist
       if (profileError.code === 'PGRST116') { // No rows returned
         console.log('🔄 Profile not found, attempting to create...')
+        console.log('🔍 User metadata:', user.user_metadata)
+        
+        // Try to determine the role from user metadata or default to buyer
+        let defaultRole: 'buyer' | 'seller' = 'buyer'
+        if (user.user_metadata?.role && (user.user_metadata.role === 'buyer' || user.user_metadata.role === 'seller')) {
+          defaultRole = user.user_metadata.role as 'buyer' | 'seller'
+        }
+        
+        console.log('🔍 Using default role:', defaultRole)
+        
         const { data: newProfile, error: createError } = await supabase
           .from('users')
           .insert({
             id: user.id,
             email: user.email!,
             full_name: user.user_metadata?.full_name || '',
-            role: 'buyer', // Default role
+            role: defaultRole,
           })
           .select()
           .single()

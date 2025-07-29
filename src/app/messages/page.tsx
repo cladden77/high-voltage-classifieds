@@ -381,12 +381,46 @@ export default function MessagesPage() {
     }
   }
 
-  const selectConversation = (conversationId: string) => {
+  const selectConversation = async (conversationId: string) => {
     setSelectedConversation(conversationId)
     // Update URL without the conversation parameter
     const url = new URL(window.location.href)
     url.searchParams.delete('conversation')
     window.history.replaceState({}, '', url.toString())
+    
+    // Mark messages as read immediately when conversation is selected
+    if (currentUser) {
+      try {
+        const { count } = await supabase
+          .from('messages')
+          .update({ is_read: true })
+          .eq('listing_id', conversationId)
+          .eq('recipient_id', currentUser.id)
+          .eq('is_read', false)
+        
+        if (count && count > 0) {
+          console.log(`Marked ${count} messages as read`)
+          
+          // Update the conversations state immediately to clear the unread count
+          setConversations(prevConversations => {
+            const updatedConversations = prevConversations.map(conv => 
+              conv.id === conversationId 
+                ? { ...conv, unreadCount: 0 }
+                : conv
+            )
+            console.log('Updated conversations, cleared unread count for:', conversationId)
+            return updatedConversations
+          })
+          
+          // Also refresh conversations from server to ensure consistency
+          setTimeout(() => {
+            fetchConversations()
+          }, 500)
+        }
+      } catch (error) {
+        console.error('Error marking messages as read:', error)
+      }
+    }
   }
 
   const filteredConversations = conversations.filter(conversation =>
@@ -501,11 +535,26 @@ export default function MessagesPage() {
                         </h3>
                         <div className="flex flex-col items-end gap-1">
                           <span className="font-open-sans text-xs text-gray-500">
-                            {new Date(conversation.lastMessage.created_at).toLocaleDateString()}
+                            {(() => {
+                              const date = new Date(conversation.lastMessage.created_at)
+                              const now = new Date()
+                              const diffTime = Math.abs(now.getTime() - date.getTime())
+                              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+                              
+                              if (diffDays === 1) {
+                                return 'Today'
+                              } else if (diffDays === 2) {
+                                return 'Yesterday'
+                              } else if (diffDays <= 7) {
+                                return date.toLocaleDateString('en-US', { weekday: 'short' })
+                              } else {
+                                return date.toLocaleDateString()
+                              }
+                            })()}
                           </span>
                           {conversation.unreadCount > 0 && (
-                            <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full">
-                              {conversation.unreadCount}
+                            <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full transition-all duration-300 ease-in-out">
+                              {conversation.unreadCount} new
                             </span>
                           )}
                         </div>
@@ -592,10 +641,34 @@ export default function MessagesPage() {
                             <p className={`font-open-sans text-xs mt-2 ${
                               isCurrentUser ? 'text-orange-100' : 'text-gray-500'
                             }`}>
-                              {new Date(message.created_at).toLocaleTimeString([], { 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                              })}
+                              {(() => {
+                                const date = new Date(message.created_at)
+                                const now = new Date()
+                                const diffTime = Math.abs(now.getTime() - date.getTime())
+                                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+                                
+                                if (diffDays === 1) {
+                                  return `Today at ${date.toLocaleTimeString([], { 
+                                    hour: '2-digit', 
+                                    minute: '2-digit' 
+                                  })}`
+                                } else if (diffDays === 2) {
+                                  return `Yesterday at ${date.toLocaleTimeString([], { 
+                                    hour: '2-digit', 
+                                    minute: '2-digit' 
+                                  })}`
+                                } else if (diffDays <= 7) {
+                                  return `${date.toLocaleDateString('en-US', { weekday: 'short' })} at ${date.toLocaleTimeString([], { 
+                                    hour: '2-digit', 
+                                    minute: '2-digit' 
+                                  })}`
+                                } else {
+                                  return `${date.toLocaleDateString()} at ${date.toLocaleTimeString([], { 
+                                    hour: '2-digit', 
+                                    minute: '2-digit' 
+                                  })}`
+                                }
+                              })()}
                             </p>
                           </div>
                         </div>
