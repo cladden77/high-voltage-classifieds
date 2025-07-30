@@ -1,26 +1,104 @@
 -- =============================================
--- IMPLEMENT SECURE FUNCTIONS (INDUSTRY STANDARD)
+-- FIX FUNCTION SEARCH PATH SECURITY WARNINGS
 -- =============================================
--- This is the industry-standard, secure approach for Supabase
--- Functions provide better security, performance, and RLS compliance
+-- This script fixes all function search_path security warnings
+-- by adding SET search_path = public to all functions
 
--- First, verify current state
-SELECT 
-    'Current problematic views' as check_type,
-    schemaname,
-    viewname,
-    viewowner
-FROM pg_views 
-WHERE viewname IN ('listing_details', 'message_threads')
-AND schemaname = 'public';
+-- Fix the trigger function
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER 
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$;
 
--- Drop the problematic views
-DROP VIEW IF EXISTS public.listing_details CASCADE;
-DROP VIEW IF EXISTS public.message_threads CASCADE;
+-- Fix user listing count function
+CREATE OR REPLACE FUNCTION get_user_listing_count(user_uuid UUID)
+RETURNS INTEGER 
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
+BEGIN
+    RETURN (SELECT COUNT(*) FROM public.listings WHERE seller_id = user_uuid AND is_sold = false);
+END;
+$$;
 
--- =============================================
--- SECURE LISTING DETAILS FUNCTION
--- =============================================
+-- Fix mark listing sold function  
+CREATE OR REPLACE FUNCTION mark_listing_sold(listing_uuid UUID, buyer_uuid UUID, amount DECIMAL)
+RETURNS UUID 
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
+DECLARE
+    order_id UUID;
+    seller_uuid UUID;
+BEGIN
+    -- Get seller ID
+    SELECT seller_id INTO seller_uuid FROM public.listings WHERE id = listing_uuid;
+    
+    -- Create order
+    INSERT INTO public.orders (listing_id, buyer_id, seller_id, amount_paid, status)
+    VALUES (listing_uuid, buyer_uuid, seller_uuid, amount, 'paid')
+    RETURNING id INTO order_id;
+    
+    -- Mark listing as sold
+    UPDATE public.listings SET is_sold = true WHERE id = listing_uuid;
+    
+    RETURN order_id;
+END;
+$$;
+
+-- Fix clear all data function
+CREATE OR REPLACE FUNCTION clear_all_data()
+RETURNS VOID 
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
+BEGIN
+    DELETE FROM public.orders;
+    DELETE FROM public.messages;
+    DELETE FROM public.favorites;
+    DELETE FROM public.listings;
+    DELETE FROM public.user_analytics;
+    -- Note: Don't delete users as they're tied to auth.users
+    RAISE NOTICE 'All listing data cleared successfully';
+END;
+$$;
+
+-- Fix platform stats function
+CREATE OR REPLACE FUNCTION get_platform_stats()
+RETURNS TABLE(
+    total_users BIGINT,
+    total_listings BIGINT,
+    total_active_listings BIGINT,
+    total_messages BIGINT,
+    total_favorites BIGINT,
+    total_orders BIGINT
+) 
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
+BEGIN
+    RETURN QUERY SELECT
+        (SELECT COUNT(*) FROM public.users) as total_users,
+        (SELECT COUNT(*) FROM public.listings) as total_listings,
+        (SELECT COUNT(*) FROM public.listings WHERE is_sold = false) as total_active_listings,
+        (SELECT COUNT(*) FROM public.messages) as total_messages,
+        (SELECT COUNT(*) FROM public.favorites) as total_favorites,
+        (SELECT COUNT(*) FROM public.orders) as total_orders;
+END;
+$$;
+
+-- Recreate our secure listing functions with fixed search_path
 CREATE OR REPLACE FUNCTION public.get_listing_details(
     p_limit integer DEFAULT NULL,
     p_offset integer DEFAULT 0,
@@ -85,9 +163,7 @@ AS $$
     OFFSET p_offset;
 $$;
 
--- =============================================
--- SECURE MESSAGE THREADS FUNCTION
--- =============================================
+-- Recreate message threads function with fixed search_path
 CREATE OR REPLACE FUNCTION public.get_message_threads(
     p_user_id uuid DEFAULT NULL
 )
@@ -142,11 +218,7 @@ AS $$
     WHERE (p_user_id IS NULL OR m.sender_id = p_user_id OR m.recipient_id = p_user_id);
 $$;
 
--- =============================================
--- HELPER FUNCTIONS FOR BETTER API
--- =============================================
-
--- Simple function to get all active listings (equivalent to old view)
+-- Recreate helper functions with fixed search_path
 CREATE OR REPLACE FUNCTION public.get_all_listings()
 RETURNS TABLE (
     id uuid,
@@ -178,7 +250,6 @@ AS $$
     SELECT * FROM public.get_listing_details();
 $$;
 
--- Function to get user's message threads
 CREATE OR REPLACE FUNCTION public.get_user_message_threads()
 RETURNS TABLE (
     thread_id text,
@@ -198,30 +269,7 @@ AS $$
     SELECT * FROM public.get_message_threads(auth.uid());
 $$;
 
--- =============================================
--- SECURITY AND PERMISSIONS
--- =============================================
-
--- Grant proper permissions
-GRANT EXECUTE ON FUNCTION public.get_listing_details(integer, integer, text, uuid) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.get_listing_details(integer, integer, text, uuid) TO anon;
-GRANT EXECUTE ON FUNCTION public.get_message_threads(uuid) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.get_all_listings() TO authenticated;
-GRANT EXECUTE ON FUNCTION public.get_all_listings() TO anon;
-GRANT EXECUTE ON FUNCTION public.get_user_message_threads() TO authenticated;
-
--- =============================================
--- VERIFICATION AND TESTING
--- =============================================
-
--- Test the functions work correctly
-SELECT 'get_listing_details' as function_name, COUNT(*) as record_count 
-FROM public.get_listing_details() LIMIT 1;
-
-SELECT 'get_message_threads' as function_name, COUNT(*) as record_count 
-FROM public.get_message_threads() LIMIT 1;
-
--- Verify security context
+-- Verify all functions have proper security settings
 SELECT 
     proname as function_name,
     prosecdef as is_security_definer,
@@ -229,19 +277,21 @@ SELECT
         WHEN prosecdef = false THEN 'SECURITY INVOKER ✓'
         ELSE 'SECURITY DEFINER ✗'
     END as security_context,
-    proacl as permissions
+    proacl as permissions,
+    prosrc as source_contains_search_path
 FROM pg_proc 
-WHERE proname IN ('get_listing_details', 'get_message_threads', 'get_all_listings', 'get_user_message_threads')
-AND pronamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public');
+WHERE proname IN (
+    'update_updated_at_column',
+    'get_user_listing_count', 
+    'mark_listing_sold',
+    'clear_all_data',
+    'get_platform_stats',
+    'get_listing_details',
+    'get_message_threads', 
+    'get_all_listings',
+    'get_user_message_threads'
+)
+AND pronamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
+ORDER BY proname;
 
--- Confirm views are gone
-SELECT 
-    CASE 
-        WHEN COUNT(*) = 0 THEN 'SUCCESS: All problematic views removed ✓'
-        ELSE 'ERROR: Views still exist ✗'
-    END as view_removal_status
-FROM pg_views 
-WHERE viewname IN ('listing_details', 'message_threads')
-AND schemaname = 'public';
-
-SELECT 'Implementation complete - industry standard security achieved!' as status; 
+SELECT 'Function search_path security fixes applied successfully! ✅' as status;

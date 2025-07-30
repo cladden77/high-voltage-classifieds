@@ -227,7 +227,11 @@ SELECT * FROM storage.buckets WHERE id = 'listing-images';
 
 -- Function to clear all data (useful for development)
 CREATE OR REPLACE FUNCTION clear_all_data()
-RETURNS VOID AS $$
+RETURNS VOID 
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
 BEGIN
     DELETE FROM public.orders;
     DELETE FROM public.messages;
@@ -237,7 +241,7 @@ BEGIN
     -- Note: Don't delete users as they're tied to auth.users
     RAISE NOTICE 'All listing data cleared successfully';
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- Function to get platform statistics
 CREATE OR REPLACE FUNCTION get_platform_stats()
@@ -248,7 +252,11 @@ RETURNS TABLE(
     total_messages BIGINT,
     total_favorites BIGINT,
     total_orders BIGINT
-) AS $$
+) 
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
 BEGIN
     RETURN QUERY SELECT
         (SELECT COUNT(*) FROM public.users) as total_users,
@@ -258,7 +266,7 @@ BEGIN
         (SELECT COUNT(*) FROM public.favorites) as total_favorites,
         (SELECT COUNT(*) FROM public.orders) as total_orders;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- =============================================
 -- INSTRUCTIONS FOR USE

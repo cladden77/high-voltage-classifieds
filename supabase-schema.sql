@@ -143,12 +143,16 @@ CREATE INDEX IF NOT EXISTS idx_orders_listing_id ON public.orders(listing_id);
 -- 5. CREATE UPDATED_AT TRIGGERS
 -- =============================================
 CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$;
 
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_listings_updated_at BEFORE UPDATE ON public.listings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -266,15 +270,23 @@ CREATE POLICY "Users can delete their own listing images" ON storage.objects
 
 -- Function to get user's listing count
 CREATE OR REPLACE FUNCTION get_user_listing_count(user_uuid UUID)
-RETURNS INTEGER AS $$
+RETURNS INTEGER 
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
 BEGIN
     RETURN (SELECT COUNT(*) FROM public.listings WHERE seller_id = user_uuid AND is_sold = false);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- Function to mark listing as sold and create order
 CREATE OR REPLACE FUNCTION mark_listing_sold(listing_uuid UUID, buyer_uuid UUID, amount DECIMAL)
-RETURNS UUID AS $$
+RETURNS UUID 
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
 DECLARE
     order_id UUID;
     seller_uuid UUID;
@@ -292,7 +304,7 @@ BEGIN
     
     RETURN order_id;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- =============================================
 -- 10. SEED DATA FOR DEVELOPMENT
@@ -331,16 +343,14 @@ RETURNS TABLE (
     price decimal,
     condition public.listing_condition,
     category text,
-    subcategory text,
-    brand text,
-    model text,
-    year integer,
     location text,
     seller_id uuid,
     created_at timestamptz,
     updated_at timestamptz,
-    images text[],
-    is_active boolean,
+    image_urls text[],
+    is_sold boolean,
+    is_featured boolean,
+    views_count integer,
     seller_name text,
     seller_email text,
     seller_avatar text,
@@ -351,6 +361,7 @@ RETURNS TABLE (
 LANGUAGE sql
 SECURITY INVOKER
 STABLE
+SET search_path = public
 AS $$
     SELECT 
         l.id,
@@ -359,16 +370,14 @@ AS $$
         l.price,
         l.condition,
         l.category,
-        l.subcategory,
-        l.brand,
-        l.model,
-        l.year,
         l.location,
         l.seller_id,
         l.created_at,
         l.updated_at,
-        l.images,
-        l.is_active,
+        l.image_urls,
+        l.is_sold,
+        l.is_featured,
+        l.views_count,
         u.full_name as seller_name,
         u.email as seller_email,
         u.avatar_url as seller_avatar,
@@ -377,7 +386,7 @@ AS $$
         (SELECT COUNT(*) FROM public.favorites f WHERE f.listing_id = l.id) as favorites_count
     FROM public.listings l
     JOIN public.users u ON l.seller_id = u.id
-    WHERE l.is_active = true
+    WHERE l.is_sold = false
     AND (p_category IS NULL OR l.category = p_category)
     AND (p_seller_id IS NULL OR l.seller_id = p_seller_id)
     ORDER BY l.created_at DESC
@@ -402,6 +411,7 @@ RETURNS TABLE (
 LANGUAGE sql
 SECURITY INVOKER
 STABLE
+SET search_path = public
 AS $$
     SELECT DISTINCT
         CASE 
@@ -448,16 +458,14 @@ RETURNS TABLE (
     price decimal,
     condition public.listing_condition,
     category text,
-    subcategory text,
-    brand text,
-    model text,
-    year integer,
     location text,
     seller_id uuid,
     created_at timestamptz,
     updated_at timestamptz,
-    images text[],
-    is_active boolean,
+    image_urls text[],
+    is_sold boolean,
+    is_featured boolean,
+    views_count integer,
     seller_name text,
     seller_email text,
     seller_avatar text,
@@ -468,6 +476,7 @@ RETURNS TABLE (
 LANGUAGE sql
 SECURITY INVOKER
 STABLE
+SET search_path = public
 AS $$
     SELECT * FROM public.get_listing_details();
 $$;
@@ -487,6 +496,7 @@ RETURNS TABLE (
 LANGUAGE sql
 SECURITY INVOKER
 STABLE
+SET search_path = public
 AS $$
     SELECT * FROM public.get_message_threads(auth.uid());
 $$;
