@@ -192,8 +192,8 @@ INSERT INTO public.user_analytics (user_id, listings_count, sales_count, total_r
 -- View all users
 SELECT * FROM public.users;
 
--- View all listings with seller info  
-SELECT * FROM listing_details ORDER BY created_at DESC;
+-- View all listings with seller info (using secure function)
+SELECT * FROM public.get_all_listings() ORDER BY created_at DESC;
 
 -- View all messages
 SELECT 

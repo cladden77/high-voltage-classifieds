@@ -148,14 +148,22 @@ Test these features in your application:
 SELECT * FROM get_platform_stats();
 ```
 
-### View All Listings with Seller Info
+### View All Listings with Seller Info (Using Secure Functions)
 ```sql
-SELECT * FROM listing_details ORDER BY created_at DESC;
+-- Get all listings (equivalent to old listing_details view)
+SELECT * FROM public.get_all_listings() ORDER BY created_at DESC;
+
+-- Or with parameters for filtering/pagination
+SELECT * FROM public.get_listing_details(10, 0, 'Electronics', NULL);
 ```
 
-### View Message Threads
+### View Message Threads (Using Secure Functions)
 ```sql
-SELECT * FROM message_threads;
+-- Get all message threads for current user
+SELECT * FROM public.get_user_message_threads();
+
+-- Or get threads for a specific user (admin use)
+SELECT * FROM public.get_message_threads('user-uuid-here');
 ```
 
 ### Clear All Test Data
