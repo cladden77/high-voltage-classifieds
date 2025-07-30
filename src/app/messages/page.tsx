@@ -353,12 +353,23 @@ function MessagesContent() {
 
   const selectConversation = async (conversationId: string) => {
     setSelectedConversation(conversationId)
+    
+    // Immediately clear the unread count in the UI for instant visual feedback
+    setConversations(prevConversations => {
+      const updatedConversations = prevConversations.map(conv => 
+        conv.id === conversationId 
+          ? { ...conv, unreadCount: 0 }
+          : conv
+      )
+      return updatedConversations
+    })
+    
     // Update URL without the conversation parameter
     const url = new URL(window.location.href)
     url.searchParams.delete('conversation')
     window.history.replaceState({}, '', url.toString())
     
-    // Mark messages as read immediately when conversation is selected
+    // Mark messages as read in the database
     if (currentUser) {
       try {
         const { count } = await supabase
@@ -368,27 +379,27 @@ function MessagesContent() {
           .eq('recipient_id', currentUser.id)
           .eq('is_read', false)
         
+        // If database update successful, refresh conversations to ensure consistency
         if (count && count > 0) {
-
-          
-          // Update the conversations state immediately to clear the unread count
-          setConversations(prevConversations => {
-            const updatedConversations = prevConversations.map(conv => 
-              conv.id === conversationId 
-                ? { ...conv, unreadCount: 0 }
-                : conv
-            )
-
-            return updatedConversations
-          })
-          
-          // Also refresh conversations from server to ensure consistency
           setTimeout(() => {
             fetchConversations()
           }, 500)
         }
       } catch (error) {
-
+        // If database update fails, restore the unread count
+        setConversations(prevConversations => {
+          const restoredConversations = prevConversations.map(conv => {
+            if (conv.id === conversationId) {
+              // Find the original unread count from the current messages
+              const unreadMessages = messages.filter(msg => 
+                !msg.is_read && msg.recipient_id === currentUser.id
+              )
+              return { ...conv, unreadCount: unreadMessages.length }
+            }
+            return conv
+          })
+          return restoredConversations
+        })
       }
     }
   }
