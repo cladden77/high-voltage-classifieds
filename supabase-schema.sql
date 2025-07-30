@@ -172,68 +172,73 @@ ALTER TABLE public.user_analytics ENABLE ROW LEVEL SECURITY;
 -- 7. CREATE RLS POLICIES
 -- =============================================
 
--- 👥 USERS POLICIES
-CREATE POLICY "Users can view their own profile" ON public.users
-    FOR SELECT USING (auth.uid() = id);
+-- 👥 USERS POLICIES (PERFORMANCE OPTIMIZED)
+-- Consolidated SELECT policy for better performance
+CREATE POLICY "Users can view profiles" ON public.users
+    FOR SELECT USING (
+        (select auth.uid()) = id OR  -- Own profile
+        true                         -- Public profiles
+    );
 
 CREATE POLICY "Users can update their own profile" ON public.users
-    FOR UPDATE USING (auth.uid() = id);
+    FOR UPDATE USING ((select auth.uid()) = id);
 
 CREATE POLICY "Users can insert their own profile" ON public.users
-    FOR INSERT WITH CHECK (auth.uid() = id);
+    FOR INSERT WITH CHECK ((select auth.uid()) = id);
 
-CREATE POLICY "Users can view public profiles" ON public.users
-    FOR SELECT USING (true);
-
--- 📦 LISTINGS POLICIES
+-- 📦 LISTINGS POLICIES (PERFORMANCE OPTIMIZED)
 CREATE POLICY "Anyone can view published listings" ON public.listings
     FOR SELECT USING (true);
 
 CREATE POLICY "Sellers can create listings" ON public.listings
-    FOR INSERT WITH CHECK (auth.uid() = seller_id);
+    FOR INSERT WITH CHECK ((select auth.uid()) = seller_id);
 
 CREATE POLICY "Sellers can update their own listings" ON public.listings
-    FOR UPDATE USING (auth.uid() = seller_id);
+    FOR UPDATE USING ((select auth.uid()) = seller_id);
 
 CREATE POLICY "Sellers can delete their own listings" ON public.listings
-    FOR DELETE USING (auth.uid() = seller_id);
+    FOR DELETE USING ((select auth.uid()) = seller_id);
 
--- 💬 MESSAGES POLICIES
+-- 💬 MESSAGES POLICIES (PERFORMANCE OPTIMIZED)
 CREATE POLICY "Users can view their own messages" ON public.messages
-    FOR SELECT USING (auth.uid() = sender_id OR auth.uid() = recipient_id);
+    FOR SELECT USING (
+        (select auth.uid()) = sender_id OR 
+        (select auth.uid()) = recipient_id
+    );
 
 CREATE POLICY "Users can send messages" ON public.messages
-    FOR INSERT WITH CHECK (auth.uid() = sender_id);
+    FOR INSERT WITH CHECK ((select auth.uid()) = sender_id);
 
 CREATE POLICY "Users can update their own sent messages" ON public.messages
-    FOR UPDATE USING (auth.uid() = sender_id);
+    FOR UPDATE USING ((select auth.uid()) = sender_id);
 
--- ❤️ FAVORITES POLICIES
+-- ❤️ FAVORITES POLICIES (PERFORMANCE OPTIMIZED)
 CREATE POLICY "Users can view their own favorites" ON public.favorites
-    FOR SELECT USING (auth.uid() = user_id);
+    FOR SELECT USING ((select auth.uid()) = user_id);
 
 CREATE POLICY "Users can add favorites" ON public.favorites
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
+    FOR INSERT WITH CHECK ((select auth.uid()) = user_id);
 
 CREATE POLICY "Users can remove their own favorites" ON public.favorites
-    FOR DELETE USING (auth.uid() = user_id);
+    FOR DELETE USING ((select auth.uid()) = user_id);
 
--- 💳 ORDERS POLICIES
-CREATE POLICY "Buyers can view their own orders" ON public.orders
-    FOR SELECT USING (auth.uid() = buyer_id);
-
-CREATE POLICY "Sellers can view orders for their listings" ON public.orders
-    FOR SELECT USING (auth.uid() = seller_id);
+-- 💳 ORDERS POLICIES (PERFORMANCE OPTIMIZED & CONSOLIDATED)
+-- Consolidated SELECT policy eliminates multiple permissive policies warning
+CREATE POLICY "Users can view relevant orders" ON public.orders
+    FOR SELECT USING (
+        (select auth.uid()) = buyer_id OR    -- Buyers can view their orders
+        (select auth.uid()) = seller_id      -- Sellers can view orders for their listings
+    );
 
 CREATE POLICY "Buyers can create orders" ON public.orders
-    FOR INSERT WITH CHECK (auth.uid() = buyer_id);
+    FOR INSERT WITH CHECK ((select auth.uid()) = buyer_id);
 
 CREATE POLICY "Buyers can update their own orders" ON public.orders
-    FOR UPDATE USING (auth.uid() = buyer_id);
+    FOR UPDATE USING ((select auth.uid()) = buyer_id);
 
--- 📊 USER ANALYTICS POLICIES
+-- 📊 USER ANALYTICS POLICIES (PERFORMANCE OPTIMIZED)
 CREATE POLICY "Users can view their own analytics" ON public.user_analytics
-    FOR SELECT USING (auth.uid() = user_id);
+    FOR SELECT USING ((select auth.uid()) = user_id);
 
 -- =============================================
 -- 8.1. VIEW SECURITY POLICIES
