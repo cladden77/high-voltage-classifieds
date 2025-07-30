@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { createClientSupabase } from '@/lib/supabase'
-import { debugStorage } from '@/lib/debug'
 
 // Force dynamic rendering for this page
 export const dynamic = 'force-dynamic'
@@ -214,24 +213,6 @@ export default function CreateListingPage() {
               <p className="font-open-sans text-sm">{error}</p>
             </div>
           )}
-
-          {/* Temporary Debug Section */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <h3 className="font-open-sans font-bold text-yellow-800 mb-2">Debug Tools (Temporary)</h3>
-            <p className="font-open-sans text-sm text-yellow-700 mb-3">
-              If you're having upload issues, click below to run diagnostics:
-            </p>
-            <button
-              type="button"
-              onClick={() => debugStorage()}
-              className="bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded-lg font-open-sans font-bold text-sm"
-            >
-              Run Storage Diagnostics
-            </button>
-            <p className="font-open-sans text-xs text-yellow-600 mt-2">
-              Check browser console for debug output
-            </p>
-          </div>
 
           {/* Basic Information */}
           <div className="bg-white border border-gray-200 rounded-lg p-6">
