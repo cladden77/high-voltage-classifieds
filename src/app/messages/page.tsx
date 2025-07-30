@@ -70,10 +70,10 @@ function MessagesContent() {
         window.location.href = '/auth/signin'
         return
       }
-      console.log('Current user:', user)
+
       setCurrentUser(user)
     } catch (error) {
-      console.error('Error checking auth:', error)
+
       setError('Authentication failed. Please sign in again.')
       setTimeout(() => {
         window.location.href = '/auth/signin'
@@ -87,7 +87,7 @@ function MessagesContent() {
     try {
       setLoading(true)
       setError(null)
-      console.log('Fetching conversations for user:', currentUser.id)
+
       
       // First, get all messages involving the current user
       const { data: messageData, error: messageError } = await supabase
@@ -105,17 +105,10 @@ function MessagesContent() {
         .order('created_at', { ascending: false })
 
       if (messageError) {
-        console.error('Message fetch error:', {
-          message: messageError.message,
-          details: messageError.details,
-          hint: messageError.hint,
-          code: messageError.code,
-          error: messageError
-        })
         throw new Error(`Database error: ${messageError.message}`)
       }
 
-      console.log('Raw messages:', messageData?.length || 0)
+
 
       if (!messageData || messageData.length === 0) {
         setConversations([])
@@ -146,32 +139,17 @@ function MessagesContent() {
       ])
 
       if (usersResponse.error) {
-        console.error('Users fetch error:', {
-          message: usersResponse.error.message,
-          details: usersResponse.error.details,
-          hint: usersResponse.error.hint,
-          code: usersResponse.error.code,
-          error: usersResponse.error
-        })
         throw new Error(`Users fetch error: ${usersResponse.error.message}`)
       }
 
       if (listingsResponse.error) {
-        console.error('Listings fetch error:', {
-          message: listingsResponse.error.message,
-          details: listingsResponse.error.details,
-          hint: listingsResponse.error.hint,
-          code: listingsResponse.error.code,
-          error: listingsResponse.error
-        })
         throw new Error(`Listings fetch error: ${listingsResponse.error.message}`)
       }
 
       const usersMap = new Map(usersResponse.data?.map(user => [user.id, user]) || [])
       const listingsMap = new Map(listingsResponse.data?.map(listing => [listing.id, listing]) || [])
 
-      console.log('Users loaded:', usersMap.size)
-      console.log('Listings loaded:', listingsMap.size)
+
 
       // Group messages into conversations by listing
       const conversationMap = new Map<string, Conversation>()
@@ -187,7 +165,6 @@ function MessagesContent() {
         const otherUser = usersMap.get(otherUserId)
 
         if (!sender || !recipient || !listing || !otherUser) {
-          console.warn('Missing data for message:', message.id)
           return
         }
 
@@ -222,10 +199,10 @@ function MessagesContent() {
       })
 
       const conversationsList = Array.from(conversationMap.values())
-      console.log('Conversations loaded:', conversationsList.length)
+
       setConversations(conversationsList)
     } catch (error: any) {
-      console.error('Error fetching conversations:', error)
+
       setError(error?.message || 'Failed to load conversations. Please try refreshing the page.')
     } finally {
       setLoading(false)
@@ -237,7 +214,7 @@ function MessagesContent() {
 
     try {
       setError(null)
-      console.log('Fetching messages for listing:', listingId)
+
 
       // Get messages for this listing
       const { data: messageData, error: messageError } = await supabase
@@ -256,7 +233,6 @@ function MessagesContent() {
         .order('created_at', { ascending: true })
 
       if (messageError) {
-        console.error('Messages fetch error:', messageError)
         throw messageError
       }
 
@@ -296,7 +272,7 @@ function MessagesContent() {
         listing: listingResponse.data
       })).filter(msg => msg.sender && msg.recipient)
 
-      console.log('Messages loaded:', messagesWithDetails.length)
+
       setMessages(messagesWithDetails)
 
       // Mark messages as read
@@ -317,7 +293,7 @@ function MessagesContent() {
       }
 
     } catch (error) {
-      console.error('Error fetching messages:', error)
+
       setError('Failed to load messages.')
     }
   }
@@ -334,12 +310,7 @@ function MessagesContent() {
         throw new Error('Conversation not found')
       }
 
-      console.log('Sending message:', {
-        sender_id: currentUser.id,
-        recipient_id: conversation.otherUser.id,
-        listing_id: selectedConversation,
-        message_text: newMessage.trim()
-      })
+
 
       const { data, error } = await supabase
         .from('messages')
@@ -353,11 +324,10 @@ function MessagesContent() {
         .select()
 
       if (error) {
-        console.error('Send message error:', error)
         throw error
       }
 
-      console.log('Message sent successfully:', data)
+
       setNewMessage('')
       
       // Refresh messages and conversations
@@ -367,7 +337,7 @@ function MessagesContent() {
       ])
 
     } catch (error) {
-      console.error('Error sending message:', error)
+
       setError('Failed to send message. Please try again.')
     } finally {
       setSending(false)
@@ -399,7 +369,7 @@ function MessagesContent() {
           .eq('is_read', false)
         
         if (count && count > 0) {
-          console.log(`Marked ${count} messages as read`)
+
           
           // Update the conversations state immediately to clear the unread count
           setConversations(prevConversations => {
@@ -408,7 +378,7 @@ function MessagesContent() {
                 ? { ...conv, unreadCount: 0 }
                 : conv
             )
-            console.log('Updated conversations, cleared unread count for:', conversationId)
+
             return updatedConversations
           })
           
@@ -418,7 +388,7 @@ function MessagesContent() {
           }, 500)
         }
       } catch (error) {
-        console.error('Error marking messages as read:', error)
+
       }
     }
   }
