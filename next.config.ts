@@ -14,6 +14,10 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   // Force Vercel redeploy - dependencies fixed
+  experimental: {
+    // Help with React state update issues in Sanity Studio
+    optimizePackageImports: ['sanity', '@sanity/vision'],
+  },
 };
 
 export default nextConfig;

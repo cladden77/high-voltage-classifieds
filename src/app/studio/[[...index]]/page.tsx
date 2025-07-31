@@ -4,7 +4,8 @@ import { NextStudio } from 'next-sanity/studio'
 import config from '../../../../sanity.config'
 import { useEffect, useState } from 'react'
 
-export default function StudioPage() {
+// Workaround for React state update issues in Sanity Studio
+const StudioPage = () => {
   const [isAuthorized, setIsAuthorized] = useState(false)
   const [password, setPassword] = useState('')
 
@@ -69,4 +70,6 @@ export default function StudioPage() {
   }
 
   return <NextStudio config={config} />
-} 
+}
+
+export default StudioPage
