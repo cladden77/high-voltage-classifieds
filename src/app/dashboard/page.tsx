@@ -27,7 +27,7 @@ function DashboardContent() {
   const [listings, setListings] = useState<Listing[]>([])
   const [favorites, setFavorites] = useState<FavoriteWithListing[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'listings' | 'messages' | 'analytics' | 'favorites' | 'payments' | 'account'>('listings')
+  const [activeTab, setActiveTab] = useState<'listings' | 'messages' | 'favorites' | 'payments' | 'account'>('listings')
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [userProfile, setUserProfile] = useState<any>(null)
   const [successMessage, setSuccessMessage] = useState('')
@@ -641,7 +641,7 @@ function DashboardContent() {
           </h1>
           <p className="font-open-sans text-lg text-gray-500">
             {currentUser?.role === 'seller' 
-              ? 'Manage your listings and track performance'
+              ? 'Manage your listings and messages'
               : 'Manage your favorites and messages'}
           </p>
         </div>
@@ -814,9 +814,8 @@ function DashboardContent() {
           <nav className="flex space-x-8">
             {(currentUser?.role === 'seller' ? [
               { id: 'listings', label: 'My Listings', icon: Eye },
-              { id: 'payments', label: 'Payment Setup', icon: CreditCard },
               { id: 'messages', label: 'Messages', icon: MessageSquare },
-              { id: 'analytics', label: 'Analytics', icon: DollarSign },
+              { id: 'payments', label: 'Payment Setup', icon: CreditCard },
               { id: 'account', label: 'Account', icon: User }
             ] : [
               { id: 'favorites', label: 'My Favorites', icon: Heart },
@@ -994,15 +993,7 @@ function DashboardContent() {
           </div>
         )}
 
-        {activeTab === 'analytics' && currentUser?.role === 'seller' && (
-          <div className="text-center py-16">
-            <DollarSign className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="font-open-sans text-xl font-bold text-gray-900 mb-2">Analytics</h3>
-            <p className="font-open-sans text-gray-500">
-              Analytics and reporting will be implemented here
-            </p>
-          </div>
-        )}
+
       </div>
 
       <Footer />
