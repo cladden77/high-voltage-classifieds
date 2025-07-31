@@ -6,6 +6,9 @@ import type { Database } from './database.types'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 
 // Server-side Supabase client (for server components)
+// Note: This function is for Server Components. For API routes, use the inline pattern:
+// const cookieStore = await cookies()
+// const supabase = createServerComponentClient<Database>({ cookies: () => cookieStore })
 export const createServerSupabase = () => 
   createServerComponentClient<Database>({ cookies })
 

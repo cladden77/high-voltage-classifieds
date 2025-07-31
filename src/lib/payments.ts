@@ -165,13 +165,7 @@ export class PayPalPayments {
   }
 }
 
-// General payment utilities
-export function formatPrice(amount: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(amount)
-}
+// General payment utilities - formatPrice moved to @/lib/format
 
 export function validatePaymentData(data: Partial<PaymentData>): data is PaymentData {
   return !!(

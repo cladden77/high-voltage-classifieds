@@ -21,6 +21,7 @@ export interface Database {
           bio: string | null
           website: string | null
           company_name: string | null
+          stripe_account_id: string | null
           is_verified: boolean
           created_at: string
           updated_at: string
@@ -36,6 +37,7 @@ export interface Database {
           bio?: string | null
           website?: string | null
           company_name?: string | null
+          stripe_account_id?: string | null
           is_verified?: boolean
           created_at?: string
           updated_at?: string
@@ -51,6 +53,7 @@ export interface Database {
           bio?: string | null
           website?: string | null
           company_name?: string | null
+          stripe_account_id?: string | null
           is_verified?: boolean
           created_at?: string
           updated_at?: string
@@ -256,6 +259,50 @@ export interface Database {
           {
             foreignKeyName: "payments_seller_id_fkey"
             columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      notifications: {
+        Row: {
+          id: string
+          user_id: string
+          type: string
+          title: string
+          message: string
+          metadata: Json | null
+          is_read: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          type: string
+          title: string
+          message: string
+          metadata?: Json | null
+          is_read?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          type?: string
+          title?: string
+          message?: string
+          metadata?: Json | null
+          is_read?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]

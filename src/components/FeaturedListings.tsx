@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClientSupabase } from "@/lib/supabase";
 import { Database } from "@/lib/database.types";
+import { formatPrice } from '@/lib/format';
 
 type Listing = Database['public']['Tables']['listings']['Row'];
 
@@ -34,14 +35,7 @@ export default function FeaturedListings() {
     }
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(price);
-  };
+
 
   return (
     <section className="bg-neutral-50 px-4 lg:px-20 py-16">

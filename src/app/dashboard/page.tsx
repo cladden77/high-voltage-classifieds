@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, Suspense } from 'react'
-import { Plus, Edit, Trash2, MessageSquare, Eye, DollarSign, Send, Clock, Heart, CheckCircle, X } from 'lucide-react'
+import { Plus, Edit, Trash2, MessageSquare, Eye, DollarSign, Send, Clock, Heart, CheckCircle, X, CreditCard, AlertTriangle } from 'lucide-react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { createClientSupabase } from '@/lib/supabase'
@@ -9,6 +9,8 @@ import { getCurrentUser } from '@/lib/auth'
 import { Database } from '@/lib/database.types'
 import { useSearchParams } from 'next/navigation'
 import { formatCondition } from '@/lib/utils'
+import StripeAccountStatus from '@/components/stripe/StripeAccountStatus'
+import ConnectAccountButton from '@/components/stripe/ConnectAccountButton'
 
 // Force dynamic rendering for this page
 export const dynamic = 'force-dynamic'
@@ -25,9 +27,10 @@ function DashboardContent() {
   const [listings, setListings] = useState<Listing[]>([])
   const [favorites, setFavorites] = useState<FavoriteWithListing[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'listings' | 'messages' | 'analytics' | 'favorites'>('listings')
+  const [activeTab, setActiveTab] = useState<'listings' | 'messages' | 'analytics' | 'favorites' | 'payments'>('listings')
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [successMessage, setSuccessMessage] = useState('')
+  const [stripeAccountStatus, setStripeAccountStatus] = useState<any>(null)
 
   const searchParams = useSearchParams()
 
@@ -59,6 +62,7 @@ function DashboardContent() {
       if (currentUser.role === 'seller') {
         console.log('🔍 Dashboard: Loading seller dashboard')
         fetchListings()
+        fetchStripeStatus()
       } else {
         console.log('🔍 Dashboard: Loading buyer dashboard')
         fetchFavorites()
@@ -175,6 +179,23 @@ function DashboardContent() {
       ))
     } catch (error) {
       console.error('Error updating listing status:', error)
+    }
+  }
+
+  const fetchStripeStatus = async () => {
+    try {
+      const response = await fetch('/api/create-stripe-account', {
+        method: 'GET',
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setStripeAccountStatus(data.data)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching Stripe status:', error)
     }
   }
 
@@ -504,9 +525,32 @@ function DashboardContent() {
           </div>
         )}
 
+        {/* Stripe Account Alert for Sellers */}
+        {currentUser?.role === 'seller' && stripeAccountStatus && !stripeAccountStatus.isComplete && (
+          <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg mb-8">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              <div>
+                <p className="font-open-sans text-sm font-semibold">Payment Setup Required</p>
+                <p className="font-open-sans text-sm">
+                  Connect your Stripe account to start receiving payments from buyers.
+                </p>
+              </div>
+              <div className="ml-auto">
+                <ConnectAccountButton 
+                  onSuccess={() => fetchStripeStatus()}
+                  className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                >
+                  Connect Now
+                </ConnectAccountButton>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Stats Cards */}
         {currentUser?.role === 'seller' ? (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
             <div className="bg-white border border-gray-200 rounded-lg p-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-100 rounded-lg">
@@ -551,6 +595,37 @@ function DashboardContent() {
                 <div>
                   <p className="font-open-sans text-sm text-gray-500">Total Value</p>
                   <p className="font-open-sans text-2xl font-bold text-gray-900">${stats.totalValue.toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Stripe Account Status Card */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${
+                  stripeAccountStatus?.isComplete 
+                    ? 'bg-green-100' 
+                    : stripeAccountStatus?.hasStripeAccount 
+                      ? 'bg-yellow-100' 
+                      : 'bg-red-100'
+                }`}>
+                  <CreditCard className={`h-6 w-6 ${
+                    stripeAccountStatus?.isComplete 
+                      ? 'text-green-600' 
+                      : stripeAccountStatus?.hasStripeAccount 
+                        ? 'text-yellow-600' 
+                        : 'text-red-600'
+                  }`} />
+                </div>
+                <div>
+                  <p className="font-open-sans text-sm text-gray-500">Payment Status</p>
+                  <p className="font-open-sans text-lg font-bold text-gray-900">
+                    {stripeAccountStatus?.isComplete 
+                      ? 'Connected' 
+                      : stripeAccountStatus?.hasStripeAccount 
+                        ? 'Setup Required' 
+                        : 'Not Connected'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -602,6 +677,7 @@ function DashboardContent() {
           <nav className="flex space-x-8">
             {(currentUser?.role === 'seller' ? [
               { id: 'listings', label: 'My Listings', icon: Eye },
+              { id: 'payments', label: 'Payment Setup', icon: CreditCard },
               { id: 'messages', label: 'Messages', icon: MessageSquare },
               { id: 'analytics', label: 'Analytics', icon: DollarSign }
             ] : [
@@ -735,6 +811,44 @@ function DashboardContent() {
 
         {activeTab === 'messages' && (
           <MessagesTab currentUser={currentUser} />
+        )}
+
+        {activeTab === 'payments' && currentUser?.role === 'seller' && (
+          <div>
+            <div className="mb-6">
+              <h2 className="font-open-sans text-xl font-bold text-gray-900 mb-2">Payment Setup</h2>
+              <p className="font-open-sans text-gray-600">
+                Connect your Stripe account to receive payments directly from buyers.
+              </p>
+            </div>
+            
+            <StripeAccountStatus 
+              showDetails={true}
+              className="mb-6"
+            />
+            
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+              <h3 className="font-open-sans text-lg font-bold text-gray-900 mb-3">How Payments Work</h3>
+              <div className="space-y-3 text-sm text-gray-600">
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center font-bold text-xs">1</div>
+                  <p>Connect your Stripe account to enable direct payments</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center font-bold text-xs">2</div>
+                  <p>Buyers purchase your items through secure Stripe Checkout</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center font-bold text-xs">3</div>
+                  <p>Money goes directly to your bank account (no platform fees currently)</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center font-bold text-xs">4</div>
+                  <p>Your listing is automatically marked as sold</p>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {activeTab === 'analytics' && currentUser?.role === 'seller' && (

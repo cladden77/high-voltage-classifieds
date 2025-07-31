@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { getCurrentUser, signOut } from "@/lib/auth";
+import NotificationBell from "./NotificationBell";
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -88,6 +89,7 @@ export default function Header() {
               <>
                 {currentUser ? (
                   <div className="hidden lg:flex items-center gap-4">
+                    <NotificationBell />
                     <span className="text-neutral-100 text-sm">
                       Hi, {currentUser.name || currentUser.email}
                     </span>

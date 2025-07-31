@@ -6,6 +6,7 @@ import { Heart, MessageCircle, ArrowLeft, Star, AlertCircle, CheckCircle } from 
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import AuthModal from '@/components/AuthModal'
+import CheckoutButton from '@/components/stripe/CheckoutButton'
 import { createClientSupabase } from '@/lib/supabase'
 import { getCurrentUser } from '@/lib/auth'
 import { Database } from '@/lib/database.types'
@@ -221,14 +222,15 @@ export default function ListingDetailPage() {
     setMessageSuccess(false)
   }
 
-  const handlePayment = (method: 'stripe' | 'paypal') => {
+  const handlePayPalPayment = () => {
     if (!currentUser) {
       showAuthPrompt('make purchases')
       return
     }
 
-    // TODO: Implement payment processing
-    console.log(`Processing payment with ${method}`)
+    // TODO: Implement PayPal payment processing
+    console.log('Processing PayPal payment')
+    alert('PayPal integration coming soon!')
   }
 
   if (loading) {
@@ -388,19 +390,36 @@ export default function ListingDetailPage() {
               </button>
               
               {!listing.is_sold && (
-                <div className="grid grid-cols-2 gap-3">
-                  <button 
-                    onClick={() => handlePayment('stripe')}
-                    className="bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-open-sans font-bold"
+                <div className="space-y-3">
+                  {/* Primary Stripe Checkout Button */}
+                  <CheckoutButton
+                    listingId={listing.id}
+                    listingTitle={listing.title}
+                    price={listing.price}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-open-sans font-bold"
+                    onSuccess={(data) => {
+                      console.log('Checkout initiated:', data)
+                    }}
+                    onError={(error) => {
+                      console.error('Checkout error:', error)
+                    }}
                   >
-                    Pay with Stripe
-                  </button>
+                    Buy Now with Stripe
+                  </CheckoutButton>
+                  
+                  {/* PayPal Alternative */}
                   <button 
-                    onClick={() => handlePayment('paypal')}
-                    className="bg-yellow-500 hover:bg-yellow-600 text-white py-3 px-6 rounded-lg font-open-sans font-bold"
+                    onClick={handlePayPalPayment}
+                    className="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-3 px-6 rounded-lg font-open-sans font-bold"
                   >
-                    Pay with PayPal
+                    Pay with PayPal (Coming Soon)
                   </button>
+                </div>
+              )}
+              
+              {listing.is_sold && (
+                <div className="w-full bg-gray-200 text-gray-600 py-3 px-6 rounded-lg font-open-sans font-bold text-center">
+                  This item has been sold
                 </div>
               )}
             </div>
