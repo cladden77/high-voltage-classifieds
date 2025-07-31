@@ -637,7 +637,7 @@ function DashboardContent() {
       <div className="max-w-7xl mx-auto px-8 py-8">
         <div className="mb-8">
           <h1 className="font-staatliches text-[54px] leading-[48px] tracking-[-1.2px] text-gray-900 mb-2">
-            {currentUser?.role === 'seller' ? 'Seller Dashboard' : 'Buyer Dashboard'}
+            Hello, {userProfile?.full_name || currentUser?.full_name || 'there'}
           </h1>
           <p className="font-open-sans text-lg text-gray-500">
             {currentUser?.role === 'seller' 
