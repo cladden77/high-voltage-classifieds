@@ -7,13 +7,11 @@
  * https://github.com/sanity-io/next-sanity
  */
 
-import { NextStudio } from 'next-sanity/studio'
-import config from '../../../../sanity.config'
+import { redirect } from 'next/navigation';
 
-export const dynamic = 'force-static'
-
-export { metadata, viewport } from 'next-sanity/studio'
+export const dynamic = 'force-static';
 
 export default function StudioPage() {
-  return <NextStudio config={config} />
+  // Redirect to Sanity's managed studio
+  redirect('https://e25wrks8.sanity.studio');
 }
