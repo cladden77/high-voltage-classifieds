@@ -20,8 +20,7 @@ export default function AccountPage() {
     name: '',
     email: '',
     phone: '',
-    location: '',
-    role: 'buyer' as 'buyer' | 'seller'
+    location: ''
   })
 
   useEffect(() => {
@@ -56,8 +55,7 @@ export default function AccountPage() {
           name: data.full_name || '',
           email: data.email,
           phone: data.phone || '',
-          location: data.location || '',
-          role: data.role
+          location: data.location || ''
         })
       }
     } catch (error) {
@@ -96,7 +94,6 @@ export default function AccountPage() {
           email: formData.email,
           phone: formData.phone,
           location: formData.location,
-          role: formData.role,
           updated_at: new Date().toISOString()
         })
 
@@ -107,8 +104,7 @@ export default function AccountPage() {
         full_name: formData.name,
         email: formData.email,
         phone: formData.phone,
-        location: formData.location,
-        role: formData.role
+        location: formData.location
       } : null)
       alert('Profile updated successfully!')
     } catch (error) {
@@ -168,11 +164,11 @@ export default function AccountPage() {
                 </h2>
                 <p className="font-open-sans text-gray-600">{formData.email}</p>
                 <span className={`inline-block px-3 py-1 rounded-full text-sm font-bold mt-2 ${
-                  formData.role === 'seller' 
+                  profile?.role === 'seller' 
                     ? 'bg-orange-100 text-orange-800' 
                     : 'bg-blue-100 text-blue-800'
                 }`}>
-                  {formData.role === 'seller' ? 'Seller' : 'Buyer'}
+                  {profile?.role === 'seller' ? 'Seller' : 'Buyer'}
                 </span>
               </div>
             </div>
@@ -241,37 +237,27 @@ export default function AccountPage() {
                 />
               </div>
 
-              {/* Role */}
+              {/* Account Type (Read-only) */}
               <div className="md:col-span-2">
                 <label className="block font-open-sans font-bold text-gray-700 mb-2">
                   Account Type
                 </label>
-                <div className="flex gap-4">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="role"
-                      value="buyer"
-                      checked={formData.role === 'buyer'}
-                      onChange={(e) => handleInputChange('role', e.target.value)}
-                      className="mr-2"
-                    />
-                    <span className="font-open-sans">Buyer</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="role"
-                      value="seller"
-                      checked={formData.role === 'seller'}
-                      onChange={(e) => handleInputChange('role', e.target.value)}
-                      className="mr-2"
-                    />
-                    <span className="font-open-sans">Seller (Business)</span>
-                  </label>
+                <div className="flex items-center gap-4">
+                  <span className={`inline-block px-3 py-2 rounded-lg text-sm font-bold ${
+                    profile?.role === 'seller' 
+                      ? 'bg-orange-100 text-orange-800' 
+                      : 'bg-blue-100 text-blue-800'
+                  }`}>
+                    {profile?.role === 'seller' ? 'Seller (Business)' : 'Buyer'}
+                  </span>
+                  <span className="font-open-sans text-sm text-gray-500">
+                    {profile?.role === 'seller' 
+                      ? 'You can create listings and manage your inventory' 
+                      : 'You can browse and purchase listings'}
+                  </span>
                 </div>
                 <p className="font-open-sans text-sm text-gray-500 mt-1">
-                  Sellers can create listings and manage their inventory
+                  Account type cannot be changed. Contact support if you need to change your account type.
                 </p>
               </div>
             </div>
