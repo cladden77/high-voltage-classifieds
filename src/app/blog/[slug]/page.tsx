@@ -23,12 +23,150 @@ function convertSanityPost(post: SanityPost) {
   }
 }
 
+// Fallback hardcoded posts for when Sanity is not available
+const fallbackPosts = [
+  {
+    id: 1,
+    title: "How to Inspect Surplus Transformers",
+    excerpt: "A step-by-step guide for contractors and buyers to safely evaluate used high-voltage transformers.",
+    content: [
+      {
+        _type: 'block',
+        style: 'normal',
+        children: [
+          {
+            _type: 'span',
+            text: "When purchasing surplus transformers, proper inspection is crucial to ensure you're getting quality equipment that will perform reliably in your application. This comprehensive guide covers the essential steps every contractor and buyer should follow."
+          }
+        ]
+      },
+      {
+        _type: 'block',
+        style: 'h2',
+        children: [
+          {
+            _type: 'span',
+            text: "Visual Inspection"
+          }
+        ]
+      },
+      {
+        _type: 'block',
+        style: 'normal',
+        children: [
+          {
+            _type: 'span',
+            text: "Start with a thorough visual examination. Look for signs of damage, corrosion, or wear. Check the nameplate for specifications and ensure it matches your requirements."
+          }
+        ]
+      }
+    ],
+    author: "Industry Expert",
+    publishedDate: "2024-01-15",
+    category: "Equipment Guide",
+    image: null,
+    slug: "how-to-inspect-surplus-transformers"
+  },
+  {
+    id: 2,
+    title: "Top 5 Safety Tips for High Voltage Work",
+    excerpt: "Essential safety practices for working with and around high-voltage equipment in the field.",
+    content: [
+      {
+        _type: 'block',
+        style: 'normal',
+        children: [
+          {
+            _type: 'span',
+            text: "Working with high-voltage equipment requires strict adherence to safety protocols. These five essential tips can help prevent accidents and ensure safe operations."
+          }
+        ]
+      },
+      {
+        _type: 'block',
+        style: 'h2',
+        children: [
+          {
+            _type: 'span',
+            text: "1. Always Use Proper PPE"
+          }
+        ]
+      },
+      {
+        _type: 'block',
+        style: 'normal',
+        children: [
+          {
+            _type: 'span',
+            text: "Personal protective equipment is your first line of defense. Always wear appropriate gloves, safety glasses, and insulated tools when working with high-voltage equipment."
+          }
+        ]
+      }
+    ],
+    author: "Safety Specialist",
+    publishedDate: "2024-01-10",
+    category: "Safety",
+    image: null,
+    slug: "top-5-safety-tips-high-voltage"
+  },
+  {
+    id: 3,
+    title: "Selling Surplus Gear: What You Need to Know",
+    excerpt: "Best practices for listing, pricing, and closing deals on surplus industrial equipment.",
+    content: [
+      {
+        _type: 'block',
+        style: 'normal',
+        children: [
+          {
+            _type: 'span',
+            text: "Selling surplus industrial equipment can be a profitable venture, but it requires careful planning and execution. Learn the best practices for maximizing your returns."
+          }
+        ]
+      },
+      {
+        _type: 'block',
+        style: 'h2',
+        children: [
+          {
+            _type: 'span',
+            text: "Accurate Documentation"
+          }
+        ]
+      },
+      {
+        _type: 'block',
+        style: 'normal',
+        children: [
+          {
+            _type: 'span',
+            text: "Proper documentation is essential. Include detailed specifications, maintenance records, and clear photos from multiple angles to build buyer confidence."
+          }
+        ]
+      }
+    ],
+    author: "Market Expert",
+    publishedDate: "2024-01-05",
+    category: "Business",
+    image: null,
+    slug: "selling-surplus-gear-guide"
+  }
+];
+
 // Generate static params for all blog posts
 export async function generateStaticParams() {
-  const slugs = await getAllPostSlugs()
-  return slugs.map((slug) => ({
-    slug: slug,
-  }))
+  try {
+    const slugs = await getAllPostSlugs()
+    const fallbackSlugs = fallbackPosts.map(post => post.slug)
+    return [...slugs, ...fallbackSlugs].map((slug) => ({
+      slug: slug,
+    }))
+  } catch (error) {
+    // If Sanity is not available, only return fallback slugs
+    return fallbackPosts.map((post) => ({
+      slug: post.slug,
+    }))
+  }
 }
 
 // PortableText components for custom rendering
@@ -66,13 +204,30 @@ const portableTextComponents = {
 }
 
 export default async function BlogPostPage({ params }: { params: { slug: string } }) {
-  const post = await getPostBySlug(params.slug)
+  let post = null;
+  let convertedPost = null;
   
-  if (!post) {
+  try {
+    // First try to get the post from Sanity
+    post = await getPostBySlug(params.slug)
+    if (post) {
+      convertedPost = convertSanityPost(post)
+    }
+  } catch (error) {
+    console.error('Error fetching post from Sanity:', error)
+  }
+  
+  // If not found in Sanity, check fallback posts
+  if (!convertedPost) {
+    const fallbackPost = fallbackPosts.find(p => p.slug === params.slug)
+    if (fallbackPost) {
+      convertedPost = fallbackPost
+    }
+  }
+  
+  if (!convertedPost) {
     notFound()
   }
-
-  const convertedPost = convertSanityPost(post)
 
   return (
     <div className="min-h-screen bg-white">
