@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useState } from 'react'
-import { ArrowLeft, Upload, X, Plus, DollarSign, MapPin, Tag, FileText } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import { ArrowLeft, Upload, X, Plus, DollarSign, MapPin, Tag, FileText, Search } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
@@ -24,6 +24,12 @@ export default function CreateListingPage() {
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
+  
+  // Location autocomplete state
+  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false)
+  const locationInputRef = useRef<HTMLInputElement>(null)
 
   const router = useRouter()
 
@@ -47,6 +53,92 @@ export default function CreateListingPage() {
       [field]: value
     }))
     if (error) setError('')
+    
+    // Handle location autocomplete
+    if (field === 'location') {
+      handleLocationSearch(value as string)
+    }
+  }
+
+  const handleLocationSearch = async (query: string) => {
+    if (query.length < 3) {
+      setLocationSuggestions([])
+      setShowSuggestions(false)
+      return
+    }
+
+    setIsLoadingLocation(true)
+    try {
+      // Use a free geocoding service (Nominatim/OpenStreetMap)
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=10&addressdetails=1&countrycodes=us`
+      )
+      const data = await response.json()
+      
+      const suggestions = data.map((item: any) => {
+        const parts = []
+        
+        // Try to get city name from various possible fields
+        const city = item.address.city || item.address.town || item.address.village || item.address.county || item.address.municipality
+        
+        // Try to get state name from various possible fields
+        const state = item.address.state || item.address.province
+        
+        // Only include if we have both city and state
+        if (city && state) {
+          parts.push(city)
+          parts.push(state)
+        } else if (city) {
+          // If we only have city, try to find state from the display name
+          const displayParts = item.display_name.split(', ')
+          const stateIndex = displayParts.findIndex((part: string) => 
+            part.length === 2 && part.toUpperCase() === part // Likely a state abbreviation
+          )
+          if (stateIndex !== -1) {
+            parts.push(city)
+            parts.push(displayParts[stateIndex])
+          } else {
+            parts.push(city)
+          }
+        }
+        
+        return parts.length > 0 ? parts.join(', ') : null
+      }).filter((suggestion: string) => suggestion && suggestion.length > 0)
+      
+      // Remove duplicates
+      const uniqueSuggestions = [...new Set(suggestions)]
+      
+      setLocationSuggestions(uniqueSuggestions)
+      setShowSuggestions(uniqueSuggestions.length > 0)
+    } catch (error) {
+      console.error('Error fetching location suggestions:', error)
+      setLocationSuggestions([])
+      setShowSuggestions(false)
+    } finally {
+      setIsLoadingLocation(false)
+    }
+  }
+
+  const selectLocation = (location: string) => {
+    setFormData(prev => ({
+      ...prev,
+      location
+    }))
+    setShowSuggestions(false)
+    setLocationSuggestions([])
+  }
+
+  const handleLocationInputFocus = () => {
+    if (locationSuggestions.length > 0) {
+      setShowSuggestions(true)
+    }
+  }
+
+  const handleLocationInputBlur = () => {
+    // Delay hiding suggestions to allow clicking on them
+    setTimeout(() => {
+      setShowSuggestions(false)
+    }, 200)
   }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -287,19 +379,51 @@ export default function CreateListingPage() {
                 />
               </div>
 
-              <div>
+              <div className="relative">
                 <label className="block font-open-sans font-bold text-gray-700 mb-2">
                   <MapPin className="inline h-4 w-4 mr-2" />
                   Location *
                 </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.location}
-                  onChange={(e) => handleInputChange('location', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  placeholder="City, State"
-                />
+                <div className="relative">
+                  <input
+                    ref={locationInputRef}
+                    type="text"
+                    required
+                    value={formData.location}
+                    onChange={(e) => handleInputChange('location', e.target.value)}
+                    onFocus={handleLocationInputFocus}
+                    onBlur={handleLocationInputBlur}
+                    className="w-full px-3 py-2 pr-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    placeholder="Start typing city or state..."
+                  />
+                  {isLoadingLocation && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500"></div>
+                    </div>
+                  )}
+                  {!isLoadingLocation && formData.location && (
+                    <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  )}
+                </div>
+                
+                {/* Location Suggestions Dropdown */}
+                {showSuggestions && locationSuggestions.length > 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {locationSuggestions.map((suggestion, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => selectLocation(suggestion)}
+                        className="w-full px-3 py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none border-b border-gray-100 last:border-b-0"
+                      >
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-gray-400" />
+                          <span className="font-open-sans text-sm">{suggestion}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="lg:col-span-2">
