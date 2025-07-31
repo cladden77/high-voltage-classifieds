@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, Suspense } from 'react'
-import { Plus, Edit, Trash2, MessageSquare, Eye, DollarSign, Send, Clock, Heart, CheckCircle, X, CreditCard, AlertTriangle } from 'lucide-react'
+import { Plus, Edit, Trash2, MessageSquare, Eye, DollarSign, Send, Clock, Heart, CheckCircle, X, CreditCard, AlertTriangle, User } from 'lucide-react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { createClientSupabase } from '@/lib/supabase'
@@ -27,8 +27,9 @@ function DashboardContent() {
   const [listings, setListings] = useState<Listing[]>([])
   const [favorites, setFavorites] = useState<FavoriteWithListing[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'listings' | 'messages' | 'analytics' | 'favorites' | 'payments'>('listings')
+  const [activeTab, setActiveTab] = useState<'listings' | 'messages' | 'analytics' | 'favorites' | 'payments' | 'account'>('listings')
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const [userProfile, setUserProfile] = useState<any>(null)
   const [successMessage, setSuccessMessage] = useState('')
   const [stripeAccountStatus, setStripeAccountStatus] = useState<any>(null)
 
@@ -59,6 +60,9 @@ function DashboardContent() {
       console.log('🔍 Dashboard: Current user role:', currentUser.role)
       console.log('🔍 Dashboard: Current user object:', currentUser)
       
+      // Fetch user profile from database
+      fetchUserProfile()
+      
       if (currentUser.role === 'seller') {
         console.log('🔍 Dashboard: Loading seller dashboard')
         fetchListings()
@@ -82,6 +86,27 @@ function DashboardContent() {
     } catch (error) {
       console.error('Error checking auth:', error)
       window.location.href = '/auth/signin'
+    }
+  }
+
+  const fetchUserProfile = async () => {
+    if (!currentUser) return
+
+    try {
+      const supabase = createClientSupabase()
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', currentUser.id)
+        .single()
+
+      if (error && error.code !== 'PGRST116') throw error
+      
+      if (data) {
+        setUserProfile(data)
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error)
     }
   }
 
@@ -387,6 +412,118 @@ function DashboardContent() {
     )
   }
 
+  // Account Tab Component
+  function AccountTab() {
+    return (
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <div className="bg-gray-50 px-6 py-8">
+          <div className="flex items-center gap-6">
+            <div className="relative">
+              <div className="w-20 h-20 bg-gray-300 rounded-full flex items-center justify-center">
+                <span className="font-open-sans font-bold text-2xl text-gray-600">
+                  {userProfile?.full_name?.charAt(0) || currentUser?.email?.charAt(0) || 'U'}
+                </span>
+              </div>
+            </div>
+            <div>
+              <h2 className="font-open-sans text-2xl font-bold text-gray-900">
+                {userProfile?.full_name || 'Your Name'}
+              </h2>
+              <p className="font-open-sans text-gray-600">{currentUser?.email}</p>
+              <span className={`inline-block px-3 py-1 rounded-full text-sm font-bold mt-2 ${
+                currentUser?.role === 'seller' 
+                  ? 'bg-orange-100 text-orange-800' 
+                  : 'bg-blue-100 text-blue-800'
+              }`}>
+                {currentUser?.role === 'seller' ? 'Seller' : 'Buyer'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Name */}
+            <div>
+              <label className="block font-open-sans font-bold text-gray-700 mb-2">
+                <User className="inline h-4 w-4 mr-2" />
+                Full Name
+              </label>
+              <div className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50">
+                {userProfile?.full_name || 'Not set'}
+              </div>
+            </div>
+
+            {/* Email */}
+            <div>
+              <label className="block font-open-sans font-bold text-gray-700 mb-2">
+                Email Address
+              </label>
+              <div className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50">
+                {currentUser?.email}
+              </div>
+            </div>
+
+            {/* Phone */}
+            <div>
+              <label className="block font-open-sans font-bold text-gray-700 mb-2">
+                Phone Number
+              </label>
+              <div className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50">
+                {userProfile?.phone || 'Not set'}
+              </div>
+            </div>
+
+            {/* Location */}
+            <div>
+              <label className="block font-open-sans font-bold text-gray-700 mb-2">
+                Location
+              </label>
+              <div className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50">
+                {userProfile?.location || 'Not set'}
+              </div>
+            </div>
+
+            {/* Account Type (Read-only) */}
+            <div className="md:col-span-2">
+              <label className="block font-open-sans font-bold text-gray-700 mb-2">
+                Account Type
+              </label>
+              <div className="flex items-center gap-4">
+                <span className={`inline-block px-3 py-2 rounded-lg text-sm font-bold ${
+                  currentUser?.role === 'seller' 
+                    ? 'bg-orange-100 text-orange-800' 
+                    : 'bg-blue-100 text-blue-800'
+                }`}>
+                  {currentUser?.role === 'seller' ? 'Seller (Business)' : 'Buyer'}
+                </span>
+                <span className="font-open-sans text-sm text-gray-500">
+                  {currentUser?.role === 'seller' 
+                    ? 'You can create listings and manage your inventory' 
+                    : 'You can browse and purchase listings'}
+                </span>
+              </div>
+              <p className="font-open-sans text-sm text-gray-500 mt-1">
+                Account type cannot be changed. Contact support if you need to change your account type.
+              </p>
+            </div>
+          </div>
+
+          {/* Edit Account Button */}
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            <a
+              href="/account"
+              className="bg-orange-500 hover:bg-orange-600 text-white py-3 px-6 rounded-lg font-open-sans font-bold inline-flex items-center gap-2"
+            >
+              <Edit className="h-4 w-4" />
+              Edit Account Details
+            </a>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   // Favorites Tab Component (for buyers)
   function FavoritesTab() {
     if (loading) {
@@ -679,10 +816,12 @@ function DashboardContent() {
               { id: 'listings', label: 'My Listings', icon: Eye },
               { id: 'payments', label: 'Payment Setup', icon: CreditCard },
               { id: 'messages', label: 'Messages', icon: MessageSquare },
-              { id: 'analytics', label: 'Analytics', icon: DollarSign }
+              { id: 'analytics', label: 'Analytics', icon: DollarSign },
+              { id: 'account', label: 'Account', icon: User }
             ] : [
               { id: 'favorites', label: 'My Favorites', icon: Heart },
-              { id: 'messages', label: 'Messages', icon: MessageSquare }
+              { id: 'messages', label: 'Messages', icon: MessageSquare },
+              { id: 'account', label: 'Account', icon: User }
             ]).map((tab) => {
               const Icon = tab.icon
               return (
@@ -704,6 +843,10 @@ function DashboardContent() {
         </div>
 
         {/* Tab Content */}
+        {activeTab === 'account' && (
+          <AccountTab />
+        )}
+
         {activeTab === 'favorites' && currentUser?.role === 'buyer' && (
           <FavoritesTab />
         )}
