@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Bell, Check, X } from 'lucide-react'
 import { createClientSupabase } from '@/lib/supabase'
 import { getCurrentUser } from '@/lib/auth'
+import { createPortal } from 'react-dom'
 
 interface Notification {
   id: string
@@ -20,6 +21,8 @@ export default function NotificationBell() {
   const [showDropdown, setShowDropdown] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
 
   const supabase = createClientSupabase()
 
@@ -49,6 +52,24 @@ export default function NotificationBell() {
       }
     }
   }, [currentUser])
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
+          buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
+        setShowDropdown(false)
+      }
+    }
+
+    if (showDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showDropdown])
 
   const checkAuth = async () => {
     try {
@@ -113,11 +134,103 @@ export default function NotificationBell() {
 
   const unreadCount = notifications.filter(n => !n.is_read).length
 
+  const renderDropdown = () => {
+    if (!showDropdown || typeof window === 'undefined') return null
+
+    const buttonRect = buttonRef.current?.getBoundingClientRect()
+    if (!buttonRect) return null
+
+    const dropdownStyle = {
+      position: 'fixed' as const,
+      top: buttonRect.bottom + 8,
+      right: window.innerWidth - buttonRect.right,
+      width: '320px',
+      maxHeight: 'calc(100vh - 100px)',
+      zIndex: 9999
+    }
+
+    return createPortal(
+      <div 
+        ref={dropdownRef}
+        className="bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden transform transition-all duration-200 ease-in-out"
+        style={dropdownStyle}
+      >
+        <div className="p-3 border-b border-gray-200 bg-gray-50">
+          <h3 className="font-semibold text-gray-900">Notifications</h3>
+        </div>
+        
+        <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
+          {notifications.length === 0 ? (
+            <div className="p-4 text-center text-gray-500">
+              No notifications yet
+            </div>
+          ) : (
+            notifications.map((notification) => (
+              <div
+                key={notification.id}
+                className={`p-3 border-b border-gray-100 hover:bg-gray-50 ${
+                  !notification.is_read ? 'bg-blue-50' : ''
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h4 className="font-medium text-sm text-gray-900">
+                      {notification.title}
+                    </h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {notification.message}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-2">
+                      {new Date(notification.created_at).toLocaleDateString()} at{' '}
+                      {new Date(notification.created_at).toLocaleTimeString()}
+                    </p>
+                  </div>
+                  
+                  <div className="flex gap-1 ml-2">
+                    {!notification.is_read && (
+                      <button
+                        onClick={() => markAsRead(notification.id)}
+                        className="p-1 text-blue-600 hover:text-blue-800"
+                        title="Mark as read"
+                      >
+                        <Check className="h-4 w-4" />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => deleteNotification(notification.id)}
+                      className="p-1 text-red-600 hover:text-red-800"
+                      title="Delete notification"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+        
+        {notifications.length > 0 && (
+          <div className="p-3 border-t border-gray-200 text-center">
+            <button
+              onClick={() => setShowDropdown(false)}
+              className="text-sm text-gray-600 hover:text-gray-900"
+            >
+              Close
+            </button>
+          </div>
+        )}
+      </div>,
+      document.body
+    )
+  }
+
   if (loading || !currentUser) return null
 
   return (
     <div className="relative">
       <button
+        ref={buttonRef}
         onClick={() => setShowDropdown(!showDropdown)}
         className="relative p-2 text-neutral-100 hover:text-[#f37121] focus:outline-none transition-colors"
       >
@@ -129,75 +242,7 @@ export default function NotificationBell() {
         )}
       </button>
 
-      {showDropdown && (
-        <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-          <div className="p-3 border-b border-gray-200">
-            <h3 className="font-semibold text-gray-900">Notifications</h3>
-          </div>
-          
-          <div className="max-h-96 overflow-y-auto">
-            {notifications.length === 0 ? (
-              <div className="p-4 text-center text-gray-500">
-                No notifications yet
-              </div>
-            ) : (
-              notifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`p-3 border-b border-gray-100 hover:bg-gray-50 ${
-                    !notification.is_read ? 'bg-blue-50' : ''
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h4 className="font-medium text-sm text-gray-900">
-                        {notification.title}
-                      </h4>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {notification.message}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-2">
-                        {new Date(notification.created_at).toLocaleDateString()} at{' '}
-                        {new Date(notification.created_at).toLocaleTimeString()}
-                      </p>
-                    </div>
-                    
-                    <div className="flex gap-1 ml-2">
-                      {!notification.is_read && (
-                        <button
-                          onClick={() => markAsRead(notification.id)}
-                          className="p-1 text-blue-600 hover:text-blue-800"
-                          title="Mark as read"
-                        >
-                          <Check className="h-4 w-4" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => deleteNotification(notification.id)}
-                        className="p-1 text-red-600 hover:text-red-800"
-                        title="Delete notification"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-          
-          {notifications.length > 0 && (
-            <div className="p-3 border-t border-gray-200 text-center">
-              <button
-                onClick={() => setShowDropdown(false)}
-                className="text-sm text-gray-600 hover:text-gray-900"
-              >
-                Close
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+      {renderDropdown()}
     </div>
   )
 }

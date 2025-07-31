@@ -52,8 +52,8 @@ export default function Header() {
 
   return (
     <header className="bg-[#1b1b1b] h-[95px] sticky top-0 z-50 shadow-[0px_10px_15px_-3px_rgba(0,0,0,0.1),0px_4px_6px_-4px_rgba(0,0,0,0.1)]">
-      <div className="box-border content-stretch flex flex-col items-center justify-center overflow-clip pb-px pt-0 px-4 lg:px-20 relative size-full">
-        <nav className="box-border content-stretch flex flex-row gap-4 lg:gap-[323px] items-center justify-between max-w-[1280px] overflow-clip px-0 py-4 relative shrink-0 w-full">
+      <div className="box-border content-stretch flex flex-col items-center justify-center pb-px pt-0 px-4 lg:px-20 relative size-full">
+        <nav className="box-border content-stretch flex flex-row gap-4 lg:gap-[323px] items-center justify-between max-w-[1280px] px-0 py-4 relative shrink-0 w-full">
           <div className="box-border content-stretch flex flex-row gap-4 lg:gap-[38px] items-center justify-start p-0 relative shrink-0">
             {/* Logo */}
             <div className="box-border content-stretch flex flex-row gap-2 items-center justify-start p-0 relative shrink-0">
