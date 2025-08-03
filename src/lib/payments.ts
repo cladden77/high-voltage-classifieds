@@ -117,8 +117,8 @@ export class PayPalPayments {
           },
         ],
         application_context: {
-          return_url: `${process.env.NEXTAUTH_URL}/payment/success`,
-          cancel_url: `${process.env.NEXTAUTH_URL}/payment/cancel`,
+          return_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/payment/success`,
+          cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/payment/cancel`,
         },
       }
 
