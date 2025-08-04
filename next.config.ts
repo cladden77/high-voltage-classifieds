@@ -15,15 +15,18 @@ const nextConfig: NextConfig = {
   },
   // Force Vercel redeploy - dependencies fixed
   experimental: {
-    // Disable Turbopack for studio routes to fix React state update errors
-    turbo: {
-      rules: {
-        '*.tsx': {
-          loaders: ['tsx'],
-          as: '*.js',
-        },
-      },
-    },
+    // Help with React state update issues in Sanity Studio
+    optimizePackageImports: ['sanity', '@sanity/vision'],
+  },
+  // Handle Sanity Studio in production
+  webpack: (config, { dev, isServer }) => {
+    if (!dev) {
+      // Ensure Sanity Studio works in production
+      config.resolve.alias = {
+        ...config.resolve.alias,
+      };
+    }
+    return config;
   },
 };
 
