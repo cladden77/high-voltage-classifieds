@@ -203,13 +203,14 @@ const portableTextComponents = {
   },
 }
 
-export default async function BlogPostPage({ params }: { params: { slug: string } }) {
+export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
   let post = null;
   let convertedPost = null;
+  const { slug } = await params
   
   try {
     // First try to get the post from Sanity
-    post = await getPostBySlug(params.slug)
+    post = await getPostBySlug(slug)
     if (post) {
       convertedPost = convertSanityPost(post)
     }
@@ -219,7 +220,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
   
   // If not found in Sanity, check fallback posts
   if (!convertedPost) {
-    const fallbackPost = fallbackPosts.find(p => p.slug === params.slug)
+    const fallbackPost = fallbackPosts.find(p => p.slug === slug)
     if (fallbackPost) {
       convertedPost = fallbackPost
     }
