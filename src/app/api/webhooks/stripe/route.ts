@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { StripePayments } from '@/lib/payments'
 import { StripeConnect } from '@/lib/stripe'
 import { createAdminSupabase } from '@/lib/supabase-server'
+import { sendSellerOrderEmail } from '@/lib/email/send'
 
 export async function POST(request: NextRequest) {
   try {
@@ -94,8 +95,10 @@ export async function POST(request: NextRequest) {
             const { data: listingData } = await supabase
               .from('listings')
               .select(`
+                id,
                 title,
                 price,
+                seller_id,
                 users!listings_seller_id_fkey (
                   id,
                   full_name,
@@ -128,6 +131,24 @@ export async function POST(request: NextRequest) {
                 console.error('❌ Notification creation error:', notificationError)
               } else {
                 console.log('📧 Seller notification created:', notificationData)
+              }
+
+              // Send seller email via Resend
+              try {
+                if (listingData?.users?.email) {
+                  const amountFormatted = `$${(session.amount_total / 100).toLocaleString()}`
+                  // Use payment intent as an order id stand-in if no orders table
+                  const orderId = session.payment_intent || 'order'
+                  await sendSellerOrderEmail({
+                    to: listingData.users.email,
+                    sellerName: listingData.users.full_name || undefined,
+                    listingTitle: listingData.title,
+                    amount: amountFormatted,
+                    orderId: orderId,
+                  })
+                }
+              } catch (emailError) {
+                console.error('❌ Failed to send seller order email:', emailError)
               }
             } else {
               console.error('❌ No listing data found for notification')

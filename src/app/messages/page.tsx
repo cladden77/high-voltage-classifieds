@@ -10,15 +10,15 @@ import { Database } from '@/lib/database.types'
 import { useSearchParams } from 'next/navigation'
 
 type MessageWithDetails = Database['public']['Tables']['messages']['Row'] & {
-  sender: Database['public']['Tables']['users']['Row']
-  recipient: Database['public']['Tables']['users']['Row']
-  listing: Database['public']['Tables']['listings']['Row']
+  sender: Database['public']['Tables']['users']['Row'] | null
+  recipient: Database['public']['Tables']['users']['Row'] | null
+  listing: Database['public']['Tables']['listings']['Row'] | null
 }
 
 type Conversation = {
   id: string
-  otherUser: Database['public']['Tables']['users']['Row']
-  listing: Database['public']['Tables']['listings']['Row']
+  otherUser: Database['public']['Tables']['users']['Row'] | null
+  listing: Database['public']['Tables']['listings']['Row'] | null
   lastMessage: MessageWithDetails
   unreadCount: number
   totalMessages: number
@@ -126,6 +126,20 @@ function MessagesContent() {
         listingIds.add(msg.listing_id)
       })
 
+      // Also fetch the sellers of the listings to ensure we have all users
+      const { data: listingsData } = await supabase
+        .from('listings')
+        .select('id, seller_id')
+        .in('id', Array.from(listingIds))
+
+      if (listingsData) {
+        listingsData.forEach(listing => {
+          if (listing.seller_id) {
+            userIds.add(listing.seller_id)
+          }
+        })
+      }
+
       // Fetch users and listings separately
       const [usersResponse, listingsResponse] = await Promise.all([
         supabase
@@ -146,10 +160,8 @@ function MessagesContent() {
         throw new Error(`Listings fetch error: ${listingsResponse.error.message}`)
       }
 
-      const usersMap = new Map(usersResponse.data?.map(user => [user.id, user]) || [])
-      const listingsMap = new Map(listingsResponse.data?.map(listing => [listing.id, listing]) || [])
-
-
+      const usersMap = new Map((usersResponse.data || []).map(user => [user.id, user]))
+      const listingsMap = new Map((listingsResponse.data || []).map(listing => [listing.id, listing]))
 
       // Group messages into conversations by listing
       const conversationMap = new Map<string, Conversation>()
@@ -159,20 +171,16 @@ function MessagesContent() {
         const isCurrentUserSender = message.sender_id === currentUser.id
         const otherUserId = isCurrentUserSender ? message.recipient_id : message.sender_id
         
-        const sender = usersMap.get(message.sender_id)
-        const recipient = usersMap.get(message.recipient_id)
-        const listing = listingsMap.get(message.listing_id)
-        const otherUser = usersMap.get(otherUserId)
-
-        if (!sender || !recipient || !listing || !otherUser) {
-          return
-        }
+        const sender = usersMap.get(message.sender_id) || null
+        const recipient = usersMap.get(message.recipient_id) || null
+        const otherUser = usersMap.get(otherUserId) || null
+        const listing = listingsMap.get(message.listing_id) || null
 
         const messageWithDetails: MessageWithDetails = {
           ...message,
-          sender,
-          recipient,
-          listing
+          sender: sender,
+          recipient: recipient,
+          listing: listing,
         }
 
         if (!conversationMap.has(conversationKey)) {
@@ -267,10 +275,10 @@ function MessagesContent() {
 
       const messagesWithDetails: MessageWithDetails[] = messageData.map(message => ({
         ...message,
-        sender: usersMap.get(message.sender_id)!,
-        recipient: usersMap.get(message.recipient_id)!,
-        listing: listingResponse.data
-      })).filter(msg => msg.sender && msg.recipient)
+        sender: usersMap.get(message.sender_id) || null,
+        recipient: usersMap.get(message.recipient_id) || null,
+        listing: listingResponse.data || null
+      }))
 
 
       setMessages(messagesWithDetails)
@@ -310,23 +318,71 @@ function MessagesContent() {
         throw new Error('Conversation not found')
       }
 
+      if (!conversation.otherUser?.id) {
+        // Try to find the other user from the messages
+        const conversationMessages = messages.filter(m => m.listing_id === selectedConversation)
+        
+        // Find the other user ID - it's the user who is NOT the current user
+        let otherUserId: string | undefined
+        
+        if (conversationMessages.length > 0) {
+          // Look for any message where the current user is either sender or recipient
+          const firstMessage = conversationMessages[0]
+          if (firstMessage.sender_id === currentUser.id) {
+            // Current user is sender, so recipient is the other user
+            otherUserId = firstMessage.recipient_id
+          } else if (firstMessage.recipient_id === currentUser.id) {
+            // Current user is recipient, so sender is the other user
+            otherUserId = firstMessage.sender_id
+          }
+        }
 
+        if (!otherUserId) {
+          setError('Unable to determine recipient. Please refresh the page and try again.')
+          return
+        }
 
-      const { data, error } = await supabase
-        .from('messages')
-        .insert({
-          sender_id: currentUser.id,
-          recipient_id: conversation.otherUser.id,
-          listing_id: selectedConversation,
-          message_text: newMessage.trim(),
-          is_read: false
+        const response = await fetch('/api/messages/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            listing_id: selectedConversation,
+            message_text: newMessage.trim(),
+            recipient_id: otherUserId
+          })
         })
-        .select()
 
-      if (error) {
-        throw error
+        const result = await response.json().catch(() => ({}))
+
+        if (!response.ok) {
+          throw new Error(result?.error || `HTTP ${response.status}`)
+        }
+
+        setNewMessage('')
+        
+        // Refresh messages and conversations
+        await Promise.all([
+          fetchMessages(selectedConversation),
+          fetchConversations()
+        ])
+        return
       }
 
+      const response = await fetch('/api/messages/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          listing_id: selectedConversation,
+          message_text: newMessage.trim(),
+          recipient_id: conversation.otherUser.id
+        })
+      })
+
+      const result = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(result?.error || `HTTP ${response.status}`)
+      }
 
       setNewMessage('')
       
@@ -336,9 +392,9 @@ function MessagesContent() {
         fetchConversations()
       ])
 
-    } catch (error) {
-
-      setError('Failed to send message. Please try again.')
+    } catch (error: any) {
+      console.error('💥 Message send error:', error)
+      setError(`Failed to send message: ${error.message || 'Unknown error'}`)
     } finally {
       setSending(false)
     }
@@ -404,10 +460,12 @@ function MessagesContent() {
     }
   }
 
-  const filteredConversations = conversations.filter(conversation =>
-    conversation.listing.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    conversation.otherUser.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredConversations = conversations.filter(conversation => {
+    const listingTitle = conversation.listing?.title?.toLowerCase() || ''
+    const otherName = conversation.otherUser?.full_name?.toLowerCase() || conversation.otherUser?.email?.toLowerCase() || ''
+    const q = searchTerm.toLowerCase()
+    return listingTitle.includes(q) || otherName.includes(q)
+  })
 
   if (loading && !currentUser) {
     return (
@@ -512,12 +570,12 @@ function MessagesContent() {
                     >
                       <div className="flex justify-between items-start mb-2">
                         <h3 className="font-open-sans font-bold text-sm text-gray-900 truncate">
-                          {conversation.otherUser.full_name || 'Unknown User'}
+                          {conversation.otherUser?.full_name || conversation.otherUser?.email || 'Unknown User'}
                         </h3>
                         <div className="flex flex-col items-end gap-1">
                           <span className="font-open-sans text-xs text-gray-500">
                             {(() => {
-                              const date = new Date(conversation.lastMessage.created_at)
+                               const date = new Date(conversation.lastMessage.created_at)
                               const now = new Date()
                               const diffTime = Math.abs(now.getTime() - date.getTime())
                               const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
@@ -541,10 +599,10 @@ function MessagesContent() {
                         </div>
                       </div>
                       <p className="font-open-sans text-sm text-gray-600 mb-2 truncate">
-                        Re: {conversation.listing.title}
+                         Re: {conversation.listing?.title || 'Listing unavailable'}
                       </p>
                       <p className="font-open-sans text-sm text-gray-500 truncate">
-                        {conversation.lastMessage.message_text}
+                         {conversation.lastMessage?.message_text || ''}
                       </p>
                       <p className="font-open-sans text-xs text-gray-400 mt-1">
                         {conversation.totalMessages} message{conversation.totalMessages !== 1 ? 's' : ''}
@@ -565,10 +623,16 @@ function MessagesContent() {
                   <div className="flex items-center justify-between">
                     <div>
                       <h2 className="font-open-sans font-bold text-lg text-gray-900">
-                        {conversations.find(c => c.id === selectedConversation)?.otherUser.full_name || 'Unknown User'}
+                        {(() => {
+                          const conv = conversations.find(c => c.id === selectedConversation)
+                          return conv?.otherUser?.full_name || conv?.otherUser?.email || 'Unknown User'
+                        })()}
                       </h2>
                       <p className="font-open-sans text-sm text-gray-500">
-                        Re: {conversations.find(c => c.id === selectedConversation)?.listing.title}
+                        Re: {(() => {
+                          const conv = conversations.find(c => c.id === selectedConversation)
+                          return conv?.listing?.title || 'Listing unavailable'
+                        })()}
                       </p>
                     </div>
                     <button 
@@ -613,7 +677,7 @@ function MessagesContent() {
                               <span className={`font-open-sans text-xs ${
                                 isCurrentUser ? 'text-orange-100' : 'text-gray-500'
                               }`}>
-                                {isCurrentUser ? 'You' : message.sender.full_name || 'Unknown'}
+                                {isCurrentUser ? 'You' : message.sender?.full_name || message.sender?.email || 'Unknown'}
                               </span>
                             </div>
                             <p className="font-open-sans text-sm whitespace-pre-wrap">

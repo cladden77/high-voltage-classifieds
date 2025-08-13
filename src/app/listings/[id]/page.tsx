@@ -155,38 +155,33 @@ export default function ListingDetailPage() {
         message_text: messageText.trim()
       })
 
-              const { data, error } = await supabase
-          .from('messages')
-          .insert({
-            sender_id: currentUser.id,
-            recipient_id: listing.seller_id,
-            listing_id: listingId,
-            message_text: messageText.trim(),
-            is_read: false
-          })
-          .select()
-
-      if (error) {
-        console.error('❌ Message send error:', error)
-        console.error('Error details:', {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          hint: error.hint
+      const response = await fetch('/api/messages/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          listing_id: listingId,
+          message_text: messageText.trim(),
+          recipient_id: listing.seller_id,
         })
+      })
+      const result = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        console.error('❌ Message send error:', result)
+        console.error('Error details:', { result })
         
-        // Provide more specific error messages
-        if (error.message.includes('row-level security')) {
+        const errorMessage = typeof result?.error === 'string' ? result.error : null
+        if (errorMessage?.includes('row-level security')) {
           setMessageError('Permission denied. Please sign out and sign in again to refresh your session.')
-        } else if (error.message.includes('foreign key')) {
+        } else if (errorMessage?.includes('foreign key')) {
           setMessageError('Invalid user or listing reference. Please refresh the page.')
         } else {
-          setMessageError(`Database error: ${error.message}`)
+          setMessageError(`Error: ${errorMessage || 'Unknown error'}`)
         }
         return
       }
 
-      console.log('✅ Message sent successfully:', data)
+      console.log('✅ Message sent successfully:', result?.data)
       
       setMessageSuccess(true)
       setMessageText('')

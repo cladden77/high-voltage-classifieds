@@ -254,37 +254,70 @@ function DashboardContent() {
       try {
         setLoading(true)
         const supabase = createClientSupabase()
-        
-        // Fetch messages where current user is sender or recipient
-        const { data, error } = await supabase
+
+        // 1) Fetch base messages involving current user
+        const { data: messageData, error: messageError } = await supabase
           .from('messages')
           .select(`
-            *,
-            sender:sender_id(id, full_name, email, role),
-            recipient:recipient_id(id, full_name, email, role),
-            listings:listing_id(id, title, price, category, location)
+            id,
+            sender_id,
+            recipient_id,
+            listing_id,
+            message_text,
+            is_read,
+            created_at
           `)
           .or(`sender_id.eq.${currentUser.id},recipient_id.eq.${currentUser.id}`)
           .order('created_at', { ascending: false })
 
-        if (error) throw error
+        if (messageError) throw messageError
 
-        // Group messages into conversations by listing
-        const conversationMap = new Map()
-        
-        data?.forEach((message) => {
-          const conversationKey = `${message.listing_id}`
+        if (!messageData || messageData.length === 0) {
+          setConversations([])
+          return
+        }
+
+        // 2) Fetch related users and listings in bulk
+        const userIds = Array.from(new Set(messageData.flatMap(m => [m.sender_id, m.recipient_id])))
+        const listingIds = Array.from(new Set(messageData.map(m => m.listing_id)))
+
+        const [usersResponse, listingsResponse] = await Promise.all([
+          supabase.from('users').select('*').in('id', userIds),
+          supabase.from('listings').select('*').in('id', listingIds),
+        ])
+
+        if (usersResponse.error) throw usersResponse.error
+        if (listingsResponse.error) throw listingsResponse.error
+
+        const usersMap = new Map(usersResponse.data?.map(u => [u.id, u]) || [])
+        const listingsMap = new Map(listingsResponse.data?.map(l => [l.id, l]) || [])
+
+        // 3) Group into conversations by listing id
+        const conversationMap = new Map<string, any>()
+
+        messageData.forEach((message) => {
+          const conversationKey = message.listing_id
           const isCurrentUserSender = message.sender_id === currentUser.id
-          const otherUser = isCurrentUserSender ? message.recipient : message.sender
+          const otherUserId = isCurrentUserSender ? message.recipient_id : message.sender_id
+
+          const otherUser = usersMap.get(otherUserId) || { id: otherUserId, full_name: null, email: null }
+          const listing = listingsMap.get(message.listing_id) || null
+
+          const messageWithDetails = {
+            ...message,
+            sender: usersMap.get(message.sender_id) || null,
+            recipient: usersMap.get(message.recipient_id) || null,
+            listings: listing,
+          }
 
           if (!conversationMap.has(conversationKey)) {
             conversationMap.set(conversationKey, {
               id: conversationKey,
-              otherUser: otherUser,
-              listing: message.listings,
-              lastMessage: message,
+              otherUser,
+              listing,
+              lastMessage: messageWithDetails,
               unreadCount: !message.is_read && !isCurrentUserSender ? 1 : 0,
-              messageCount: 1
+              messageCount: 1,
             })
           } else {
             const conv = conversationMap.get(conversationKey)
@@ -292,12 +325,16 @@ function DashboardContent() {
               conv.unreadCount++
             }
             conv.messageCount++
+            if (new Date(message.created_at) > new Date(conv.lastMessage.created_at)) {
+              conv.lastMessage = messageWithDetails
+            }
           }
         })
 
         setConversations(Array.from(conversationMap.values()))
       } catch (error) {
         console.error('Error fetching conversations:', error)
+        setConversations([])
       } finally {
         setLoading(false)
       }
@@ -356,7 +393,7 @@ function DashboardContent() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="font-open-sans font-bold text-lg text-gray-900 group-hover:text-orange-600 transition-colors">
-                      {conversation.otherUser.full_name || 'Unknown User'}
+                      {conversation.otherUser?.full_name || conversation.otherUser?.email || 'Unknown User'}
                     </h3>
                     {conversation.unreadCount > 0 && (
                       <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full">
@@ -365,15 +402,15 @@ function DashboardContent() {
                     )}
                   </div>
                   <p className="font-open-sans text-sm text-gray-600 mb-2">
-                    Re: {conversation.listing.title}
+                    Re: {conversation.listing?.title || 'Listing unavailable'}
                   </p>
                   <p className="font-open-sans text-sm text-gray-500 mb-3">
-                    {conversation.lastMessage.message_text}
+                    {conversation.lastMessage?.message_text || ''}
                   </p>
                   <div className="flex items-center gap-4 text-xs text-gray-400">
                     <span className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
-                      {new Date(conversation.lastMessage.created_at).toLocaleDateString()}
+                      {conversation.lastMessage?.created_at ? new Date(conversation.lastMessage.created_at).toLocaleDateString() : '-'}
                     </span>
                     <span className="flex items-center gap-1">
                       <MessageSquare className="h-3 w-3" />

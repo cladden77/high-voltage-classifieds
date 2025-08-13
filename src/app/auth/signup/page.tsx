@@ -57,6 +57,8 @@ export default function SignUpPage() {
       if (result.success) {
         // Store user session
         localStorage.setItem('user', JSON.stringify(result.user))
+        // Fire welcome email check (best-effort)
+        fetch('/api/internal/email/welcome', { method: 'GET' }).catch(() => {})
         router.push('/dashboard')
       } else {
         setError(result.error || 'Failed to create account')
