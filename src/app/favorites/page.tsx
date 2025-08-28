@@ -46,6 +46,7 @@ export default function FavoritesPage() {
           listings (*)
         `)
         .eq('user_id', currentUser.id)
+        .eq('listings.is_sold', false) // Only show available listings in favorites
 
       if (error) throw error
       setFavorites(data || [])

@@ -27,7 +27,7 @@ function DashboardContent() {
   const [listings, setListings] = useState<Listing[]>([])
   const [favorites, setFavorites] = useState<FavoriteWithListing[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'listings' | 'messages' | 'favorites' | 'payments' | 'account'>('listings')
+  const [activeTab, setActiveTab] = useState<'listings' | 'messages' | 'favorites' | 'payments' | 'account' | 'seller-setup'>('listings')
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [userProfile, setUserProfile] = useState<any>(null)
   const [successMessage, setSuccessMessage] = useState('')
@@ -799,16 +799,16 @@ function DashboardContent() {
             <div className="bg-white border border-gray-200 rounded-lg p-6">
               <div className="flex items-center gap-3">
                 <div className={`p-2 rounded-lg ${
-                  stripeAccountStatus?.isComplete 
+                  currentUser?.sellerVerified 
                     ? 'bg-green-100' 
-                    : stripeAccountStatus?.hasStripeAccount 
+                    : currentUser?.canSell 
                       ? 'bg-yellow-100' 
                       : 'bg-red-100'
                 }`}>
                   <CreditCard className={`h-6 w-6 ${
-                    stripeAccountStatus?.isComplete 
+                    currentUser?.sellerVerified 
                       ? 'text-green-600' 
-                      : stripeAccountStatus?.hasStripeAccount 
+                      : currentUser?.canSell 
                         ? 'text-yellow-600' 
                         : 'text-red-600'
                   }`} />
@@ -816,9 +816,9 @@ function DashboardContent() {
                 <div>
                   <p className="font-open-sans text-sm text-gray-500">Payment Status</p>
                   <p className="font-open-sans text-lg font-bold text-gray-900">
-                    {stripeAccountStatus?.isComplete 
+                    {currentUser?.sellerVerified 
                       ? 'Connected' 
-                      : stripeAccountStatus?.hasStripeAccount 
+                      : currentUser?.canSell 
                         ? 'Setup Required' 
                         : 'Not Connected'}
                   </p>
@@ -915,93 +915,7 @@ function DashboardContent() {
               </p>
             </div>
             
-            {/* Test Notifications Button */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <h3 className="font-open-sans font-bold text-blue-900 mb-2">Test Notifications</h3>
-              <p className="font-open-sans text-sm text-blue-700 mb-3">
-                Test if the notifications system is working properly.
-              </p>
-              <div className="space-y-2">
-                <button
-                  onClick={async () => {
-                    try {
-                      const response = await fetch('/api/test-notification', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ userId: currentUser?.id })
-                      })
-                      if (response.ok) {
-                        alert('Test notification created! Check the notification bell.')
-                        // Refresh the page to show the new notification
-                        window.location.reload()
-                      } else {
-                        alert('Failed to create test notification')
-                      }
-                    } catch (error) {
-                      console.error('Error creating test notification:', error)
-                      alert('Error creating test notification')
-                    }
-                  }}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium mr-2"
-                >
-                  Test Basic Notification
-                </button>
-                
-                <button
-                  onClick={async () => {
-                    try {
-                      const response = await fetch('/api/test-webhook', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                          userId: currentUser?.id, 
-                          testType: 'message' 
-                        })
-                      })
-                      if (response.ok) {
-                        alert('Test message notification created! Check the notification bell.')
-                        window.location.reload()
-                      } else {
-                        alert('Failed to create test message notification')
-                      }
-                    } catch (error) {
-                      console.error('Error creating test message notification:', error)
-                      alert('Error creating test message notification')
-                    }
-                  }}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium mr-2"
-                >
-                  Test Message Notification
-                </button>
-                
-                <button
-                  onClick={async () => {
-                    try {
-                      const response = await fetch('/api/test-webhook', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                          userId: currentUser?.id, 
-                          testType: 'sold' 
-                        })
-                      })
-                      if (response.ok) {
-                        alert('Test sold item notification created! Check the notification bell.')
-                        window.location.reload()
-                      } else {
-                        alert('Failed to create test sold item notification')
-                      }
-                    } catch (error) {
-                      console.error('Error creating test sold item notification:', error)
-                      alert('Error creating test sold item notification')
-                    }
-                  }}
-                  className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium"
-                >
-                  Test Sold Item Notification
-                </button>
-              </div>
-            </div>
+
             
             {/* Account Information */}
             <AccountTab />
