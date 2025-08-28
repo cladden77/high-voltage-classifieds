@@ -45,10 +45,10 @@ export default function ConnectAccountButton({
         return
       }
 
-      if (user.role !== 'seller') {
+      if (!user.canSell) {
         toast({
-          title: "Sellers Only",
-          description: "Only sellers can connect Stripe accounts.",
+          title: "Seller Capabilities Required",
+          description: "You need to enable seller capabilities to connect a Stripe account.",
           variant: "destructive",
         })
         return

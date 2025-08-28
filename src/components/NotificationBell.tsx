@@ -1,248 +1,242 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { Bell, Check, X } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { Bell, X, CheckCircle, Info, AlertTriangle, AlertCircle } from 'lucide-react'
 import { createClientSupabase } from '@/lib/supabase'
 import { getCurrentUser } from '@/lib/auth'
-import { createPortal } from 'react-dom'
 
 interface Notification {
   id: string
-  type: string
   title: string
   message: string
-  metadata?: any
+  type: 'info' | 'success' | 'warning' | 'error'
   is_read: boolean
+  related_id: string | null
+  related_type: string | null
   created_at: string
 }
 
 export default function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([])
-  const [showDropdown, setShowDropdown] = useState(false)
-  const [currentUser, setCurrentUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const dropdownRef = useRef<HTMLDivElement>(null)
-  const buttonRef = useRef<HTMLButtonElement>(null)
-
-  const supabase = createClientSupabase()
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [isOpen, setIsOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    checkAuth()
+    loadNotifications()
   }, [])
 
-  useEffect(() => {
-    if (currentUser) {
-      fetchNotifications()
-      
-      // Set up real-time subscription for new notifications
-      const subscription = supabase
-        .channel('notifications')
-        .on('postgres_changes', {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${currentUser.id}`
-        }, () => {
-          fetchNotifications() // Refresh notifications when new ones arrive
-        })
-        .subscribe()
-
-      return () => {
-        supabase.removeChannel(subscription)
-      }
-    }
-  }, [currentUser])
-
-  // Handle click outside to close dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
-          buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
-        setShowDropdown(false)
-      }
-    }
-
-    if (showDropdown) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showDropdown])
-
-  const checkAuth = async () => {
+  const loadNotifications = async () => {
     try {
       const user = await getCurrentUser()
-      setCurrentUser(user)
-    } catch (error) {
-      console.error('Error checking auth:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+      if (!user) return
 
-  const fetchNotifications = async () => {
-    if (!currentUser) return
-
-    try {
+      const supabase = createClientSupabase()
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
-        .eq('user_id', currentUser.id)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(10)
 
-      if (error) throw error
+      if (error) {
+        console.error('Error loading notifications:', error)
+        return
+      }
+
       setNotifications(data || [])
+      setUnreadCount(data?.filter(n => !n.is_read).length || 0)
     } catch (error) {
-      console.error('Error fetching notifications:', error)
+      console.error('Error loading notifications:', error)
     }
   }
 
   const markAsRead = async (notificationId: string) => {
     try {
+      const supabase = createClientSupabase()
       const { error } = await supabase
         .from('notifications')
         .update({ is_read: true })
         .eq('id', notificationId)
 
-      if (error) throw error
-      
-      setNotifications(notifications.map(n => 
-        n.id === notificationId ? { ...n, is_read: true } : n
-      ))
+      if (error) {
+        console.error('Error marking notification as read:', error)
+        return
+      }
+
+      // Update local state
+      setNotifications(prev => 
+        prev.map(n => 
+          n.id === notificationId ? { ...n, is_read: true } : n
+        )
+      )
+      setUnreadCount(prev => Math.max(0, prev - 1))
     } catch (error) {
       console.error('Error marking notification as read:', error)
     }
   }
 
-  const deleteNotification = async (notificationId: string) => {
+  const markAllAsRead = async () => {
     try {
+      setLoading(true)
+      const user = await getCurrentUser()
+      if (!user) return
+
+      const supabase = createClientSupabase()
       const { error } = await supabase
         .from('notifications')
-        .delete()
-        .eq('id', notificationId)
+        .update({ is_read: true })
+        .eq('user_id', user.id)
+        .eq('is_read', false)
 
-      if (error) throw error
-      
-      setNotifications(notifications.filter(n => n.id !== notificationId))
+      if (error) {
+        console.error('Error marking all notifications as read:', error)
+        return
+      }
+
+      // Update local state
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
+      setUnreadCount(0)
     } catch (error) {
-      console.error('Error deleting notification:', error)
+      console.error('Error marking all notifications as read:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const unreadCount = notifications.filter(n => !n.is_read).length
-
-  const renderDropdown = () => {
-    if (!showDropdown || typeof window === 'undefined') return null
-
-    const buttonRect = buttonRef.current?.getBoundingClientRect()
-    if (!buttonRect) return null
-
-    const dropdownStyle = {
-      position: 'fixed' as const,
-      top: buttonRect.bottom + 8,
-      right: window.innerWidth - buttonRect.right,
-      width: '320px',
-      maxHeight: 'calc(100vh - 100px)',
-      zIndex: 9999
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'success':
+        return <CheckCircle className="h-5 w-5 text-green-600" />
+      case 'warning':
+        return <AlertTriangle className="h-5 w-5 text-yellow-600" />
+      case 'error':
+        return <AlertCircle className="h-5 w-5 text-red-600" />
+      default:
+        return <Info className="h-5 w-5 text-blue-600" />
     }
-
-    return createPortal(
-      <div 
-        ref={dropdownRef}
-        className="bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden transform transition-all duration-200 ease-in-out"
-        style={dropdownStyle}
-      >
-        <div className="p-3 border-b border-gray-200 bg-gray-50">
-          <h3 className="font-semibold text-gray-900">Notifications</h3>
-        </div>
-        
-        <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
-          {notifications.length === 0 ? (
-            <div className="p-4 text-center text-gray-500">
-              No notifications yet
-            </div>
-          ) : (
-            notifications.map((notification) => (
-              <div
-                key={notification.id}
-                className={`p-3 border-b border-gray-100 hover:bg-gray-50 ${
-                  !notification.is_read ? 'bg-blue-50' : ''
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h4 className="font-medium text-sm text-gray-900">
-                      {notification.title}
-                    </h4>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {notification.message}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-2">
-                      {new Date(notification.created_at).toLocaleDateString()} at{' '}
-                      {new Date(notification.created_at).toLocaleTimeString()}
-                    </p>
-                  </div>
-                  
-                  <div className="flex gap-1 ml-2">
-                    {!notification.is_read && (
-                      <button
-                        onClick={() => markAsRead(notification.id)}
-                        className="p-1 text-blue-600 hover:text-blue-800"
-                        title="Mark as read"
-                      >
-                        <Check className="h-4 w-4" />
-                      </button>
-                    )}
-                    <button
-                      onClick={() => deleteNotification(notification.id)}
-                      className="p-1 text-red-600 hover:text-red-800"
-                      title="Delete notification"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-        
-        {notifications.length > 0 && (
-          <div className="p-3 border-t border-gray-200 text-center">
-            <button
-              onClick={() => setShowDropdown(false)}
-              className="text-sm text-gray-600 hover:text-gray-900"
-            >
-              Close
-            </button>
-          </div>
-        )}
-      </div>,
-      document.body
-    )
   }
 
-  if (loading || !currentUser) return null
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
+    
+    if (diffInMinutes < 1) return 'Just now'
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`
+    
+    const diffInHours = Math.floor(diffInMinutes / 60)
+    if (diffInHours < 24) return `${diffInHours}h ago`
+    
+    const diffInDays = Math.floor(diffInHours / 24)
+    if (diffInDays < 7) return `${diffInDays}d ago`
+    
+    return date.toLocaleDateString()
+  }
 
   return (
     <div className="relative">
+      {/* Notification Bell */}
       <button
-        ref={buttonRef}
-        onClick={() => setShowDropdown(!showDropdown)}
-        className="relative p-2 text-neutral-100 hover:text-[#f37121] focus:outline-none transition-colors"
+        onClick={() => setIsOpen(!isOpen)}
+        className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
       >
         <Bell className="h-6 w-6" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
-      {renderDropdown()}
+      {/* Notifications Dropdown */}
+      {isOpen && (
+        <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+          <div className="p-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h3 className="font-open-sans font-bold text-gray-900">Notifications</h3>
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllAsRead}
+                  disabled={loading}
+                  className="text-sm text-orange-600 hover:text-orange-700 font-medium disabled:opacity-50"
+                >
+                  {loading ? 'Marking...' : 'Mark all read'}
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="max-h-96 overflow-y-auto">
+            {notifications.length === 0 ? (
+              <div className="p-4 text-center text-gray-500">
+                <Bell className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                <p className="font-open-sans text-sm">No notifications yet</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {notifications.map((notification) => (
+                  <div
+                    key={notification.id}
+                    className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
+                      !notification.is_read ? 'bg-blue-50' : ''
+                    }`}
+                    onClick={() => markAsRead(notification.id)}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 mt-0.5">
+                        {getNotificationIcon(notification.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between">
+                          <p className="font-open-sans font-bold text-sm text-gray-900">
+                            {notification.title}
+                          </p>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              markAsRead(notification.id)
+                            }}
+                            className="text-gray-400 hover:text-gray-600 ml-2"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                        <p className="font-open-sans text-sm text-gray-600 mt-1">
+                          {notification.message}
+                        </p>
+                        <p className="font-open-sans text-xs text-gray-400 mt-2">
+                          {formatTimeAgo(notification.created_at)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {notifications.length > 0 && (
+            <div className="p-3 border-t border-gray-200 bg-gray-50">
+              <a
+                href="/dashboard"
+                className="block text-center text-sm text-orange-600 hover:text-orange-700 font-medium"
+                onClick={() => setIsOpen(false)}
+              >
+                View all notifications
+              </a>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Click outside to close */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
     </div>
   )
 }

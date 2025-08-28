@@ -30,6 +30,15 @@ export async function signInWithCredentials(email: string, password: string, rol
       return { success: false, error: error?.message }
     }
 
+    // Check if email is verified
+    if (!data.user.email_confirmed_at) {
+      console.log('⚠️ Email not verified for user:', data.user.id)
+      return { 
+        success: false, 
+        error: 'Please check your email and click the verification link before signing in.' 
+      }
+    }
+
     console.log('✅ Auth successful, fetching profile for:', data.user.id)
 
     // Get user profile from database
@@ -50,6 +59,8 @@ export async function signInWithCredentials(email: string, password: string, rol
       email: data.user.email!,
       name: profile?.full_name || data.user.user_metadata?.full_name || '',
       role: profile?.role || role || 'buyer',
+      canSell: profile?.can_sell || false,
+      sellerVerified: profile?.seller_verified || false,
     }
 
     console.log('✅ Final user object:', user)
@@ -64,7 +75,7 @@ export async function signInWithCredentials(email: string, password: string, rol
   }
 }
 
-export async function signUpWithCredentials(email: string, password: string, name: string, role: 'buyer' | 'seller') {
+export async function signUpWithCredentials(email: string, password: string, name: string, canSell: boolean = false) {
   try {
     const supabase = createClientSupabase()
     const { data, error } = await supabase.auth.signUp({
@@ -73,7 +84,7 @@ export async function signUpWithCredentials(email: string, password: string, nam
       options: {
         data: {
           full_name: name,
-          role: role,
+          can_sell: canSell,
         }
       }
     })
@@ -82,18 +93,22 @@ export async function signUpWithCredentials(email: string, password: string, nam
       return { success: false, error: error?.message }
     }
 
-    // Create user profile in database
+    // Create user profile in database - all users start as buyers with optional seller capabilities
     const { data: profileData, error: profileError } = await supabase
       .from('users')
       .insert({
         id: data.user.id,
         email: email,
         full_name: name,
-        role: role,
+        role: 'buyer', // All users start as buyers
+        can_sell: canSell,
+        seller_verified: false, // Will be verified after Stripe Connect onboarding
       })
       .select()
 
     if (profileError) {
+      console.error('❌ Profile creation failed:', profileError)
+      
       // If profile creation fails, try again with a delay (sometimes Supabase needs a moment)
       await new Promise(resolve => setTimeout(resolve, 1000))
       
@@ -103,20 +118,28 @@ export async function signUpWithCredentials(email: string, password: string, nam
           id: data.user.id,
           email: email,
           full_name: name,
-          role: role,
+          role: 'buyer',
+          can_sell: canSell,
+          seller_verified: false,
         })
         .select()
 
       if (retryError) {
+        console.error('❌ Profile creation retry failed:', retryError)
         // If profile creation fails, still return success since auth succeeded
+      } else {
+        console.log('✅ Profile created on retry:', retryProfileData)
       }
+    } else {
+      console.log('✅ Profile created successfully:', profileData)
     }
 
     const user = {
       id: data.user.id,
       email: email,
       name: name,
-      role: role,
+      role: 'buyer', // All users start as buyers
+      canSell: canSell,
     }
 
     return { 
@@ -124,7 +147,8 @@ export async function signUpWithCredentials(email: string, password: string, nam
       user
     }
   } catch (error) {
-    return { success: false, error: 'An unexpected error occurred' }
+    console.error('💥 SignUpWithCredentials exception:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'An unexpected error occurred' }
   }
 }
 
@@ -185,6 +209,8 @@ export async function getCurrentUser() {
       email: user.email!,
       name: profile?.full_name || user.user_metadata?.full_name || '',
       role: profile?.role || 'buyer',
+      canSell: profile?.can_sell || false,
+      sellerVerified: profile?.seller_verified || false,
     }
 
     return currentUser
@@ -247,7 +273,7 @@ export async function debugAuthState() {
 }
 
 // Utility function to manually create/fix user profile
-export async function createUserProfile(userId: string, email: string, name: string, role: 'buyer' | 'seller' = 'buyer') {
+export async function createUserProfile(userId: string, email: string, name: string, role: 'buyer' | 'seller' = 'buyer', canSell: boolean = false) {
   try {
     console.log('🔧 Creating/fixing user profile for:', userId)
     
@@ -259,6 +285,8 @@ export async function createUserProfile(userId: string, email: string, name: str
         email: email,
         full_name: name,
         role: role,
+        can_sell: canSell,
+        seller_verified: canSell && role === 'seller',
       })
       .select()
 
@@ -281,4 +309,6 @@ export interface User {
   email: string
   name: string
   role: 'buyer' | 'seller'
+  canSell?: boolean
+  sellerVerified?: boolean
 } 

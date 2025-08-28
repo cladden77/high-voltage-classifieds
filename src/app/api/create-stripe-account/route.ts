@@ -18,10 +18,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get user profile to check role
+    // Get user profile to check seller capabilities
     const { data: userProfile, error: profileError } = await supabase
       .from('users')
-      .select('role, stripe_account_id')
+      .select('can_sell, seller_verified, stripe_account_id')
       .eq('id', user.id)
       .single()
 
@@ -32,10 +32,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Only allow sellers to create Stripe accounts
-    if (userProfile.role !== 'seller') {
+    // Only allow users with seller capabilities to create Stripe accounts
+    if (!userProfile.can_sell) {
       return NextResponse.json(
-        { error: 'Only sellers can create Stripe accounts' },
+        { error: 'Seller capabilities not enabled for this account' },
         { status: 403 }
       )
     }
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
     // Get user profile
     const { data: userProfile, error: profileError } = await supabase
       .from('users')
-      .select('stripe_account_id, role')
+      .select('stripe_account_id, can_sell, seller_verified')
       .eq('id', user.id)
       .single()
 
@@ -87,6 +87,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         { error: 'User profile not found' },
         { status: 404 }
+      )
+    }
+
+    // Only allow users with seller capabilities to check Stripe status
+    if (!userProfile.can_sell) {
+      return NextResponse.json(
+        { error: 'Seller capabilities not enabled for this account' },
+        { status: 403 }
       )
     }
 

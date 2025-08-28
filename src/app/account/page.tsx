@@ -1,115 +1,128 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { User, Mail, Phone, MapPin, Save, Camera } from 'lucide-react'
+import { User, Building, CreditCard, Save, AlertTriangle, CheckCircle } from 'lucide-react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import { getCurrentUser } from '@/lib/auth'
 import { createClientSupabase } from '@/lib/supabase'
-import { Database } from '@/lib/database.types'
-
-// Force dynamic rendering for this page
-export const dynamic = 'force-dynamic'
-
-type UserProfile = Database['public']['Tables']['users']['Row']
+import { useRouter } from 'next/navigation'
 
 export default function AccountPage() {
-  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [user, setUser] = useState<any>(null)
+  const [userProfile, setUserProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
+    full_name: '',
     phone: '',
-    location: ''
+    location: '',
+    bio: '',
+    website: '',
+    company_name: '',
+    can_sell: false
   })
 
+  const router = useRouter()
+
   useEffect(() => {
-    fetchProfile()
+    loadUserData()
   }, [])
 
-  const fetchProfile = async () => {
+  const loadUserData = async () => {
     try {
-      // Initialize Supabase client inside the function to avoid build-time errors
-      const supabase = createClientSupabase()
-      const { getCurrentUser } = await import('@/lib/auth')
-      
-      // Get current user
       const currentUser = await getCurrentUser()
       if (!currentUser) {
-        // Redirect to sign in if not authenticated
-        window.location.href = '/auth/signin'
+        router.push('/auth/signin')
         return
       }
-      
-      const { data, error } = await supabase
+
+      setUser(currentUser)
+
+      const supabase = createClientSupabase()
+      const { data: profile, error } = await supabase
         .from('users')
         .select('*')
         .eq('id', currentUser.id)
         .single()
 
-      if (error && error.code !== 'PGRST116') throw error
-      
-      if (data) {
-        setProfile(data)
-        setFormData({
-          name: data.full_name || '',
-          email: data.email,
-          phone: data.phone || '',
-          location: data.location || ''
-        })
+      if (error) {
+        console.error('Error loading profile:', error)
+        return
       }
+
+      setUserProfile(profile)
+      setFormData({
+        full_name: profile.full_name || '',
+        phone: profile.phone || '',
+        location: profile.location || '',
+        bio: profile.bio || '',
+        website: profile.website || '',
+        company_name: profile.company_name || '',
+        can_sell: profile.can_sell || false
+      })
     } catch (error) {
-      console.error('Error fetching profile:', error)
+      console.error('Error loading user data:', error)
+      router.push('/auth/signin')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }))
   }
 
-  const handleSave = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
     setSaving(true)
+    setMessage(null)
+
     try {
       const supabase = createClientSupabase()
-      const { getCurrentUser } = await import('@/lib/auth')
       
-      // Get current user
-      const currentUser = await getCurrentUser()
-      if (!currentUser) {
-        alert('Please sign in to update your profile')
-        window.location.href = '/auth/signin'
-        return
+      // If enabling seller capabilities, we need to reset verification status
+      const updateData = {
+        ...formData,
+        updated_at: new Date().toISOString()
       }
-      
+
+      if (formData.can_sell && !userProfile.can_sell) {
+        // User is enabling seller capabilities for the first time
+        updateData.seller_verified = false
+        updateData.seller_verification_date = null
+        updateData.stripe_account_id = null
+      }
+
       const { error } = await supabase
         .from('users')
-        .upsert({
-          id: currentUser.id,
-          full_name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          location: formData.location,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
+        .eq('id', user.id)
 
-      if (error) throw error
-      
-      setProfile(prev => prev ? { 
-        ...prev, 
-        full_name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        location: formData.location
-      } : null)
-      alert('Profile updated successfully!')
+      if (error) {
+        throw error
+      }
+
+      setMessage({
+        type: 'success',
+        text: formData.can_sell && !userProfile.can_sell
+          ? 'Account updated successfully! Seller capabilities enabled. Complete Stripe Connect onboarding to start selling.'
+          : 'Account updated successfully!'
+      })
+
+      // Reload user data to reflect changes
+      await loadUserData()
+
     } catch (error) {
       console.error('Error updating profile:', error)
-      alert('Error updating profile. Please try again.')
+      setMessage({
+        type: 'error',
+        text: 'Failed to update account. Please try again.'
+      })
     } finally {
       setSaving(false)
     }
@@ -120,9 +133,9 @@ export default function AccountPage() {
       <div className="min-h-screen bg-white">
         <Header />
         <div className="max-w-4xl mx-auto px-8 py-8">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/3 mb-8"></div>
-            <div className="bg-gray-200 h-96 rounded-lg"></div>
+          <div className="animate-pulse space-y-8">
+            <div className="h-16 bg-gray-200 rounded-lg w-1/2"></div>
+            <div className="h-64 bg-gray-200 rounded-lg"></div>
           </div>
         </div>
         <Footer />
@@ -135,162 +148,220 @@ export default function AccountPage() {
       <Header />
       
       <div className="max-w-4xl mx-auto px-8 py-8">
+        {/* Header */}
         <div className="mb-8">
           <h1 className="font-staatliches text-[54px] leading-[48px] tracking-[-1.2px] text-gray-900 mb-2">
             Account Settings
           </h1>
           <p className="font-open-sans text-lg text-gray-500">
-            Manage your profile and preferences
+            Manage your account information and preferences
           </p>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-          {/* Profile Header */}
-          <div className="bg-gray-50 px-6 py-8">
-            <div className="flex items-center gap-6">
-              <div className="relative">
-                <div className="w-20 h-20 bg-gray-300 rounded-full flex items-center justify-center">
-                  <span className="font-open-sans font-bold text-2xl text-gray-600">
-                    {formData.name?.charAt(0) || 'U'}
-                  </span>
-                </div>
-                <button className="absolute -bottom-2 -right-2 p-2 bg-orange-500 text-white rounded-full hover:bg-orange-600">
-                  <Camera className="h-4 w-4" />
-                </button>
-              </div>
-              <div>
-                <h2 className="font-open-sans text-2xl font-bold text-gray-900">
-                  {formData.name || 'Your Name'}
-                </h2>
-                <p className="font-open-sans text-gray-600">{formData.email}</p>
-                <span className={`inline-block px-3 py-1 rounded-full text-sm font-bold mt-2 ${
-                  profile?.role === 'seller' 
-                    ? 'bg-orange-100 text-orange-800' 
-                    : 'bg-blue-100 text-blue-800'
-                }`}>
-                  {profile?.role === 'seller' ? 'Seller' : 'Buyer'}
-                </span>
-              </div>
+        {/* Message */}
+        {message && (
+          <div className={`mb-8 p-4 rounded-lg border ${
+            message.type === 'success' 
+              ? 'bg-green-50 border-green-200 text-green-700' 
+              : 'bg-red-50 border-red-200 text-red-700'
+          }`}>
+            <div className="flex items-center gap-2">
+              {message.type === 'success' ? (
+                <CheckCircle className="h-5 w-5" />
+              ) : (
+                <AlertTriangle className="h-5 w-5" />
+              )}
+              <p className="font-open-sans text-sm">{message.text}</p>
             </div>
           </div>
+        )}
 
-          {/* Profile Form */}
-          <div className="p-6">
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Basic Information */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h2 className="font-open-sans text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Basic Information
+            </h2>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Name */}
               <div>
                 <label className="block font-open-sans font-bold text-gray-700 mb-2">
-                  <User className="inline h-4 w-4 mr-2" />
-                  Full Name
+                  Full Name *
                 </label>
                 <input
                   type="text"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  required
+                  value={formData.full_name}
+                  onChange={(e) => handleInputChange('full_name', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   placeholder="Enter your full name"
                 />
               </div>
 
-              {/* Email */}
               <div>
                 <label className="block font-open-sans font-bold text-gray-700 mb-2">
-                  <Mail className="inline h-4 w-4 mr-2" />
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  placeholder="Enter your email"
-                />
-              </div>
-
-              {/* Phone */}
-              <div>
-                <label className="block font-open-sans font-bold text-gray-700 mb-2">
-                  <Phone className="inline h-4 w-4 mr-2" />
                   Phone Number
                 </label>
                 <input
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   placeholder="Enter your phone number"
                 />
               </div>
 
-              {/* Location */}
               <div>
                 <label className="block font-open-sans font-bold text-gray-700 mb-2">
-                  <MapPin className="inline h-4 w-4 mr-2" />
                   Location
                 </label>
                 <input
                   type="text"
                   value={formData.location}
                   onChange={(e) => handleInputChange('location', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   placeholder="Enter your location"
                 />
               </div>
 
-              {/* Account Type (Read-only) */}
+              <div>
+                <label className="block font-open-sans font-bold text-gray-700 mb-2">
+                  Website
+                </label>
+                <input
+                  type="url"
+                  value={formData.website}
+                  onChange={(e) => handleInputChange('website', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  placeholder="https://yourwebsite.com"
+                />
+              </div>
+
               <div className="md:col-span-2">
                 <label className="block font-open-sans font-bold text-gray-700 mb-2">
-                  Account Type
+                  Bio
                 </label>
-                <div className="flex items-center gap-4">
-                  <span className={`inline-block px-3 py-2 rounded-lg text-sm font-bold ${
-                    profile?.role === 'seller' 
-                      ? 'bg-orange-100 text-orange-800' 
-                      : 'bg-blue-100 text-blue-800'
-                  }`}>
-                    {profile?.role === 'seller' ? 'Seller (Business)' : 'Buyer'}
-                  </span>
-                  <span className="font-open-sans text-sm text-gray-500">
-                    {profile?.role === 'seller' 
-                      ? 'You can create listings and manage your inventory' 
-                      : 'You can browse and purchase listings'}
-                  </span>
-                </div>
-                <p className="font-open-sans text-sm text-gray-500 mt-1">
-                  Account type cannot be changed. Contact support if you need to change your account type.
-                </p>
+                <textarea
+                  value={formData.bio}
+                  onChange={(e) => handleInputChange('bio', e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  placeholder="Tell us about yourself or your business"
+                />
               </div>
             </div>
+          </div>
 
-            {/* Save Button */}
-            <div className="mt-8 pt-6 border-t border-gray-200">
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 text-white py-3 px-6 rounded-lg font-open-sans font-bold flex items-center gap-2"
-              >
-                <Save className="h-4 w-4" />
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
+          {/* Business Information */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h2 className="font-open-sans text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+              <Building className="h-5 w-5" />
+              Business Information
+            </h2>
+            
+            <div className="space-y-6">
+              <div>
+                <label className="block font-open-sans font-bold text-gray-700 mb-2">
+                  Company Name
+                </label>
+                <input
+                  type="text"
+                  value={formData.company_name}
+                  onChange={(e) => handleInputChange('company_name', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  placeholder="Enter your company name"
+                />
+              </div>
+
+              {/* Seller Capabilities */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    id="can_sell"
+                    checked={formData.can_sell}
+                    onChange={(e) => handleInputChange('can_sell', e.target.checked)}
+                    className="mt-1 h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                  />
+                  <div>
+                    <label htmlFor="can_sell" className="font-open-sans font-bold text-blue-900">
+                      Enable Seller Capabilities
+                    </label>
+                    <p className="font-open-sans text-sm text-blue-700 mt-1">
+                      {formData.can_sell 
+                        ? 'Seller capabilities are enabled. You can create listings and receive payments after completing Stripe Connect onboarding.'
+                        : 'Check this box to enable seller capabilities. You\'ll need to complete Stripe Connect onboarding to start receiving payments.'
+                      }
+                    </p>
+                    {userProfile?.seller_verified && (
+                      <div className="mt-2 flex items-center gap-2 text-green-700">
+                        <CheckCircle className="h-4 w-4" />
+                        <span className="font-open-sans text-sm font-medium">Stripe account verified - ready to sell!</span>
+                      </div>
+                    )}
+                    {formData.can_sell && !userProfile?.seller_verified && (
+                      <div className="mt-2 flex items-center gap-2 text-yellow-700">
+                        <AlertTriangle className="h-4 w-4" />
+                        <span className="font-open-sans text-sm font-medium">Complete Stripe Connect onboarding to start selling</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Danger Zone */}
-        <div className="mt-8 bg-red-50 border border-red-200 rounded-lg p-6">
-          <h3 className="font-open-sans font-bold text-lg text-red-900 mb-2">Danger Zone</h3>
-          <p className="font-open-sans text-red-700 mb-4">
-            These actions cannot be undone. Please be careful.
-          </p>
-          <div className="flex gap-4">
-            <button className="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-open-sans font-bold">
-              Delete Account
-            </button>
-            <button className="border border-red-600 text-red-600 hover:bg-red-50 py-2 px-4 rounded-lg font-open-sans font-bold">
-              Export Data
+          {/* Payment Information */}
+          {formData.can_sell && (
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <h2 className="font-open-sans text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                Payment Setup
+              </h2>
+              
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <p className="font-open-sans text-sm text-gray-600 mb-4">
+                  {userProfile?.seller_verified 
+                    ? 'Your Stripe account is verified and ready to receive payments.'
+                    : 'Complete Stripe Connect onboarding to start receiving payments from buyers.'
+                  }
+                </p>
+                
+                {!userProfile?.seller_verified && (
+                  <a
+                    href="/dashboard"
+                    className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-lg font-open-sans font-bold"
+                  >
+                    <CreditCard className="h-4 w-4" />
+                    Complete Stripe Setup
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Save Button */}
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={saving}
+              className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 text-white py-3 px-6 rounded-lg font-open-sans font-bold flex items-center gap-2"
+            >
+              {saving ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  Save Changes
+                </>
+              )}
             </button>
           </div>
-        </div>
+        </form>
       </div>
 
       <Footer />

@@ -18,7 +18,7 @@ export interface PaymentData {
   buyerId: string
   sellerId: string
   amount: number
-  paymentMethod: 'stripe' | 'paypal'
+  paymentMethod: 'stripe'
 }
 
 // Stripe Integration
@@ -80,90 +80,8 @@ export class StripePayments {
   }
 }
 
-// PayPal Integration (using PayPal REST API)
-export class PayPalPayments {
-  private static async getAccessToken(): Promise<string> {
-    const auth = Buffer.from(
-      `${process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`
-    ).toString('base64')
 
-    const response = await fetch(`${process.env.PAYPAL_BASE_URL || 'https://api-m.sandbox.paypal.com'}/v1/oauth2/token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        Authorization: `Basic ${auth}`,
-      },
-      body: 'grant_type=client_credentials',
-    })
 
-    const data = await response.json()
-    return data.access_token
-  }
-
-  static async createOrder(data: PaymentData): Promise<{ id: string; approval_url?: string }> {
-    try {
-      const accessToken = await this.getAccessToken()
-
-      const order = {
-        intent: 'CAPTURE',
-        purchase_units: [
-          {
-            amount: {
-              currency_code: 'USD',
-              value: data.amount.toFixed(2),
-            },
-            description: `Equipment purchase - Listing ${data.listingId}`,
-            custom_id: data.listingId,
-          },
-        ],
-        application_context: {
-          return_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/payment/success`,
-          cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/payment/cancel`,
-        },
-      }
-
-      const response = await fetch(`${process.env.PAYPAL_BASE_URL || 'https://api-m.sandbox.paypal.com'}/v2/checkout/orders`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify(order),
-      })
-
-      const result = await response.json()
-      
-      const approvalUrl = result.links?.find((link: any) => link.rel === 'approve')?.href
-
-      return {
-        id: result.id,
-        approval_url: approvalUrl,
-      }
-    } catch (error) {
-      console.error('Error creating PayPal order:', error)
-      throw new Error('Failed to create PayPal order')
-    }
-  }
-
-  static async captureOrder(orderId: string): Promise<any> {
-    try {
-      const accessToken = await this.getAccessToken()
-
-      const response = await fetch(`${process.env.PAYPAL_BASE_URL || 'https://api-m.sandbox.paypal.com'}/v2/checkout/orders/${orderId}/capture`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-      })
-
-      return await response.json()
-    } catch (error) {
-      console.error('Error capturing PayPal order:', error)
-      throw new Error('Failed to capture PayPal order')
-    }
-  }
-}
 
 // General payment utilities - formatPrice moved to @/lib/format
 
@@ -175,6 +93,6 @@ export function validatePaymentData(data: Partial<PaymentData>): data is Payment
     data.amount &&
     data.amount > 0 &&
     data.paymentMethod &&
-    ['stripe', 'paypal'].includes(data.paymentMethod)
+    data.paymentMethod === 'stripe'
   )
 } 

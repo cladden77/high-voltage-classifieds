@@ -229,8 +229,8 @@ export default function CreateListingPage() {
         return
       }
 
-      if (currentUser.role !== 'seller') {
-        setError('Only sellers can create listings')
+      if (!currentUser.canSell || !currentUser.sellerVerified) {
+        setError('You need to enable seller capabilities and complete Stripe Connect onboarding to create listings')
         return
       }
 

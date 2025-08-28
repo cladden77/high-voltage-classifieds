@@ -22,6 +22,9 @@ export interface Database {
           website: string | null
           company_name: string | null
           stripe_account_id: string | null
+          can_sell: boolean
+          seller_verified: boolean
+          seller_verification_date: string | null
           is_verified: boolean
           created_at: string
           updated_at: string
@@ -38,6 +41,9 @@ export interface Database {
           website?: string | null
           company_name?: string | null
           stripe_account_id?: string | null
+          can_sell?: boolean
+          seller_verified?: boolean
+          seller_verification_date?: string | null
           is_verified?: boolean
           created_at?: string
           updated_at?: string
@@ -54,6 +60,9 @@ export interface Database {
           website?: string | null
           company_name?: string | null
           stripe_account_id?: string | null
+          can_sell?: boolean
+          seller_verified?: boolean
+          seller_verification_date?: string | null
           is_verified?: boolean
           created_at?: string
           updated_at?: string
@@ -211,7 +220,7 @@ export interface Database {
           buyer_id: string
           seller_id: string
           amount: number
-          payment_method: 'stripe' | 'paypal'
+          payment_method: 'stripe'
           payment_intent_id: string | null
           status: 'pending' | 'completed' | 'failed' | 'cancelled'
           created_at: string
@@ -223,7 +232,7 @@ export interface Database {
           buyer_id: string
           seller_id: string
           amount: number
-          payment_method: 'stripe' | 'paypal'
+          payment_method: 'stripe'
           payment_intent_id?: string | null
           status?: 'pending' | 'completed' | 'failed' | 'cancelled'
           created_at?: string
@@ -235,7 +244,7 @@ export interface Database {
           buyer_id?: string
           seller_id?: string
           amount?: number
-          payment_method?: 'stripe' | 'paypal'
+          payment_method?: 'stripe'
           payment_intent_id?: string | null
           status?: 'pending' | 'completed' | 'failed' | 'cancelled'
           created_at?: string
@@ -298,6 +307,50 @@ export interface Database {
           is_read?: boolean
           created_at?: string
           updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      notifications: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          message: string
+          type: string
+          is_read: boolean
+          related_id: string | null
+          related_type: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          message: string
+          type?: string
+          is_read?: boolean
+          related_id?: string | null
+          related_type?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          message?: string
+          type?: string
+          is_read?: boolean
+          related_id?: string | null
+          related_type?: string | null
+          created_at?: string
         }
         Relationships: [
           {

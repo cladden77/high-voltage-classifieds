@@ -89,6 +89,36 @@ export async function POST(request: NextRequest) {
               console.error('❌ Listing update error:', listingError)
             } else {
               console.log('✅ Listing marked as sold:', listingUpdate)
+              
+              // Create notification for seller
+              try {
+                await supabase.rpc('create_notification', {
+                  p_user_id: sellerId,
+                  p_title: 'Listing Sold!',
+                  p_message: `Your listing "${listingData?.title || 'Equipment'}" has been sold for $${(session.amount_total || 0) / 100}.`,
+                  p_type: 'success',
+                  p_related_id: listingId,
+                  p_related_type: 'listing'
+                })
+                console.log('✅ Seller notification created')
+              } catch (notifError) {
+                console.error('❌ Error creating seller notification:', notifError)
+              }
+              
+              // Create notification for buyer
+              try {
+                await supabase.rpc('create_notification', {
+                  p_user_id: buyerId,
+                  p_title: 'Purchase Successful!',
+                  p_message: `You have successfully purchased "${listingData?.title || 'Equipment'}" for $${(session.amount_total || 0) / 100}.`,
+                  p_type: 'success',
+                  p_related_id: listingId,
+                  p_related_type: 'listing'
+                })
+                console.log('✅ Buyer notification created')
+              } catch (notifError) {
+                console.error('❌ Error creating buyer notification:', notifError)
+              }
             }
 
             // Get listing and seller details for notification
@@ -240,6 +270,45 @@ export async function POST(request: NextRequest) {
             .eq('payment_intent_id', paymentIntent.id)
 
           console.log('Payment canceled:', paymentIntent.id)
+        }
+        break
+
+      case 'account.updated':
+        {
+          const account = event.data.object
+          
+          try {
+            console.log('🔔 Stripe Connect account updated:', {
+              accountId: account.id,
+              chargesEnabled: account.charges_enabled,
+              payoutsEnabled: account.payouts_enabled,
+              requirements: account.requirements
+            })
+
+            // Check if account is fully onboarded
+            const isOnboarded = account.charges_enabled && account.payouts_enabled
+            
+            if (isOnboarded) {
+              // Find user with this Stripe account ID and mark as verified
+              const { data: userUpdate, error: userError } = await supabase
+                .from('users')
+                .update({ 
+                  seller_verified: true,
+                  seller_verification_date: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                })
+                .eq('stripe_account_id', account.id)
+                .select()
+
+              if (userError) {
+                console.error('❌ Error updating user verification status:', userError)
+              } else {
+                console.log('✅ User marked as seller verified:', userUpdate)
+              }
+            }
+          } catch (error) {
+            console.error('❌ Error processing account update:', error)
+          }
         }
         break
 

@@ -217,16 +217,7 @@ export default function ListingDetailPage() {
     setMessageSuccess(false)
   }
 
-  const handlePayPalPayment = () => {
-    if (!currentUser) {
-      showAuthPrompt('make purchases')
-      return
-    }
 
-    // TODO: Implement PayPal payment processing
-    console.log('Processing PayPal payment')
-    alert('PayPal integration coming soon!')
-  }
 
   if (loading) {
     return (
@@ -402,13 +393,7 @@ export default function ListingDetailPage() {
                     Buy Now with Stripe
                   </CheckoutButton>
                   
-                  {/* PayPal Alternative */}
-                  <button 
-                    onClick={handlePayPalPayment}
-                    className="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-3 px-6 rounded-lg font-open-sans font-bold"
-                  >
-                    Pay with PayPal (Coming Soon)
-                  </button>
+
                 </div>
               )}
               

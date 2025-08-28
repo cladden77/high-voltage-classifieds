@@ -11,12 +11,13 @@ export default function SignUpPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'buyer' as 'buyer' | 'seller'
+    canSell: false
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
 
   const router = useRouter()
 
@@ -47,24 +48,34 @@ export default function SignUpPage() {
     }
 
     try {
+      console.log('🚀 Starting signup process:', { email: formData.email, canSell: formData.canSell })
+      
       const result = await signUpWithCredentials(
         formData.email,
         formData.password,
         formData.name,
-        formData.role
+        formData.canSell
       )
       
+      console.log('📋 Signup result:', result)
+      
       if (result.success) {
-        // Store user session
-        localStorage.setItem('user', JSON.stringify(result.user))
+        console.log('✅ Signup successful, user:', result.user)
+        // Show success message and redirect to signin
+        setSuccessMessage('You have successfully signed up for High Voltage Classifieds. Please check your email and confirm your account to log in.')
         // Fire welcome email check (best-effort)
         fetch('/api/internal/email/welcome', { method: 'GET' }).catch(() => {})
-        router.push('/dashboard')
+        // Redirect to signin after 3 seconds
+        setTimeout(() => {
+          router.push('/auth/signin')
+        }, 3000)
       } else {
+        console.error('❌ Signup failed:', result.error)
         setError(result.error || 'Failed to create account')
       }
     } catch (error) {
-      setError('An unexpected error occurred')
+      console.error('💥 Signup exception:', error)
+      setError(error instanceof Error ? error.message : 'An unexpected error occurred')
     } finally {
       setIsLoading(false)
     }
@@ -91,45 +102,41 @@ export default function SignUpPage() {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-6 shadow-sm rounded-lg border border-gray-200">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {successMessage && (
+              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+                <p className="font-open-sans text-sm">{successMessage}</p>
+              </div>
+            )}
+            
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                 <p className="font-open-sans text-sm">{error}</p>
               </div>
             )}
 
-            {/* Role Selection */}
+            {/* Seller Capabilities */}
             <div>
               <label className="block font-open-sans font-bold text-gray-700 mb-3">
-                Account Type
+                Account Capabilities
               </label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => handleInputChange('role', 'buyer')}
-                  className={`p-4 border-2 rounded-lg text-center transition-colors ${
-                    formData.role === 'buyer'
-                      ? 'border-orange-500 bg-orange-50 text-orange-700'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <User className="h-6 w-6 mx-auto mb-2" />
-                  <div className="font-open-sans font-bold">Buyer</div>
-                  <div className="font-open-sans text-xs text-gray-500">Browse & purchase equipment</div>
-                </button>
-                
-                <button
-                  type="button"
-                  onClick={() => handleInputChange('role', 'seller')}
-                  className={`p-4 border-2 rounded-lg text-center transition-colors ${
-                    formData.role === 'seller'
-                      ? 'border-orange-500 bg-orange-50 text-orange-700'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <Building className="h-6 w-6 mx-auto mb-2" />
-                  <div className="font-open-sans font-bold">Seller</div>
-                  <div className="font-open-sans text-xs text-gray-500">List & sell equipment</div>
-                </button>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    id="canSell"
+                    checked={formData.canSell}
+                    onChange={(e) => handleInputChange('canSell', e.target.checked)}
+                    className="mt-1 h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                  />
+                  <div>
+                    <label htmlFor="canSell" className="font-open-sans font-bold text-blue-900">
+                      Enable Seller Capabilities
+                    </label>
+                    <p className="font-open-sans text-sm text-blue-700 mt-1">
+                      Check this box if you want to be able to list and sell equipment. You'll need to complete Stripe Connect onboarding to receive payments.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 

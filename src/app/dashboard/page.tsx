@@ -63,7 +63,7 @@ function DashboardContent() {
       // Fetch user profile from database
       fetchUserProfile()
       
-      if (currentUser.role === 'seller') {
+      if (currentUser.canSell && currentUser.sellerVerified) {
         console.log('🔍 Dashboard: Loading seller dashboard')
         fetchListings()
         fetchStripeStatus()
@@ -521,27 +521,47 @@ function DashboardContent() {
               </div>
             </div>
 
-            {/* Account Type (Read-only) */}
+            {/* Account Capabilities (Read-only) */}
             <div className="md:col-span-2">
               <label className="block font-open-sans font-bold text-gray-700 mb-2">
-                Account Type
+                Account Capabilities
               </label>
-              <div className="flex items-center gap-4">
-                <span className={`inline-block px-3 py-2 rounded-lg text-sm font-bold ${
-                  currentUser?.role === 'seller' 
-                    ? 'bg-orange-100 text-orange-800' 
-                    : 'bg-blue-100 text-blue-800'
-                }`}>
-                  {currentUser?.role === 'seller' ? 'Seller (Business)' : 'Buyer'}
-                </span>
-                <span className="font-open-sans text-sm text-gray-500">
-                  {currentUser?.role === 'seller' 
-                    ? 'You can create listings and manage your inventory' 
-                    : 'You can browse and purchase listings'}
-                </span>
+              <div className="space-y-3">
+                <div className="flex items-center gap-4">
+                  <span className="inline-block px-3 py-2 rounded-lg text-sm font-bold bg-blue-100 text-blue-800">
+                    Buyer
+                  </span>
+                  <span className="font-open-sans text-sm text-gray-500">
+                    You can browse and purchase listings
+                  </span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className={`inline-block px-3 py-2 rounded-lg text-sm font-bold ${
+                    currentUser?.canSell 
+                      ? currentUser?.sellerVerified 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-yellow-100 text-yellow-800'
+                      : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {currentUser?.canSell 
+                      ? currentUser?.sellerVerified 
+                        ? 'Seller (Verified)' 
+                        : 'Seller (Setup Required)' 
+                      : 'Seller (Not Enabled)'}
+                  </span>
+                  <span className="font-open-sans text-sm text-gray-500">
+                    {currentUser?.canSell 
+                      ? currentUser?.sellerVerified 
+                        ? 'You can create listings and receive payments' 
+                        : 'Complete Stripe Connect onboarding to start selling' 
+                      : 'Enable seller capabilities in your account settings'}
+                  </span>
+                </div>
               </div>
               <p className="font-open-sans text-sm text-gray-500 mt-1">
-                Account type cannot be changed. Contact support if you need to change your account type.
+                {currentUser?.canSell 
+                  ? 'Seller capabilities are enabled. Contact support if you need to disable them.'
+                  : 'Contact support if you want to enable seller capabilities.'}
               </p>
             </div>
           </div>
@@ -677,9 +697,11 @@ function DashboardContent() {
             Hello, {userProfile?.full_name || currentUser?.full_name || 'there'}
           </h1>
           <p className="font-open-sans text-lg text-gray-500">
-            {currentUser?.role === 'seller' 
+            {currentUser?.canSell && currentUser?.sellerVerified
               ? 'Manage your listings and messages'
-              : 'Manage your favorites and messages'}
+              : currentUser?.canSell
+                ? 'Complete Stripe Connect onboarding to start selling'
+                : 'Manage your favorites and messages'}
           </p>
         </div>
 
@@ -700,7 +722,7 @@ function DashboardContent() {
         )}
 
         {/* Stripe Account Alert for Sellers */}
-        {currentUser?.role === 'seller' && stripeAccountStatus && !stripeAccountStatus.isComplete && (
+        {currentUser?.canSell && !currentUser?.sellerVerified && (
           <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg mb-8">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5" />
@@ -723,7 +745,7 @@ function DashboardContent() {
         )}
 
         {/* Stats Cards */}
-        {currentUser?.role === 'seller' ? (
+        {currentUser?.canSell && currentUser?.sellerVerified ? (
           <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
             <div className="bg-white border border-gray-200 rounded-lg p-6">
               <div className="flex items-center gap-3">
@@ -849,10 +871,15 @@ function DashboardContent() {
         {/* Tabs */}
         <div className="border-b border-gray-200 mb-8">
           <nav className="flex space-x-8">
-            {(currentUser?.role === 'seller' ? [
+            {(currentUser?.canSell && currentUser?.sellerVerified ? [
               { id: 'listings', label: 'My Listings', icon: Eye },
               { id: 'messages', label: 'Messages', icon: MessageSquare },
               { id: 'payments', label: 'Payment Setup', icon: CreditCard },
+              { id: 'account', label: 'Account', icon: User }
+            ] : currentUser?.canSell ? [
+              { id: 'favorites', label: 'My Favorites', icon: Heart },
+              { id: 'messages', label: 'Messages', icon: MessageSquare },
+              { id: 'seller-setup', label: 'Seller Setup', icon: CreditCard },
               { id: 'account', label: 'Account', icon: User }
             ] : [
               { id: 'favorites', label: 'My Favorites', icon: Heart },
@@ -883,11 +910,11 @@ function DashboardContent() {
           <AccountTab />
         )}
 
-        {activeTab === 'favorites' && currentUser?.role === 'buyer' && (
+        {activeTab === 'favorites' && (
           <FavoritesTab />
         )}
 
-        {activeTab === 'listings' && currentUser?.role === 'seller' && (
+        {activeTab === 'listings' && currentUser?.canSell && currentUser?.sellerVerified && (
           <div>
             <div className="flex justify-between items-center mb-6">
               <h2 className="font-open-sans text-xl font-bold text-gray-900">My Listings</h2>
@@ -992,7 +1019,7 @@ function DashboardContent() {
           <MessagesTab currentUser={currentUser} />
         )}
 
-        {activeTab === 'payments' && currentUser?.role === 'seller' && (
+        {activeTab === 'payments' && currentUser?.canSell && currentUser?.sellerVerified && (
           <div>
             <div className="mb-6">
               <h2 className="font-open-sans text-xl font-bold text-gray-900 mb-2">Payment Setup</h2>
@@ -1030,6 +1057,56 @@ function DashboardContent() {
           </div>
         )}
 
+        {activeTab === 'seller-setup' && currentUser?.canSell && !currentUser?.sellerVerified && (
+          <div>
+            <div className="mb-6">
+              <h2 className="font-open-sans text-xl font-bold text-gray-900 mb-2">Complete Seller Setup</h2>
+              <p className="font-open-sans text-gray-600">
+                Connect your Stripe account to start receiving payments from buyers.
+              </p>
+            </div>
+            
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                <div>
+                  <h3 className="font-open-sans font-bold text-yellow-800 mb-2">Action Required</h3>
+                  <p className="font-open-sans text-yellow-700 mb-4">
+                    You've enabled seller capabilities but need to complete Stripe Connect onboarding to start receiving payments.
+                  </p>
+                  <ConnectAccountButton 
+                    onSuccess={() => {
+                      fetchStripeStatus()
+                      // Refresh user data to update sellerVerified status
+                      window.location.reload()
+                    }}
+                    className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                  >
+                    Complete Stripe Setup
+                  </ConnectAccountButton>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+              <h3 className="font-open-sans text-lg font-bold text-gray-900 mb-3">How Seller Setup Works</h3>
+              <div className="space-y-3 text-sm text-gray-600">
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center font-bold text-xs">1</div>
+                  <p>Connect your Stripe account through secure onboarding</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center font-bold text-xs">2</div>
+                  <p>Provide business information and bank account details</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center font-bold text-xs">3</div>
+                  <p>Start creating listings and receiving payments immediately</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
 
