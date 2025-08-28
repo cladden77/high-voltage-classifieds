@@ -193,7 +193,7 @@ export class StripeConnect {
           seller_id: listing.seller_id,
           amount: listing.price,
           payment_method: 'stripe',
-          payment_intent_id: session.payment_intent as string,
+          payment_intent_id: null, // Will be updated when payment is completed via webhook
           status: 'pending',
         })
         .select()
@@ -213,11 +213,12 @@ export class StripeConnect {
             seller_id: listing.seller_id,
             amount: listing.price,
             payment_method: 'stripe',
-            payment_intent_id: session.payment_intent,
+            payment_intent_id: null,
             status: 'pending',
           }
         })
         // Don't throw here as the checkout session was created successfully
+        // The payment record will be updated when the webhook processes the completed payment
       } else {
         console.log('✅ Payment record stored successfully:', paymentData)
       }
@@ -225,7 +226,7 @@ export class StripeConnect {
       return {
         id: session.id,
         url: session.url!,
-        paymentIntentId: session.payment_intent as string,
+        paymentIntentId: null, // Not available immediately with transfer_data
       }
     } catch (error) {
       console.error('Error creating checkout session:', error)

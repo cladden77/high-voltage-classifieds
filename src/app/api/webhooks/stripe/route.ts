@@ -81,14 +81,17 @@ export async function POST(request: NextRequest) {
               break
             }
 
-            // Update payment status to completed
+            // Update payment status to completed and add payment intent ID
             const { data: paymentUpdate, error: paymentError } = await supabase
               .from('payments')
               .update({ 
                 status: 'completed',
+                payment_intent_id: session.payment_intent,
                 updated_at: new Date().toISOString()
               })
-              .eq('payment_intent_id', session.payment_intent)
+              .eq('listing_id', listingId)
+              .eq('buyer_id', buyerId)
+              .eq('status', 'pending')
               .select()
 
             if (paymentError) {
