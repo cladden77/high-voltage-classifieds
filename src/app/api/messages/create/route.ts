@@ -60,6 +60,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: insertError.message }, { status: 400 })
     }
 
+    // Create notification for recipient about new message
+    try {
+      const admin = createAdminSupabase()
+      await admin.rpc('create_notification', {
+        p_user_id: recipient_id,
+        p_title: 'New Message Received',
+        p_message: `You have a new message about "${listing.title}" from ${user.user_metadata?.full_name || 'A user'}.`,
+        p_type: 'info',
+        p_related_id: inserted.id,
+        p_related_type: 'message'
+      })
+      console.log('✅ Message notification created for recipient')
+    } catch (notifError) {
+      console.error('❌ Error creating message notification:', notifError)
+      // Don't fail the message creation if notification fails
+    }
+
     // Try to send email notification (optional - don't fail if email fails)
     try {
       const { sendNewMessageEmail } = await import('@/lib/email/send')

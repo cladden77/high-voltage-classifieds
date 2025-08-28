@@ -264,6 +264,27 @@ export default function CreateListingPage() {
         throw new Error(`Failed to create listing: ${error.message}`)
       }
 
+      // Create notification for the seller about successful listing creation
+      try {
+        const { error: notifError } = await supabase.rpc('create_notification', {
+          p_user_id: currentUser.id,
+          p_title: 'Listing Created Successfully!',
+          p_message: `Your listing "${formData.title}" has been created and is now live on the platform.`,
+          p_type: 'success',
+          p_related_id: data.id,
+          p_related_type: 'listing'
+        })
+        
+        if (notifError) {
+          console.error('Failed to create listing notification:', notifError)
+        } else {
+          console.log('✅ Listing creation notification created')
+        }
+      } catch (notifError) {
+        console.error('Error creating listing notification:', notifError)
+        // Don't fail the listing creation if notification fails
+      }
+
       // Redirect to dashboard with success message
       router.push('/dashboard?success=listing-created')
     } catch (error: any) {

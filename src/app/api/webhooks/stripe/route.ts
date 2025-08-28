@@ -114,7 +114,8 @@ export async function POST(request: NextRequest) {
               
               // Create notification for seller
               try {
-                await supabase.rpc('create_notification', {
+                console.log('🔄 Creating seller notification for user:', sellerId)
+                const { data: notificationId, error: notifError } = await supabase.rpc('create_notification', {
                   p_user_id: sellerId,
                   p_title: 'Listing Sold!',
                   p_message: `Your listing "${listingData.title}" has been sold for $${(session.amount_total || 0) / 100}.`,
@@ -122,14 +123,20 @@ export async function POST(request: NextRequest) {
                   p_related_id: listingId,
                   p_related_type: 'listing'
                 })
-                console.log('✅ Seller notification created')
+                
+                if (notifError) {
+                  console.error('❌ Seller notification RPC error:', notifError)
+                } else {
+                  console.log('✅ Seller notification created with ID:', notificationId)
+                }
               } catch (notifError) {
                 console.error('❌ Error creating seller notification:', notifError)
               }
               
               // Create notification for buyer
               try {
-                await supabase.rpc('create_notification', {
+                console.log('🔄 Creating buyer notification for user:', buyerId)
+                const { data: notificationId, error: notifError } = await supabase.rpc('create_notification', {
                   p_user_id: buyerId,
                   p_title: 'Purchase Successful!',
                   p_message: `You have successfully purchased "${listingData.title}" for $${(session.amount_total || 0) / 100}.`,
@@ -137,7 +144,12 @@ export async function POST(request: NextRequest) {
                   p_related_id: listingId,
                   p_related_type: 'listing'
                 })
-                console.log('✅ Buyer notification created')
+                
+                if (notifError) {
+                  console.error('❌ Buyer notification RPC error:', notifError)
+                } else {
+                  console.log('✅ Buyer notification created with ID:', notificationId)
+                }
               } catch (notifError) {
                 console.error('❌ Error creating buyer notification:', notifError)
               }

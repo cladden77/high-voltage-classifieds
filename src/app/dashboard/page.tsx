@@ -921,30 +921,86 @@ function DashboardContent() {
               <p className="font-open-sans text-sm text-blue-700 mb-3">
                 Test if the notifications system is working properly.
               </p>
-              <button
-                onClick={async () => {
-                  try {
-                    const response = await fetch('/api/test-notification', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ userId: currentUser?.id })
-                    })
-                    if (response.ok) {
-                      alert('Test notification created! Check the notification bell.')
-                      // Refresh the page to show the new notification
-                      window.location.reload()
-                    } else {
-                      alert('Failed to create test notification')
+              <div className="space-y-2">
+                <button
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/test-notification', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId: currentUser?.id })
+                      })
+                      if (response.ok) {
+                        alert('Test notification created! Check the notification bell.')
+                        // Refresh the page to show the new notification
+                        window.location.reload()
+                      } else {
+                        alert('Failed to create test notification')
+                      }
+                    } catch (error) {
+                      console.error('Error creating test notification:', error)
+                      alert('Error creating test notification')
                     }
-                  } catch (error) {
-                    console.error('Error creating test notification:', error)
-                    alert('Error creating test notification')
-                  }
-                }}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium"
-              >
-                Create Test Notification
-              </button>
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium mr-2"
+                >
+                  Test Basic Notification
+                </button>
+                
+                <button
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/test-webhook', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                          userId: currentUser?.id, 
+                          testType: 'message' 
+                        })
+                      })
+                      if (response.ok) {
+                        alert('Test message notification created! Check the notification bell.')
+                        window.location.reload()
+                      } else {
+                        alert('Failed to create test message notification')
+                      }
+                    } catch (error) {
+                      console.error('Error creating test message notification:', error)
+                      alert('Error creating test message notification')
+                    }
+                  }}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium mr-2"
+                >
+                  Test Message Notification
+                </button>
+                
+                <button
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/test-webhook', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                          userId: currentUser?.id, 
+                          testType: 'sold' 
+                        })
+                      })
+                      if (response.ok) {
+                        alert('Test sold item notification created! Check the notification bell.')
+                        window.location.reload()
+                      } else {
+                        alert('Failed to create test sold item notification')
+                      }
+                    } catch (error) {
+                      console.error('Error creating test sold item notification:', error)
+                      alert('Error creating test sold item notification')
+                    }
+                  }}
+                  className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium"
+                >
+                  Test Sold Item Notification
+                </button>
+              </div>
             </div>
             
             {/* Account Information */}
