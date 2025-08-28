@@ -214,6 +214,12 @@ export default function Header() {
                       Hi, {currentUser.name || currentUser.email}
                     </div>
                     
+                    {/* Mobile Notifications */}
+                    <div className="flex items-center justify-between py-2">
+                      <span className="text-neutral-100 text-base font-bold uppercase">Notifications</span>
+                      <NotificationBell />
+                    </div>
+                    
                     {/* User Navigation Links */}
                     <div className="space-y-3">
                       <Link 

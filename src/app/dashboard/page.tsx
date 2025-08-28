@@ -907,7 +907,49 @@ function DashboardContent() {
 
         {/* Tab Content */}
         {activeTab === 'account' && (
-          <AccountTab />
+          <div>
+            <div className="mb-6">
+              <h2 className="font-open-sans text-xl font-bold text-gray-900 mb-2">Account Settings</h2>
+              <p className="font-open-sans text-gray-600">
+                Manage your account information and preferences.
+              </p>
+            </div>
+            
+            {/* Test Notifications Button */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <h3 className="font-open-sans font-bold text-blue-900 mb-2">Test Notifications</h3>
+              <p className="font-open-sans text-sm text-blue-700 mb-3">
+                Test if the notifications system is working properly.
+              </p>
+              <button
+                onClick={async () => {
+                  try {
+                    const response = await fetch('/api/test-notification', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ userId: currentUser?.id })
+                    })
+                    if (response.ok) {
+                      alert('Test notification created! Check the notification bell.')
+                      // Refresh the page to show the new notification
+                      window.location.reload()
+                    } else {
+                      alert('Failed to create test notification')
+                    }
+                  } catch (error) {
+                    console.error('Error creating test notification:', error)
+                    alert('Error creating test notification')
+                  }
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium"
+              >
+                Create Test Notification
+              </button>
+            </div>
+            
+            {/* Account Information */}
+            <AccountTab />
+          </div>
         )}
 
         {activeTab === 'favorites' && (

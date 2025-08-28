@@ -59,6 +59,28 @@ export async function POST(request: NextRequest) {
               amount: session.amount_total
             })
 
+            // Get listing and seller details first
+            const { data: listingData, error: listingDataError } = await supabase
+              .from('listings')
+              .select(`
+                id,
+                title,
+                price,
+                seller_id,
+                users!listings_seller_id_fkey (
+                  id,
+                  full_name,
+                  email
+                )
+              `)
+              .eq('id', listingId)
+              .single()
+
+            if (listingDataError || !listingData) {
+              console.error('❌ Error fetching listing data:', listingDataError)
+              break
+            }
+
             // Update payment status to completed
             const { data: paymentUpdate, error: paymentError } = await supabase
               .from('payments')
@@ -95,7 +117,7 @@ export async function POST(request: NextRequest) {
                 await supabase.rpc('create_notification', {
                   p_user_id: sellerId,
                   p_title: 'Listing Sold!',
-                  p_message: `Your listing "${listingData?.title || 'Equipment'}" has been sold for $${(session.amount_total || 0) / 100}.`,
+                  p_message: `Your listing "${listingData.title}" has been sold for $${(session.amount_total || 0) / 100}.`,
                   p_type: 'success',
                   p_related_id: listingId,
                   p_related_type: 'listing'
@@ -110,7 +132,7 @@ export async function POST(request: NextRequest) {
                 await supabase.rpc('create_notification', {
                   p_user_id: buyerId,
                   p_title: 'Purchase Successful!',
-                  p_message: `You have successfully purchased "${listingData?.title || 'Equipment'}" for $${(session.amount_total || 0) / 100}.`,
+                  p_message: `You have successfully purchased "${listingData.title}" for $${(session.amount_total || 0) / 100}.`,
                   p_type: 'success',
                   p_related_id: listingId,
                   p_related_type: 'listing'
@@ -118,49 +140,6 @@ export async function POST(request: NextRequest) {
                 console.log('✅ Buyer notification created')
               } catch (notifError) {
                 console.error('❌ Error creating buyer notification:', notifError)
-              }
-            }
-
-            // Get listing and seller details for notification
-            const { data: listingData } = await supabase
-              .from('listings')
-              .select(`
-                id,
-                title,
-                price,
-                seller_id,
-                users!listings_seller_id_fkey (
-                  id,
-                  full_name,
-                  email
-                )
-              `)
-              .eq('id', listingId)
-              .single()
-
-            // Create a notification record for the seller
-            if (listingData) {
-              const { data: notificationData, error: notificationError } = await supabase
-                .from('notifications')
-                .insert({
-                  user_id: sellerId,
-                  type: 'sale_completed',
-                  title: 'Item Sold! 🎉',
-                  message: `Your "${listingData.title}" sold for $${(session.amount_total / 100).toLocaleString()}`,
-                  metadata: {
-                    listing_id: listingId,
-                    payment_intent_id: session.payment_intent,
-                    buyer_id: buyerId,
-                    amount: session.amount_total / 100
-                  },
-                  is_read: false
-                })
-                .select()
-
-              if (notificationError) {
-                console.error('❌ Notification creation error:', notificationError)
-              } else {
-                console.log('📧 Seller notification created:', notificationData)
               }
 
               // Send seller email via Resend
@@ -176,21 +155,13 @@ export async function POST(request: NextRequest) {
                     amount: amountFormatted,
                     orderId: orderId,
                   })
+                  console.log('✅ Seller email sent')
                 }
               } catch (emailError) {
-                console.error('❌ Failed to send seller order email:', emailError)
+                console.error('❌ Error sending seller email:', emailError)
               }
-            } else {
-              console.error('❌ No listing data found for notification')
             }
 
-            console.log('✅ Checkout completed:', {
-              sessionId: session.id,
-              paymentIntentId: session.payment_intent,
-              listingId,
-              sellerEmail: listingData?.users?.email,
-              amount: session.amount_total
-            })
           } catch (error) {
             console.error('❌ Error processing checkout completion:', error)
           }

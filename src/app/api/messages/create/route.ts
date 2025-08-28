@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { listing_id, message_text, recipient_id } = body || {}
 
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
 
     const { data: { user } } = await supabase.auth.getUser()
