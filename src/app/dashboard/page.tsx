@@ -26,12 +26,15 @@ type FavoriteWithListing = {
 function DashboardContent() {
   const [listings, setListings] = useState<Listing[]>([])
   const [favorites, setFavorites] = useState<FavoriteWithListing[]>([])
+  const [purchasedItems, setPurchasedItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'listings' | 'messages' | 'favorites' | 'payments' | 'account' | 'seller-setup'>('listings')
+  const [activeTab, setActiveTab] = useState<'listings' | 'messages' | 'favorites' | 'purchased' | 'payments' | 'account' | 'seller-setup'>('listings')
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [userProfile, setUserProfile] = useState<any>(null)
   const [successMessage, setSuccessMessage] = useState('')
   const [stripeAccountStatus, setStripeAccountStatus] = useState<any>(null)
+  const [isCheckingVerification, setIsCheckingVerification] = useState(false)
+  const [hasProcessedStripeReturn, setHasProcessedStripeReturn] = useState(false)
 
   const searchParams = useSearchParams()
 
@@ -48,12 +51,26 @@ function DashboardContent() {
       setSuccessMessage('Listing updated successfully!')
     }
     
+    // Check if user is returning from Stripe Connect onboarding
+    const stripeReturn = searchParams.get('stripe_onboarding')
+    if (stripeReturn === 'complete' && currentUser && !hasProcessedStripeReturn) {
+      console.log('🔄 User returned from Stripe Connect, refreshing status...')
+      setHasProcessedStripeReturn(true)
+      // Force refresh user data and Stripe status
+      refreshUserData()
+      fetchStripeStatus()
+      // Check and update verification status if needed
+      checkAndUpdateVerificationStatus()
+      // Show success message
+      setSuccessMessage('Stripe account connected successfully! You can now start selling.')
+    }
+    
     // Clear success message after 5 seconds
     if (successMessage) {
       const timer = setTimeout(() => setSuccessMessage(''), 5000)
       return () => clearTimeout(timer)
     }
-  }, [searchParams, successMessage])
+  }, [searchParams, successMessage, currentUser])
 
   useEffect(() => {
     if (currentUser) {
@@ -63,17 +80,45 @@ function DashboardContent() {
       // Fetch user profile from database
       fetchUserProfile()
       
+      // Check verification status for users with seller capabilities
+      if (currentUser.canSell && !currentUser.sellerVerified && !isCheckingVerification) {
+        // Add a small delay to ensure webhook has time to process
+        setTimeout(() => {
+          checkAndUpdateVerificationStatus()
+        }, 2000)
+      }
+      
       if (currentUser.canSell && currentUser.sellerVerified) {
         console.log('🔍 Dashboard: Loading seller dashboard')
         fetchListings()
+        fetchSoldItems() // Fetch sold items for sellers
         fetchStripeStatus()
+        setActiveTab('listings') // Default to listings for verified sellers
+      } else if (currentUser.canSell && !currentUser.sellerVerified) {
+        console.log('🔍 Dashboard: Loading seller setup dashboard')
+        fetchFavorites() // Still show favorites while setting up
+        fetchPurchasedItems() // Also fetch purchased items
+        setActiveTab('seller-setup') // Default to seller setup for unverified sellers
       } else {
         console.log('🔍 Dashboard: Loading buyer dashboard')
         fetchFavorites()
+        fetchPurchasedItems() // Fetch purchased items for buyers
         setActiveTab('favorites') // Default to favorites for buyers
       }
     }
   }, [currentUser])
+
+  // Add a refresh mechanism for purchased items when tab is active
+  useEffect(() => {
+    if (activeTab === 'purchased' && currentUser) {
+      // Refresh purchased items when tab is activated
+      if (currentUser.canSell && currentUser.sellerVerified) {
+        fetchSoldItems()
+      } else {
+        fetchPurchasedItems()
+      }
+    }
+  }, [activeTab, currentUser])
 
   const checkAuth = async () => {
     try {
@@ -83,9 +128,64 @@ function DashboardContent() {
         return
       }
       setCurrentUser(user)
+      // Reset Stripe return flag for new user
+      setHasProcessedStripeReturn(false)
     } catch (error) {
       console.error('Error checking auth:', error)
       window.location.href = '/auth/signin'
+    }
+  }
+
+  const refreshUserData = async () => {
+    try {
+      const user = await getCurrentUser()
+      if (user) {
+        setCurrentUser(user)
+      }
+    } catch (error) {
+      console.error('Error refreshing user data:', error)
+    }
+  }
+
+  const checkAndUpdateVerificationStatus = async () => {
+    if (!currentUser?.canSell || currentUser?.sellerVerified || isCheckingVerification) return
+    
+    try {
+      setIsCheckingVerification(true)
+      console.log('🔍 Checking if Stripe account is complete...')
+      const response = await fetch('/api/create-stripe-account', {
+        method: 'GET',
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.data.isComplete) {
+          console.log('✅ Stripe account is complete, updating verification status...')
+          
+          // Update the user's verification status in the database
+          const supabase = createClientSupabase()
+          const { error: updateError } = await supabase
+            .from('users')
+            .update({ 
+              seller_verified: true,
+              seller_verification_date: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', currentUser.id)
+          
+          if (updateError) {
+            console.error('❌ Failed to update verification status:', updateError)
+          } else {
+            console.log('✅ Verification status updated successfully')
+            // Refresh user data to reflect the change
+            refreshUserData()
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking verification status:', error)
+    } finally {
+      setIsCheckingVerification(false)
     }
   }
 
@@ -150,6 +250,66 @@ function DashboardContent() {
       setFavorites(data || [])
     } catch (error) {
       console.error('Error fetching favorites:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchPurchasedItems = async () => {
+    if (!currentUser) return
+
+    try {
+      setLoading(true)
+      const supabase = createClientSupabase()
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          listings (*),
+          users!orders_seller_id_fkey (
+            id,
+            full_name,
+            email
+          )
+        `)
+        .eq('buyer_id', currentUser.id)
+        .eq('status', 'paid')
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setPurchasedItems(data || [])
+    } catch (error) {
+      console.error('Error fetching purchased items:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchSoldItems = async () => {
+    if (!currentUser) return
+
+    try {
+      setLoading(true)
+      const supabase = createClientSupabase()
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          listings (*),
+          users!orders_buyer_id_fkey (
+            id,
+            full_name,
+            email
+          )
+        `)
+        .eq('seller_id', currentUser.id)
+        .eq('status', 'paid')
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setPurchasedItems(data || []) // Reuse the same state for sold items
+    } catch (error) {
+      console.error('Error fetching sold items:', error)
     } finally {
       setLoading(false)
     }
@@ -687,6 +847,220 @@ function DashboardContent() {
     )
   }
 
+  // Purchased Tab Component (for buyers)
+  function PurchasedTab() {
+    if (loading) {
+      return (
+        <div className="animate-pulse space-y-4">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-32 bg-gray-200 rounded-lg"></div>
+          ))}
+        </div>
+      )
+    }
+
+    if (purchasedItems.length === 0) {
+      return (
+        <div className="text-center py-16">
+          <CheckCircle className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="font-open-sans text-xl font-bold text-gray-900 mb-2">No purchases yet</h3>
+          <p className="font-open-sans text-gray-500 mb-6">
+            Your purchased items will appear here after you buy them
+          </p>
+          <a
+            href="/listings"
+            className="bg-orange-500 hover:bg-orange-600 text-white py-3 px-6 rounded-lg font-open-sans font-bold inline-block"
+          >
+            Browse Listings
+          </a>
+        </div>
+      )
+    }
+
+    return (
+      <div>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="font-open-sans text-xl font-bold text-gray-900">My Purchases</h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {purchasedItems.slice(0, 6).map((purchase) => (
+            <div key={purchase.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+              <div className="aspect-video bg-gray-200 flex items-center justify-center">
+                {purchase.listings.image_urls && purchase.listings.image_urls.length > 0 ? (
+                  <img 
+                    src={purchase.listings.image_urls[0]} 
+                    alt={purchase.listings.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="text-gray-500 font-open-sans">No Image</div>
+                )}
+              </div>
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="font-open-sans font-bold text-lg text-gray-900 truncate">
+                    {purchase.listings.title}
+                  </h3>
+                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-bold">
+                    Purchased
+                  </span>
+                </div>
+                <p className="font-open-sans text-2xl font-bold text-gray-900 mb-2">
+                  ${purchase.amount_paid.toLocaleString()}
+                </p>
+                <p className="font-open-sans text-sm text-gray-600 mb-2 line-clamp-2">
+                  {purchase.listings.description}
+                </p>
+                <div className="space-y-2 text-sm text-gray-500">
+                  <div className="flex justify-between">
+                    <span>Seller:</span>
+                    <span>{purchase.users?.full_name || purchase.users?.email || 'Unknown'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Location:</span>
+                    <span>{purchase.listings.location}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Category:</span>
+                    <span>{purchase.listings.category}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Purchased:</span>
+                    <span>{new Date(purchase.created_at).toLocaleDateString()}</span>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <a
+                    href={`/listings/${purchase.listings.id}`}
+                    className="block w-full text-center bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg font-open-sans font-bold"
+                  >
+                    View Details
+                  </a>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {purchasedItems.length > 6 && (
+          <div className="text-center mt-8">
+            <p className="text-gray-600 font-open-sans">
+              Showing {purchasedItems.length} purchased items
+            </p>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Sold Items Tab Component (for sellers)
+  function SoldItemsTab() {
+    if (loading) {
+      return (
+        <div className="animate-pulse space-y-4">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-32 bg-gray-200 rounded-lg"></div>
+          ))}
+        </div>
+      )
+    }
+
+    if (purchasedItems.length === 0) {
+      return (
+        <div className="text-center py-16">
+          <DollarSign className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="font-open-sans text-xl font-bold text-gray-900 mb-2">No sales yet</h3>
+          <p className="font-open-sans text-gray-500 mb-6">
+            Your sold items will appear here after buyers purchase them
+          </p>
+          <a
+            href="/dashboard/create-listing"
+            className="bg-orange-500 hover:bg-orange-600 text-white py-3 px-6 rounded-lg font-open-sans font-bold inline-block"
+          >
+            Create Listing
+          </a>
+        </div>
+      )
+    }
+
+    return (
+      <div>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="font-open-sans text-xl font-bold text-gray-900">Sold Items</h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {purchasedItems.slice(0, 6).map((sale) => (
+            <div key={sale.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+              <div className="aspect-video bg-gray-200 flex items-center justify-center">
+                {sale.listings.image_urls && sale.listings.image_urls.length > 0 ? (
+                  <img 
+                    src={sale.listings.image_urls[0]} 
+                    alt={sale.listings.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="text-gray-500 font-open-sans">No Image</div>
+                )}
+              </div>
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="font-open-sans font-bold text-lg text-gray-900 truncate">
+                    {sale.listings.title}
+                  </h3>
+                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-bold">
+                    Sold
+                  </span>
+                </div>
+                <p className="font-open-sans text-2xl font-bold text-gray-900 mb-2">
+                  ${sale.amount_paid.toLocaleString()}
+                </p>
+                <p className="font-open-sans text-sm text-gray-600 mb-2 line-clamp-2">
+                  {sale.listings.description}
+                </p>
+                <div className="space-y-2 text-sm text-gray-500">
+                  <div className="flex justify-between">
+                    <span>Buyer:</span>
+                    <span>{sale.users?.full_name || sale.users?.email || 'Unknown'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Location:</span>
+                    <span>{sale.listings.location}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Category:</span>
+                    <span>{sale.listings.category}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Sold:</span>
+                    <span>{new Date(sale.created_at).toLocaleDateString()}</span>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <a
+                    href={`/listings/${sale.listings.id}`}
+                    className="block w-full text-center bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg font-open-sans font-bold"
+                  >
+                    View Details
+                  </a>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {purchasedItems.length > 6 && (
+          <div className="text-center mt-8">
+            <p className="text-gray-600 font-open-sans">
+              Showing {purchasedItems.length} sold items
+            </p>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <Header />
@@ -734,7 +1108,11 @@ function DashboardContent() {
               </div>
               <div className="ml-auto">
                 <ConnectAccountButton 
-                  onSuccess={() => fetchStripeStatus()}
+                  onSuccess={() => {
+                    fetchStripeStatus()
+                    // Refresh user data to update sellerVerified status
+                    refreshUserData()
+                  }}
                   className="bg-yellow-600 hover:bg-yellow-700 text-white"
                 >
                   Connect Now
@@ -798,30 +1176,65 @@ function DashboardContent() {
             {/* Stripe Account Status Card */}
             <div className="bg-white border border-gray-200 rounded-lg p-6">
               <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${
-                  currentUser?.sellerVerified 
-                    ? 'bg-green-100' 
-                    : currentUser?.canSell 
-                      ? 'bg-yellow-100' 
-                      : 'bg-red-100'
-                }`}>
-                  <CreditCard className={`h-6 w-6 ${
-                    currentUser?.sellerVerified 
-                      ? 'text-green-600' 
-                      : currentUser?.canSell 
-                        ? 'text-yellow-600' 
-                        : 'text-red-600'
-                  }`} />
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <CreditCard className="h-6 w-6 text-green-600" />
                 </div>
                 <div>
                   <p className="font-open-sans text-sm text-gray-500">Payment Status</p>
-                  <p className="font-open-sans text-lg font-bold text-gray-900">
-                    {currentUser?.sellerVerified 
-                      ? 'Connected' 
-                      : currentUser?.canSell 
-                        ? 'Setup Required' 
-                        : 'Not Connected'}
+                  <p className="font-open-sans text-lg font-bold text-gray-900">Connected</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : currentUser?.canSell && !currentUser?.sellerVerified ? (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <Heart className="h-6 w-6 text-red-600" />
+                </div>
+                <div>
+                  <p className="font-open-sans text-sm text-gray-500">Total Favorites</p>
+                  <p className="font-open-sans text-2xl font-bold text-gray-900">{buyerStats.totalFavorites}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Plus className="h-6 w-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="font-open-sans text-sm text-gray-500">Added This Week</p>
+                  <p className="font-open-sans text-2xl font-bold text-gray-900">{buyerStats.recentFavorites}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <MessageSquare className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="font-open-sans text-sm text-gray-500">Messages</p>
+                  <p className="font-open-sans text-2xl font-bold text-gray-900">
+                    <a href="/messages" className="hover:text-orange-600">View All</a>
                   </p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Stripe Account Status Card for Setup */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-yellow-100 rounded-lg">
+                  <CreditCard className="h-6 w-6 text-yellow-600" />
+                </div>
+                <div>
+                  <p className="font-open-sans text-sm text-gray-500">Payment Status</p>
+                  <p className="font-open-sans text-lg font-bold text-gray-900">Setup Required</p>
                 </div>
               </div>
             </div>
@@ -873,16 +1286,19 @@ function DashboardContent() {
           <nav className="flex space-x-8">
             {(currentUser?.canSell && currentUser?.sellerVerified ? [
               { id: 'listings', label: 'My Listings', icon: Eye },
+              { id: 'purchased', label: 'Sold Items', icon: CheckCircle },
               { id: 'messages', label: 'Messages', icon: MessageSquare },
               { id: 'payments', label: 'Payment Setup', icon: CreditCard },
               { id: 'account', label: 'Account', icon: User }
             ] : currentUser?.canSell ? [
               { id: 'favorites', label: 'My Favorites', icon: Heart },
+              { id: 'purchased', label: 'Purchased', icon: CheckCircle },
               { id: 'messages', label: 'Messages', icon: MessageSquare },
               { id: 'seller-setup', label: 'Seller Setup', icon: CreditCard },
               { id: 'account', label: 'Account', icon: User }
             ] : [
               { id: 'favorites', label: 'My Favorites', icon: Heart },
+              { id: 'purchased', label: 'Purchased', icon: CheckCircle },
               { id: 'messages', label: 'Messages', icon: MessageSquare },
               { id: 'account', label: 'Account', icon: User }
             ]).map((tab) => {
@@ -924,6 +1340,18 @@ function DashboardContent() {
 
         {activeTab === 'favorites' && (
           <FavoritesTab />
+        )}
+
+        {activeTab === 'purchased' && !currentUser?.canSell && (
+          <PurchasedTab />
+        )}
+
+        {activeTab === 'purchased' && currentUser?.canSell && !currentUser?.sellerVerified && (
+          <PurchasedTab />
+        )}
+
+        {activeTab === 'purchased' && currentUser?.canSell && currentUser?.sellerVerified && (
+          <SoldItemsTab />
         )}
 
         {activeTab === 'listings' && currentUser?.canSell && currentUser?.sellerVerified && (
@@ -1090,7 +1518,7 @@ function DashboardContent() {
                     onSuccess={() => {
                       fetchStripeStatus()
                       // Refresh user data to update sellerVerified status
-                      window.location.reload()
+                      refreshUserData()
                     }}
                     className="bg-yellow-600 hover:bg-yellow-700 text-white"
                   >

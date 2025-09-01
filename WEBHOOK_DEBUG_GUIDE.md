@@ -1,193 +1,111 @@
-# 🔍 Webhook Debugging Guide
+# Webhook Debugging and Testing Guide
 
-## 🚨 Current Issue: Webhook Not Firing
+## Issue: Purchase Successful but Listing Not Marked as Sold
 
-The purchase completes but:
-- ❌ Listing not marked as sold
-- ❌ Seller not notified
-- ❌ Payment status not updated
+The purchase is completing successfully, but the listing isn't being marked as sold and doesn't appear in the Purchased tab. This suggests the webhook isn't being triggered or there's an issue with the webhook processing.
 
-This means the webhook isn't firing or processing correctly.
+## Debugging Steps
 
-## 🔧 Step-by-Step Debugging
+### 1. Check Webhook Endpoint
+The webhook endpoint should be: `https://your-domain.com/api/webhooks/stripe`
 
-### **1. Check Webhook Setup**
+### 2. Verify Stripe Webhook Configuration
+In your Stripe Dashboard:
+1. Go to Developers → Webhooks
+2. Check if the webhook endpoint is configured
+3. Verify the webhook secret matches your `STRIPE_WEBHOOK_SECRET` environment variable
+4. Ensure `checkout.session.completed` events are being sent
 
-**Terminal 1: Start your app**
+### 3. Test Webhook Locally
+If testing locally, use Stripe CLI:
 ```bash
-npm run dev
-```
-
-**Terminal 2: Set up Stripe webhook forwarding**
-```bash
-# Install Stripe CLI if not installed
-# https://stripe.com/docs/stripe-cli
-
-# Login to Stripe
-stripe login
-
-# Forward webhooks to your local app
 stripe listen --forward-to localhost:3000/api/webhooks/stripe
 ```
 
-**Expected Output from Terminal 2:**
-```
-> Ready! Your webhook signing secret is whsec_1234...
-```
+### 4. Check Console Logs
+Look for these log messages in your application console:
+- `🔔 Webhook received:`
+- `✅ Webhook validated:`
+- `🔄 Processing checkout completion:`
+- `✅ Order updated:`
+- `✅ Listing marked as sold:`
 
-### **2. Update Environment Variables**
+### 5. Database Verification
+Check your Supabase database:
+1. **Orders table**: Look for the order record with `status = 'paid'`
+2. **Listings table**: Check if `is_sold = true` for the purchased listing
+3. **Notifications table**: Verify notifications were created
 
-Add the webhook secret to `.env.local`:
-```bash
-STRIPE_WEBHOOK_SECRET=whsec_1234... # Copy from Terminal 2 output
-```
+## Common Issues and Solutions
 
-### **3. Test Webhook Endpoint**
+### Issue 1: Webhook Not Triggered
+**Symptoms**: No webhook logs in console
+**Solution**: 
+- Verify webhook endpoint URL in Stripe Dashboard
+- Check webhook secret configuration
+- Ensure `checkout.session.completed` events are enabled
 
-Test if your webhook endpoint is reachable:
-```bash
-curl -X POST http://localhost:3000/api/webhooks/stripe \
-  -H "Content-Type: application/json" \
-  -d '{"test": "data"}'
-```
+### Issue 2: Webhook Fails Validation
+**Symptoms**: `❌ No signature provided` or `❌ Invalid webhook signature`
+**Solution**:
+- Check `STRIPE_WEBHOOK_SECRET` environment variable
+- Verify webhook secret in Stripe Dashboard matches
 
-**Expected**: Should return an error about missing signature (which is good!)
+### Issue 3: Database Update Fails
+**Symptoms**: `❌ Order update error` or `❌ Listing update error`
+**Solution**:
+- Check RLS policies for orders and listings tables
+- Verify database permissions
+- Check for foreign key constraints
 
-### **4. Check Database Tables**
+### Issue 4: RLS Policy Issues
+**Symptoms**: Database operations fail with permission errors
+**Solution**:
+- Run the RLS policies script: `scripts/add-orders-rls-policies.sql`
+- Ensure admin Supabase client is used in webhook
 
-Make sure these tables exist in Supabase:
+## Testing the Fix
 
-**Run in Supabase SQL Editor:**
+### Step 1: Make a Test Purchase
+1. Create a test listing
+2. Complete a purchase with Stripe test card
+3. Monitor console logs for webhook activity
+
+### Step 2: Verify Database Updates
+Check these tables in Supabase:
 ```sql
--- Check if tables exist
-SELECT table_name FROM information_schema.tables 
-WHERE table_schema = 'public' 
-AND table_name IN ('payments', 'listings', 'notifications');
+-- Check orders table
+SELECT * FROM orders WHERE listing_id = 'your-listing-id' ORDER BY created_at DESC;
 
--- Check if stripe_account_id column exists
-SELECT column_name FROM information_schema.columns 
-WHERE table_name = 'users' AND column_name = 'stripe_account_id';
+-- Check listings table
+SELECT id, title, is_sold, updated_at FROM listings WHERE id = 'your-listing-id';
+
+-- Check notifications table
+SELECT * FROM notifications WHERE related_id = 'your-listing-id';
 ```
 
-### **5. Test Complete Flow with Debugging**
+### Step 3: Verify UI Updates
+1. Refresh the listing page - should show "This item has been sold"
+2. Check buyer's dashboard - should show item in "Purchased" tab
+3. Check seller's dashboard - should show item in "Sold Items" tab
+4. Check listings page - item should not appear (filtered out)
 
-**Step 1: Create Test Listing**
-1. Login as seller
-2. Create a listing with price $100
-3. Note the listing ID
+## Manual Fix (If Webhook Fails)
 
-**Step 2: Purchase as Buyer**
-1. Login as different user (buyer)
-2. Go to listing page
-3. Click "Buy Now with Stripe"
-4. Use test card: `4242424242424242`
-5. Complete purchase
+If the webhook isn't working, you can manually update the database:
 
-**Step 3: Monitor Logs**
-
-**Watch Terminal 1 (App Console):**
-- Should show checkout session creation
-- Should show payment record creation
-
-**Watch Terminal 2 (Stripe CLI):**
-- Should show webhook events being sent
-- Should show successful delivery
-
-**Expected Terminal 2 Output:**
-```
--> checkout.session.completed [evt_test_...]
-<- 200 POST http://localhost:3000/api/webhooks/stripe
-```
-
-### **6. Check Database After Purchase**
-
-**In Supabase Dashboard:**
-1. Go to Table Editor
-2. Check `payments` table - should have new record
-3. Check `listings` table - `is_sold` should be true
-4. Check `notifications` table - should have seller notification
-
-### **7. Manual Webhook Testing**
-
-If webhook still doesn't work, test manually:
-
-**Create a test webhook event:**
-```bash
-stripe trigger checkout.session.completed
-```
-
-**Expected**: Should trigger your webhook and update the database
-
-## 🚨 Common Issues & Solutions
-
-### **Issue 1: Webhook Secret Not Set**
-**Symptoms**: Webhook validation fails
-**Solution**: Copy webhook secret from `stripe listen` output
-
-### **Issue 2: Database Tables Missing**
-**Symptoms**: Webhook processes but no database updates
-**Solution**: Run the SQL scripts to create tables
-
-### **Issue 3: RLS Policies Blocking**
-**Symptoms**: Database errors in webhook
-**Solution**: Check RLS policies allow service role operations
-
-### **Issue 4: Stripe Account Not Connected**
-**Symptoms**: Checkout fails or webhook can't find seller
-**Solution**: Ensure seller completed Stripe onboarding
-
-## 🔍 Debugging Commands
-
-### **Check Webhook Status:**
-```bash
-# List webhook endpoints
-stripe webhook endpoints list
-
-# View webhook logs
-stripe webhook endpoints logs we_...
-```
-
-### **Test Webhook Locally:**
-```bash
-# Forward webhooks
-stripe listen --forward-to localhost:3000/api/webhooks/stripe
-
-# In another terminal, trigger test event
-stripe trigger checkout.session.completed
-```
-
-### **Check Environment:**
-```bash
-# Verify environment variables
-echo $STRIPE_WEBHOOK_SECRET
-echo $STRIPE_SECRET_KEY
-```
-
-## 📊 Expected Database State After Purchase
-
-### **payments table:**
 ```sql
-SELECT * FROM payments WHERE payment_intent_id = 'pi_test_...';
--- Should show: status = 'completed'
+-- Mark listing as sold
+UPDATE listings SET is_sold = true WHERE id = 'your-listing-id';
+
+-- Update order status
+UPDATE orders SET status = 'paid' WHERE listing_id = 'your-listing-id';
 ```
 
-### **listings table:**
-```sql
-SELECT * FROM listings WHERE id = 'your-listing-id';
--- Should show: is_sold = true
-```
+## Next Steps
 
-### **notifications table:**
-```sql
-SELECT * FROM notifications WHERE type = 'sale_completed';
--- Should show: seller notification
-```
-
-## 🎯 Success Indicators
-
-✅ **Terminal 2 shows**: `-> checkout.session.completed`
-✅ **App console shows**: `✅ Checkout completed:`
-✅ **Database shows**: Listing marked as sold
-✅ **Seller sees**: Notification bell with red badge
-
-If any of these fail, follow the debugging steps above. 
+1. **Check webhook configuration** in Stripe Dashboard
+2. **Monitor console logs** during purchase
+3. **Verify database updates** in Supabase
+4. **Test purchase flow** end-to-end
+5. **Apply RLS policies** if not already done 

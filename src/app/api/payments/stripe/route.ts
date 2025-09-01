@@ -17,22 +17,22 @@ export async function POST(request: NextRequest) {
     // Create payment intent with Stripe
     const paymentIntent = await StripePayments.createPaymentIntent(body)
 
-    // Store payment record in database
+    // Store order record in database
     const supabase = createAdminSupabase()
     const { error } = await supabase
-      .from('payments')
+      .from('orders')
       .insert({
         listing_id: body.listingId,
         buyer_id: body.buyerId,
         seller_id: body.sellerId,
-        amount: body.amount,
+        amount_paid: body.amount,
         payment_method: 'stripe',
         payment_intent_id: paymentIntent.id,
         status: 'pending',
       })
 
     if (error) {
-      console.error('Error storing payment record:', error)
+      console.error('Error storing order record:', error)
     }
 
     return NextResponse.json({

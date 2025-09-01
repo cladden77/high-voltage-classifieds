@@ -21,7 +21,7 @@ export default function SignUpPage() {
 
   const router = useRouter()
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value

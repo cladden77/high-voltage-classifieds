@@ -85,7 +85,8 @@ export async function signUpWithCredentials(email: string, password: string, nam
         data: {
           full_name: name,
           can_sell: canSell,
-        }
+        },
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/dashboard`
       }
     })
 
@@ -103,6 +104,8 @@ export async function signUpWithCredentials(email: string, password: string, nam
         role: 'buyer', // All users start as buyers
         can_sell: canSell,
         seller_verified: false, // Will be verified after Stripe Connect onboarding
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       })
       .select()
 
@@ -112,6 +115,7 @@ export async function signUpWithCredentials(email: string, password: string, nam
       // If profile creation fails, try again with a delay (sometimes Supabase needs a moment)
       await new Promise(resolve => setTimeout(resolve, 1000))
       
+      // Try creating profile without seller fields in case they don't exist yet
       const { data: retryProfileData, error: retryError } = await supabase
         .from('users')
         .insert({
@@ -119,8 +123,8 @@ export async function signUpWithCredentials(email: string, password: string, nam
           email: email,
           full_name: name,
           role: 'buyer',
-          can_sell: canSell,
-          seller_verified: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         })
         .select()
 
@@ -128,7 +132,24 @@ export async function signUpWithCredentials(email: string, password: string, nam
         console.error('❌ Profile creation retry failed:', retryError)
         // If profile creation fails, still return success since auth succeeded
       } else {
-        console.log('✅ Profile created on retry:', retryProfileData)
+        console.log('✅ Profile created on retry (basic fields only):', retryProfileData)
+        
+        // If we successfully created a basic profile, try to update it with seller fields
+        if (canSell) {
+          try {
+            await supabase
+              .from('users')
+              .update({ 
+                can_sell: true,
+                seller_verified: false,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', data.user.id)
+            console.log('✅ Updated profile with seller capabilities')
+          } catch (updateError) {
+            console.log('⚠️ Could not update with seller fields (may not exist yet):', updateError)
+          }
+        }
       }
     } else {
       console.log('✅ Profile created successfully:', profileData)
@@ -194,6 +215,8 @@ export async function getCurrentUser() {
             email: user.email!,
             full_name: user.user_metadata?.full_name || '',
             role: defaultRole,
+            can_sell: user.user_metadata?.can_sell || false,
+            seller_verified: false,
           })
           .select()
           .single()

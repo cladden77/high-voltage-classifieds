@@ -213,16 +213,19 @@ export interface Database {
           }
         ]
       }
-      payments: {
+      orders: {
         Row: {
           id: string
           listing_id: string
           buyer_id: string
           seller_id: string
-          amount: number
-          payment_method: 'stripe'
+          amount_paid: number
+          payment_method: string
           payment_intent_id: string | null
-          status: 'pending' | 'completed' | 'failed' | 'cancelled'
+          paypal_order_id: string | null
+          status: 'pending' | 'paid' | 'failed' | 'cancelled' | 'refunded'
+          shipping_address: Json | null
+          notes: string | null
           created_at: string
           updated_at: string
         }
@@ -231,10 +234,13 @@ export interface Database {
           listing_id: string
           buyer_id: string
           seller_id: string
-          amount: number
-          payment_method: 'stripe'
+          amount_paid: number
+          payment_method: string
           payment_intent_id?: string | null
-          status?: 'pending' | 'completed' | 'failed' | 'cancelled'
+          paypal_order_id?: string | null
+          status?: 'pending' | 'paid' | 'failed' | 'cancelled' | 'refunded'
+          shipping_address?: Json | null
+          notes?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -243,30 +249,33 @@ export interface Database {
           listing_id?: string
           buyer_id?: string
           seller_id?: string
-          amount?: number
-          payment_method?: 'stripe'
+          amount_paid?: number
+          payment_method?: string
           payment_intent_id?: string | null
-          status?: 'pending' | 'completed' | 'failed' | 'cancelled'
+          paypal_order_id?: string | null
+          status?: 'pending' | 'paid' | 'failed' | 'cancelled' | 'refunded'
+          shipping_address?: Json | null
+          notes?: string | null
           created_at?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "payments_listing_id_fkey"
+            foreignKeyName: "orders_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "listings"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "payments_buyer_id_fkey"
+            foreignKeyName: "orders_buyer_id_fkey"
             columns: ["buyer_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "payments_seller_id_fkey"
+            foreignKeyName: "orders_seller_id_fkey"
             columns: ["seller_id"]
             isOneToOne: false
             referencedRelation: "users"

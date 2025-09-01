@@ -184,43 +184,43 @@ export class StripeConnect {
         },
       })
 
-      // Store payment record in database
-      const { data: paymentData, error: paymentError } = await supabase
-        .from('payments')
+      // Store order record in database
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
         .insert({
           listing_id: checkoutData.listingId,
           buyer_id: checkoutData.buyerId,
           seller_id: listing.seller_id,
-          amount: listing.price,
+          amount_paid: listing.price,
           payment_method: 'stripe',
           payment_intent_id: null, // Will be updated when payment is completed via webhook
           status: 'pending',
         })
         .select()
 
-      if (paymentError) {
-        console.error('❌ Error storing payment record:', {
-          error: paymentError,
+      if (orderError) {
+        console.error('❌ Error storing order record:', {
+          error: orderError,
           details: {
-            message: paymentError.message,
-            code: paymentError.code,
-            hint: paymentError.hint,
-            details: paymentError.details
+            message: orderError.message,
+            code: orderError.code,
+            hint: orderError.hint,
+            details: orderError.details
           },
           attemptedData: {
             listing_id: checkoutData.listingId,
             buyer_id: checkoutData.buyerId,
             seller_id: listing.seller_id,
-            amount: listing.price,
+            amount_paid: listing.price,
             payment_method: 'stripe',
             payment_intent_id: null,
             status: 'pending',
           }
         })
         // Don't throw here as the checkout session was created successfully
-        // The payment record will be updated when the webhook processes the completed payment
+        // The order record will be updated when the webhook processes the completed payment
       } else {
-        console.log('✅ Payment record stored successfully:', paymentData)
+        console.log('✅ Order record stored successfully:', orderData)
       }
 
       return {

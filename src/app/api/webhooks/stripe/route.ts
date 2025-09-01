@@ -81,11 +81,11 @@ export async function POST(request: NextRequest) {
               break
             }
 
-            // Update payment status to completed and add payment intent ID
-            const { data: paymentUpdate, error: paymentError } = await supabase
-              .from('payments')
+            // Update order status to completed and add payment intent ID
+            const { data: orderUpdate, error: orderError } = await supabase
+              .from('orders')
               .update({ 
-                status: 'completed',
+                status: 'paid',
                 payment_intent_id: session.payment_intent,
                 updated_at: new Date().toISOString()
               })
@@ -94,10 +94,16 @@ export async function POST(request: NextRequest) {
               .eq('status', 'pending')
               .select()
 
-            if (paymentError) {
-              console.error('❌ Payment update error:', paymentError)
+            if (orderError) {
+              console.error('❌ Order update error:', orderError)
+              console.error('❌ Order update details:', {
+                listingId,
+                buyerId,
+                paymentIntentId: session.payment_intent,
+                error: orderError
+              })
             } else {
-              console.log('✅ Payment updated:', paymentUpdate)
+              console.log('✅ Order updated:', orderUpdate)
             }
 
             // Mark listing as sold
@@ -112,8 +118,17 @@ export async function POST(request: NextRequest) {
 
             if (listingError) {
               console.error('❌ Listing update error:', listingError)
+              console.error('❌ Listing update details:', {
+                listingId,
+                error: listingError
+              })
             } else {
               console.log('✅ Listing marked as sold:', listingUpdate)
+              console.log('✅ Listing update details:', {
+                listingId,
+                isSold: listingUpdate?.[0]?.is_sold,
+                updatedAt: listingUpdate?.[0]?.updated_at
+              })
               
               // Create notification for seller
               try {
@@ -188,9 +203,9 @@ export async function POST(request: NextRequest) {
           const session = event.data.object
           
           try {
-            // Update payment status to cancelled if it exists
+            // Update order status to cancelled if it exists
             await supabase
-              .from('payments')
+              .from('orders')
               .update({ 
                 status: 'cancelled',
                 updated_at: new Date().toISOString()
@@ -207,24 +222,24 @@ export async function POST(request: NextRequest) {
         {
           const paymentIntent = event.data.object
           
-          // Update payment status to completed
+          // Update order status to paid
           await supabase
-            .from('payments')
-            .update({ status: 'completed' })
+            .from('orders')
+            .update({ status: 'paid' })
             .eq('payment_intent_id', paymentIntent.id)
 
           // Mark listing as sold
-          const paymentRecord = await supabase
-            .from('payments')
+          const orderRecord = await supabase
+            .from('orders')
             .select('listing_id')
             .eq('payment_intent_id', paymentIntent.id)
             .single()
 
-          if (paymentRecord.data) {
+          if (orderRecord.data) {
             await supabase
               .from('listings')
               .update({ is_sold: true })
-              .eq('id', paymentRecord.data.listing_id)
+              .eq('id', orderRecord.data.listing_id)
           }
 
           console.log('Payment succeeded:', paymentIntent.id)
@@ -235,9 +250,9 @@ export async function POST(request: NextRequest) {
         {
           const paymentIntent = event.data.object
           
-          // Update payment status to failed
+          // Update order status to failed
           await supabase
-            .from('payments')
+            .from('orders')
             .update({ status: 'failed' })
             .eq('payment_intent_id', paymentIntent.id)
 
@@ -249,9 +264,9 @@ export async function POST(request: NextRequest) {
         {
           const paymentIntent = event.data.object
           
-          // Update payment status to canceled
+          // Update order status to cancelled
           await supabase
-            .from('payments')
+            .from('orders')
             .update({ status: 'cancelled' })
             .eq('payment_intent_id', paymentIntent.id)
 

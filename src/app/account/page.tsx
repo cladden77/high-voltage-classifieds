@@ -86,7 +86,7 @@ export default function AccountPage() {
       const supabase = createClientSupabase()
       
       // If enabling seller capabilities, we need to reset verification status
-      const updateData = {
+      const updateData: any = {
         ...formData,
         updated_at: new Date().toISOString()
       }
