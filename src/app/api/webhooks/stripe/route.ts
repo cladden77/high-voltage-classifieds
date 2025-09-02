@@ -46,7 +46,8 @@ export async function POST(request: NextRequest) {
     console.log('✅ Webhook validated:', {
       eventType: event.type,
       eventId: event.id,
-      created: event.created
+      created: event.created,
+      account: event.account // For Connect events
     })
 
     // Handle different event types

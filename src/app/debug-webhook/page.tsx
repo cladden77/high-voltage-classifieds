@@ -8,6 +8,9 @@ export default function WebhookDebugPage() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState<string>('')
+  const [listingId, setListingId] = useState<string>('')
+  const [buyerId, setBuyerId] = useState<string>('')
+  const [sellerId, setSellerId] = useState<string>('')
 
   const testWebhookProcessing = async () => {
     setLoading(true)
@@ -93,6 +96,49 @@ export default function WebhookDebugPage() {
     }
   }
 
+  const debugPurchase = async (action: string) => {
+    if (!listingId || !buyerId) {
+      setError('Please enter listing ID and buyer ID')
+      return
+    }
+
+    setLoading(true)
+    setError('')
+    setResult(null)
+
+    try {
+      const response = await fetch('/api/debug-purchase', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action,
+          listingId,
+          buyerId,
+          sellerId
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(`Debug endpoint error: ${data.error}`)
+        return
+      }
+
+      setResult({
+        message: `Debug action "${action}" completed successfully!`,
+        data: data
+      })
+
+    } catch (err: any) {
+      setError(`Error: ${err.message}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-8 py-8">
       <h1 className="text-2xl font-bold mb-6">Webhook Debug Tool</h1>
@@ -104,13 +150,68 @@ export default function WebhookDebugPage() {
         </p>
       </div>
 
-      <button
-        onClick={testWebhookProcessing}
-        disabled={loading}
-        className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg font-bold"
-      >
-        {loading ? 'Testing...' : 'Test Webhook Processing'}
-      </button>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+          <h3 className="font-bold text-gray-800 mb-2">Test Webhook Processing</h3>
+          <button
+            onClick={testWebhookProcessing}
+            disabled={loading}
+            className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg font-bold"
+          >
+            {loading ? 'Testing...' : 'Test Webhook Processing'}
+          </button>
+        </div>
+
+        <div>
+          <h3 className="font-bold text-gray-800 mb-2">Debug Specific Purchase</h3>
+          <div className="space-y-2">
+            <input
+              type="text"
+              placeholder="Listing ID"
+              value={listingId}
+              onChange={(e) => setListingId(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-lg"
+            />
+            <input
+              type="text"
+              placeholder="Buyer ID"
+              value={buyerId}
+              onChange={(e) => setBuyerId(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-lg"
+            />
+            <input
+              type="text"
+              placeholder="Seller ID (optional)"
+              value={sellerId}
+              onChange={(e) => setSellerId(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-lg"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => debugPurchase('check_listing')}
+                disabled={loading}
+                className="bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg font-bold text-sm"
+              >
+                Check Listing
+              </button>
+              <button
+                onClick={() => debugPurchase('check_orders')}
+                disabled={loading}
+                className="bg-purple-500 hover:bg-purple-600 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg font-bold text-sm"
+              >
+                Check Orders
+              </button>
+              <button
+                onClick={() => debugPurchase('manual_update')}
+                disabled={loading}
+                className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg font-bold text-sm"
+              >
+                Manual Update
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {error && (
         <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
