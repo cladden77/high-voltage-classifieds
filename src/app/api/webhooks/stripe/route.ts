@@ -4,6 +4,20 @@ import { StripeConnect } from '@/lib/stripe'
 import { createAdminSupabase } from '@/lib/supabase-server'
 import { sendSellerOrderEmail } from '@/lib/email/send'
 
+export async function GET() {
+  return NextResponse.json({ 
+    message: 'Webhook endpoint is accessible',
+    endpoint: '/api/webhooks/stripe',
+    instructions: [
+      '1. Go to Stripe Dashboard → Developers → Webhooks',
+      '2. Add endpoint: https://your-domain.com/api/webhooks/stripe',
+      '3. Select events: checkout.session.completed, payment_intent.succeeded',
+      '4. Test the webhook using Stripe\'s test feature',
+      '5. Check server logs for webhook events'
+    ]
+  })
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.text()

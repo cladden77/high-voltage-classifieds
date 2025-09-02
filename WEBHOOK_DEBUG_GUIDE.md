@@ -1,111 +1,99 @@
-# Webhook Debugging and Testing Guide
+# Webhook Debugging Guide
 
-## Issue: Purchase Successful but Listing Not Marked as Sold
+## 🔍 **Issue Analysis**
 
-The purchase is completing successfully, but the listing isn't being marked as sold and doesn't appear in the Purchased tab. This suggests the webhook isn't being triggered or there's an issue with the webhook processing.
+The debug tool works, which means the database updates are functioning correctly. The problem is that the Stripe webhook isn't being triggered during real purchases.
 
-## Debugging Steps
+## 🎯 **Root Cause**
 
-### 1. Check Webhook Endpoint
-The webhook endpoint should be: `https://your-domain.com/api/webhooks/stripe`
+When using Stripe Connect with `transfer_data`, the webhook events are different from regular Stripe payments. The main events you need to listen for are:
 
-### 2. Verify Stripe Webhook Configuration
-In your Stripe Dashboard:
-1. Go to Developers → Webhooks
-2. Check if the webhook endpoint is configured
-3. Verify the webhook secret matches your `STRIPE_WEBHOOK_SECRET` environment variable
-4. Ensure `checkout.session.completed` events are being sent
+1. **`checkout.session.completed`** - When the checkout session is completed
+2. **`payment_intent.succeeded`** - When the payment intent succeeds (this is the key one for Connect transfers)
 
-### 3. Test Webhook Locally
-If testing locally, use Stripe CLI:
-```bash
-stripe listen --forward-to localhost:3000/api/webhooks/stripe
+## 📋 **Debugging Steps**
+
+### **Step 1: Check Webhook Configuration**
+
+1. **Go to Stripe Dashboard** → **Developers** → **Webhooks**
+2. **Verify your endpoint URL**: `https://your-domain.com/api/webhooks/stripe`
+3. **Check enabled events**: Should include:
+   - `checkout.session.completed`
+   - `payment_intent.succeeded`
+   - `payment_intent.payment_failed`
+   - `account.updated` (for Connect accounts)
+
+### **Step 2: Test Webhook Endpoint**
+
+Visit: `https://your-domain.com/api/webhooks/stripe`
+
+You should see a JSON response confirming the endpoint is accessible.
+
+### **Step 3: Check Server Logs**
+
+Look for these log messages in your server console:
+
+```
+🔔 Webhook received: { hasBody: true, bodyLength: 1234, hasSignature: true, ... }
+✅ Webhook validated: { eventType: 'payment_intent.succeeded', eventId: 'evt_...', ... }
 ```
 
-### 4. Check Console Logs
-Look for these log messages in your application console:
-- `🔔 Webhook received:`
-- `✅ Webhook validated:`
-- `🔄 Processing checkout completion:`
-- `✅ Order updated:`
-- `✅ Listing marked as sold:`
+### **Step 4: Common Issues**
 
-### 5. Database Verification
-Check your Supabase database:
-1. **Orders table**: Look for the order record with `status = 'paid'`
-2. **Listings table**: Check if `is_sold = true` for the purchased listing
-3. **Notifications table**: Verify notifications were created
+#### **Issue 1: Wrong Webhook URL**
+- **Problem**: Webhook URL doesn't match your domain
+- **Solution**: Update webhook URL in Stripe Dashboard
 
-## Common Issues and Solutions
+#### **Issue 2: Missing Events**
+- **Problem**: Only listening to `checkout.session.completed`
+- **Solution**: Add `payment_intent.succeeded` event
 
-### Issue 1: Webhook Not Triggered
-**Symptoms**: No webhook logs in console
-**Solution**: 
-- Verify webhook endpoint URL in Stripe Dashboard
-- Check webhook secret configuration
-- Ensure `checkout.session.completed` events are enabled
+#### **Issue 3: Webhook Secret Mismatch**
+- **Problem**: `STRIPE_WEBHOOK_SECRET` doesn't match
+- **Solution**: Copy the webhook secret from Stripe Dashboard
 
-### Issue 2: Webhook Fails Validation
-**Symptoms**: `❌ No signature provided` or `❌ Invalid webhook signature`
-**Solution**:
-- Check `STRIPE_WEBHOOK_SECRET` environment variable
-- Verify webhook secret in Stripe Dashboard matches
+#### **Issue 4: Server Not Receiving Webhooks**
+- **Problem**: Firewall/network blocking webhooks
+- **Solution**: Check server logs and network configuration
 
-### Issue 3: Database Update Fails
-**Symptoms**: `❌ Order update error` or `❌ Listing update error`
-**Solution**:
-- Check RLS policies for orders and listings tables
-- Verify database permissions
-- Check for foreign key constraints
+## 🛠️ **Quick Fix**
 
-### Issue 4: RLS Policy Issues
-**Symptoms**: Database operations fail with permission errors
-**Solution**:
-- Run the RLS policies script: `scripts/add-orders-rls-policies.sql`
-- Ensure admin Supabase client is used in webhook
+The most likely issue is that you're only listening to `checkout.session.completed` but need to also listen to `payment_intent.succeeded` for Connect transfers.
 
-## Testing the Fix
+### **In Stripe Dashboard:**
+1. Go to **Developers** → **Webhooks**
+2. Edit your webhook endpoint
+3. Add these events:
+   - ✅ `checkout.session.completed`
+   - ✅ `payment_intent.succeeded`
+   - ✅ `payment_intent.payment_failed`
+   - ✅ `account.updated`
 
-### Step 1: Make a Test Purchase
-1. Create a test listing
-2. Complete a purchase with Stripe test card
-3. Monitor console logs for webhook activity
+## 🧪 **Test Process**
 
-### Step 2: Verify Database Updates
-Check these tables in Supabase:
-```sql
--- Check orders table
-SELECT * FROM orders WHERE listing_id = 'your-listing-id' ORDER BY created_at DESC;
+1. **Use the debug tool** at `/debug-webhook` to verify database updates work
+2. **Check webhook configuration** in Stripe Dashboard
+3. **Make a test purchase** and watch server logs
+4. **Look for webhook events** in the logs
 
--- Check listings table
-SELECT id, title, is_sold, updated_at FROM listings WHERE id = 'your-listing-id';
+## 📊 **Expected Log Flow**
 
--- Check notifications table
-SELECT * FROM notifications WHERE related_id = 'your-listing-id';
+When a purchase is made, you should see:
+
+```
+🔔 Webhook received: { hasBody: true, bodyLength: 1234, ... }
+✅ Webhook validated: { eventType: 'payment_intent.succeeded', ... }
+💰 Payment Intent succeeded: { id: 'pi_...', amount: 1000, ... }
+🔄 Processing payment intent success for Connect transfer: { ... }
+✅ Order updated via payment intent: [order data]
+✅ Listing marked as sold via payment intent: [listing data]
 ```
 
-### Step 3: Verify UI Updates
-1. Refresh the listing page - should show "This item has been sold"
-2. Check buyer's dashboard - should show item in "Purchased" tab
-3. Check seller's dashboard - should show item in "Sold Items" tab
-4. Check listings page - item should not appear (filtered out)
+## 🚨 **If Still Not Working**
 
-## Manual Fix (If Webhook Fails)
+1. **Check Stripe Dashboard** → **Logs** for webhook delivery attempts
+2. **Verify webhook secret** in your environment variables
+3. **Test with Stripe CLI** if available
+4. **Check server firewall** and network configuration
 
-If the webhook isn't working, you can manually update the database:
-
-```sql
--- Mark listing as sold
-UPDATE listings SET is_sold = true WHERE id = 'your-listing-id';
-
--- Update order status
-UPDATE orders SET status = 'paid' WHERE listing_id = 'your-listing-id';
-```
-
-## Next Steps
-
-1. **Check webhook configuration** in Stripe Dashboard
-2. **Monitor console logs** during purchase
-3. **Verify database updates** in Supabase
-4. **Test purchase flow** end-to-end
-5. **Apply RLS policies** if not already done 
+The issue is almost certainly in the webhook configuration, not the code! 
