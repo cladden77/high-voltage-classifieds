@@ -54,7 +54,6 @@ function DashboardContent() {
     // Check if user is returning from Stripe Connect onboarding
     const stripeReturn = searchParams.get('stripe_onboarding')
     if (stripeReturn === 'complete' && currentUser && !hasProcessedStripeReturn) {
-      console.log('🔄 User returned from Stripe Connect, refreshing status...')
       setHasProcessedStripeReturn(true)
       // Force refresh user data and Stripe status
       refreshUserData()
@@ -74,9 +73,6 @@ function DashboardContent() {
 
   useEffect(() => {
     if (currentUser) {
-      console.log('🔍 Dashboard: Current user role:', currentUser.role)
-      console.log('🔍 Dashboard: Current user object:', currentUser)
-      
       // Fetch user profile from database
       fetchUserProfile()
       
@@ -89,18 +85,15 @@ function DashboardContent() {
       }
       
       if (currentUser.canSell && currentUser.sellerVerified) {
-        console.log('🔍 Dashboard: Loading seller dashboard')
         fetchListings()
         fetchSoldItems() // Fetch sold items for sellers
         fetchStripeStatus()
         setActiveTab('listings') // Default to listings for verified sellers
       } else if (currentUser.canSell && !currentUser.sellerVerified) {
-        console.log('🔍 Dashboard: Loading seller setup dashboard')
         fetchFavorites() // Still show favorites while setting up
         fetchPurchasedItems() // Also fetch purchased items
         setActiveTab('seller-setup') // Default to seller setup for unverified sellers
       } else {
-        console.log('🔍 Dashboard: Loading buyer dashboard')
         fetchFavorites()
         fetchPurchasedItems() // Fetch purchased items for buyers
         setActiveTab('favorites') // Default to favorites for buyers
@@ -152,7 +145,6 @@ function DashboardContent() {
     
     try {
       setIsCheckingVerification(true)
-      console.log('🔍 Checking if Stripe account is complete...')
       const response = await fetch('/api/create-stripe-account', {
         method: 'GET',
       })
@@ -160,8 +152,6 @@ function DashboardContent() {
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.data.isComplete) {
-          console.log('✅ Stripe account is complete, updating verification status...')
-          
           // Update the user's verification status in the database
           const supabase = createClientSupabase()
           const { error: updateError } = await supabase
@@ -176,7 +166,6 @@ function DashboardContent() {
           if (updateError) {
             console.error('❌ Failed to update verification status:', updateError)
           } else {
-            console.log('✅ Verification status updated successfully')
             // Refresh user data to reflect the change
             refreshUserData()
           }
