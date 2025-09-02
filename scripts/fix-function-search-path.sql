@@ -295,3 +295,41 @@ AND pronamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
 ORDER BY proname;
 
 SELECT 'Function search_path security fixes applied successfully! ✅' as status;
+
+-- Fix Function Search Path Security Warning
+-- This script fixes the search_path security warning for the create_notification function
+
+-- Recreate the create_notification function with fixed search_path
+CREATE OR REPLACE FUNCTION create_notification(
+    p_user_id UUID,
+    p_title TEXT,
+    p_message TEXT,
+    p_type TEXT DEFAULT 'info',
+    p_related_id TEXT DEFAULT NULL,
+    p_related_type TEXT DEFAULT NULL
+) RETURNS UUID AS $$
+DECLARE
+    notification_id UUID;
+BEGIN
+    INSERT INTO public.notifications (
+        user_id,
+        title,
+        message,
+        type,
+        related_id,
+        related_type
+    ) VALUES (
+        p_user_id,
+        p_title,
+        p_message,
+        p_type,
+        p_related_id,
+        p_related_type
+    ) RETURNING id INTO notification_id;
+    
+    RETURN notification_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+-- Grant execute permission to authenticated users
+GRANT EXECUTE ON FUNCTION create_notification(UUID, TEXT, TEXT, TEXT, TEXT, TEXT) TO authenticated;
