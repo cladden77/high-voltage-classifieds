@@ -17,8 +17,7 @@ export default function CreateListingPage() {
     price: '',
     location: '',
     category: '',
-    condition: 'good' as 'new' | 'like_new' | 'good' | 'fair' | 'poor',
-    featured: false
+    condition: 'good' as 'new' | 'like_new' | 'good' | 'fair' | 'poor'
   })
   const [images, setImages] = useState<File[]>([])
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
@@ -106,7 +105,7 @@ export default function CreateListingPage() {
       }).filter((suggestion: string) => suggestion && suggestion.length > 0)
       
       // Remove duplicates
-      const uniqueSuggestions = [...new Set(suggestions)]
+      const uniqueSuggestions = [...new Set(suggestions as string[])]
       
       setLocationSuggestions(uniqueSuggestions)
       setShowSuggestions(uniqueSuggestions.length > 0)
@@ -244,10 +243,9 @@ export default function CreateListingPage() {
           price: price,
           location: formData.location,
           category: formData.category,
-          condition: formData.condition as any,
+          condition: formData.condition,
           image_urls: imageUrls,
           seller_id: currentUser.id,
-          is_featured: formData.featured,
           is_sold: false
         })
         .select()
@@ -262,27 +260,6 @@ export default function CreateListingPage() {
           error: error
         })
         throw new Error(`Failed to create listing: ${error.message}`)
-      }
-
-      // Create notification for the seller about successful listing creation
-      try {
-        const { error: notifError } = await supabase.rpc('create_notification', {
-          p_user_id: currentUser.id,
-          p_title: 'Listing Created Successfully!',
-          p_message: `Your listing "${formData.title}" has been created and is now live on the platform.`,
-          p_type: 'success',
-          p_related_id: data.id,
-          p_related_type: 'listing'
-        })
-        
-        if (notifError) {
-          console.error('Failed to create listing notification:', notifError)
-        } else {
-          console.log('✅ Listing creation notification created')
-        }
-      } catch (notifError) {
-        console.error('Error creating listing notification:', notifError)
-        // Don't fail the listing creation if notification fails
       }
 
       // Redirect to dashboard with success message
@@ -459,20 +436,6 @@ export default function CreateListingPage() {
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                   placeholder="Provide detailed information about the equipment including specifications, condition, history, and any relevant details..."
                 />
-              </div>
-
-              <div className="lg:col-span-2">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={formData.featured}
-                    onChange={(e) => handleInputChange('featured', e.target.checked)}
-                    className="mr-2 h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
-                  />
-                  <span className="font-open-sans font-bold text-gray-700">
-                    Feature this listing (additional fee may apply)
-                  </span>
-                </label>
               </div>
             </div>
           </div>
