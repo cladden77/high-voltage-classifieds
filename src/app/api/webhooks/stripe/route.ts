@@ -59,8 +59,24 @@ export async function POST(request: NextRequest) {
           const buyerId = session.metadata?.buyer_id
           const sellerId = session.metadata?.seller_id
           
+          console.log('🛒 Checkout session completed:', {
+            sessionId: session.id,
+            paymentIntentId: session.payment_intent,
+            listingId,
+            buyerId,
+            sellerId,
+            amount: session.amount_total,
+            paymentStatus: session.payment_status
+          })
+          
           if (!listingId || !buyerId || !sellerId) {
             console.error('Missing metadata in checkout session:', session.id)
+            break
+          }
+
+          // Only process if payment is actually completed
+          if (session.payment_status !== 'paid') {
+            console.log('⏳ Payment not yet completed, waiting for payment_intent.succeeded event')
             break
           }
 
