@@ -114,32 +114,6 @@ export default function SignUpPage() {
               </div>
             )}
 
-            {/* Seller Capabilities */}
-            <div>
-              <label className="block font-open-sans font-bold text-gray-700 mb-3">
-                Account Capabilities
-              </label>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <input
-                    type="checkbox"
-                    id="canSell"
-                    checked={formData.canSell}
-                    onChange={(e) => handleInputChange('canSell', e.target.checked)}
-                    className="mt-1 h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
-                  />
-                  <div>
-                    <label htmlFor="canSell" className="font-open-sans font-bold text-blue-900">
-                      Enable Seller Capabilities
-                    </label>
-                    <p className="font-open-sans text-sm text-blue-700 mt-1">
-                      Check this box if you want to be able to list and sell equipment. You'll need to complete Stripe Connect onboarding to receive payments.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             <div>
               <label className="block font-open-sans font-bold text-gray-700 mb-2">
                 Full Name
@@ -222,6 +196,32 @@ export default function SignUpPage() {
               </div>
             </div>
 
+            {/* Seller Capabilities */}
+            <div>
+              <label className="block font-open-sans font-bold text-gray-700 mb-3">
+                Account Capabilities
+              </label>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    id="canSell"
+                    checked={formData.canSell}
+                    onChange={(e) => handleInputChange('canSell', e.target.checked)}
+                    className="mt-1 h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                  />
+                  <div>
+                    <label htmlFor="canSell" className="font-open-sans font-bold text-blue-900">
+                      Enable Seller Capabilities
+                    </label>
+                    <p className="font-open-sans text-sm text-blue-700 mt-1">
+                      Check this box if you want to be able to list and sell equipment. You'll need to complete Stripe Connect onboarding to receive payments.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="flex items-center">
               <input
                 id="agree-terms"
@@ -251,7 +251,7 @@ export default function SignUpPage() {
             </button>
           </form>
 
-          <div className="mt-6">
+          {/* <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300" />
@@ -275,7 +275,7 @@ export default function SignUpPage() {
                 <span className="ml-2">Sign up with Google</span>
               </button>
             </div>
-          </div>
+          </div> */}
 
           <div className="mt-6 text-center">
             <p className="font-open-sans text-sm text-gray-600">

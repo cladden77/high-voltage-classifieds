@@ -145,7 +145,7 @@ export default function SignInPage() {
             </button>
           </form>
 
-          <div className="mt-6">
+          {/* <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300" />
@@ -169,7 +169,7 @@ export default function SignInPage() {
                 <span className="ml-2">Sign in with Google</span>
               </button>
             </div>
-          </div>
+          </div> */}
 
           <div className="mt-6 text-center">
             <p className="font-open-sans text-sm text-gray-600">
