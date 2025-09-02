@@ -297,11 +297,14 @@ export async function POST(request: NextRequest) {
               accountId: account.id,
               chargesEnabled: account.charges_enabled,
               payoutsEnabled: account.payouts_enabled,
+              detailsSubmitted: account.details_submitted,
               requirements: account.requirements
             })
 
             // Check if account is fully onboarded
-            const isOnboarded = account.charges_enabled && account.payouts_enabled
+            // Use details_submitted as the primary indicator
+            const isOnboarded = account.details_submitted && 
+                               (!account.requirements?.currently_due || account.requirements.currently_due.length === 0)
             
             if (isOnboarded) {
               // Find user with this Stripe account ID and mark as verified
@@ -320,9 +323,15 @@ export async function POST(request: NextRequest) {
               } else {
                 console.log('✅ User marked as seller verified:', userUpdate)
               }
+            } else {
+              console.log('ℹ️ Account not yet fully onboarded:', {
+                detailsSubmitted: account.details_submitted,
+                currentlyDue: account.requirements?.currently_due
+              })
             }
           } catch (error) {
             console.error('❌ Error processing account update:', error)
+            // Don't throw the error, just log it to prevent webhook failures
           }
         }
         break
@@ -341,10 +350,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ received: true })
   } catch (error) {
-    console.error('Error processing webhook:', error)
+    console.error('❌ Error processing webhook:', error)
+    // Return 200 to prevent Stripe from retrying failed webhooks
+    // This prevents webhook delivery failures
     return NextResponse.json(
-      { error: 'Webhook processing failed' },
-      { status: 400 }
+      { error: 'Webhook processing failed', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 200 }
     )
   }
 } 
