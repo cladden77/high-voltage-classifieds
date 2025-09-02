@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { Bell, X, CheckCircle, Info, AlertTriangle, AlertCircle } from 'lucide-react'
 import { createClientSupabase } from '@/lib/supabase'
 import { getCurrentUser } from '@/lib/auth'
+import { useRouter } from 'next/navigation'
 
 interface Notification {
   id: string
@@ -21,6 +22,7 @@ export default function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     loadNotifications()
@@ -104,6 +106,39 @@ export default function NotificationBell() {
     }
   }
 
+  const handleNotificationClick = async (notification: Notification) => {
+    // Mark as read first
+    await markAsRead(notification.id)
+    
+    // Close the dropdown
+    setIsOpen(false)
+    
+    // Navigate based on notification type
+    if (notification.related_type && notification.related_id) {
+      switch (notification.related_type) {
+        case 'message':
+          // Navigate to messages page
+          router.push('/messages')
+          break
+        case 'listing':
+          // Navigate to the specific listing
+          router.push(`/listings/${notification.related_id}`)
+          break
+        case 'order':
+          // Navigate to dashboard orders tab
+          router.push('/dashboard?tab=orders')
+          break
+        default:
+          // For other types or no related type, go to dashboard
+          router.push('/dashboard')
+          break
+      }
+    } else {
+      // No related type/ID, go to dashboard
+      router.push('/dashboard')
+    }
+  }
+
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'success':
@@ -181,7 +216,7 @@ export default function NotificationBell() {
                     className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
                       !notification.is_read ? 'bg-blue-50' : ''
                     }`}
-                    onClick={() => markAsRead(notification.id)}
+                    onClick={() => handleNotificationClick(notification)}
                   >
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0 mt-0.5">
@@ -215,18 +250,6 @@ export default function NotificationBell() {
               </div>
             )}
           </div>
-
-          {notifications.length > 0 && (
-            <div className="p-3 border-t border-gray-200 bg-gray-50">
-              <a
-                href="/dashboard"
-                className="block text-center text-sm text-orange-600 hover:text-orange-700 font-medium"
-                onClick={() => setIsOpen(false)}
-              >
-                View all notifications
-              </a>
-            </div>
-          )}
         </div>
       )}
 
