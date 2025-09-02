@@ -338,15 +338,13 @@ export async function POST(request: NextRequest) {
         break
 
       default:
-        console.log(`Unhandled event type: ${event.type}`)
-        // Log helpful information for debugging
-        if (event.type.startsWith('account.')) {
-          console.log('💡 Connect account event received:', {
-            type: event.type,
-            accountId: event.account,
-            created: event.created
-          })
-        }
+        console.log(`📝 Unhandled event type: ${event.type}`)
+        console.log('📝 Event received but not processed:', {
+          type: event.type,
+          id: event.id,
+          account: event.account,
+          objectType: event.data.object.object
+        })
     }
 
     return NextResponse.json({ received: true })
