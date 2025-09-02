@@ -27,6 +27,7 @@ function DashboardContent() {
   const [listings, setListings] = useState<Listing[]>([])
   const [favorites, setFavorites] = useState<FavoriteWithListing[]>([])
   const [purchasedItems, setPurchasedItems] = useState<any[]>([])
+  const [soldItems, setSoldItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'listings' | 'messages' | 'favorites' | 'purchased' | 'payments' | 'account' | 'seller-setup'>('listings')
   const [currentUser, setCurrentUser] = useState<any>(null)
@@ -296,7 +297,7 @@ function DashboardContent() {
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      setPurchasedItems(data || []) // Reuse the same state for sold items
+      setSoldItems(data || [])
     } catch (error) {
       console.error('Error fetching sold items:', error)
     } finally {
@@ -955,7 +956,7 @@ function DashboardContent() {
       )
     }
 
-    if (purchasedItems.length === 0) {
+    if (soldItems.length === 0) {
       return (
         <div className="text-center py-16">
           <DollarSign className="h-16 w-16 text-gray-300 mx-auto mb-4" />
@@ -980,7 +981,7 @@ function DashboardContent() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {purchasedItems.slice(0, 6).map((sale) => (
+          {soldItems.slice(0, 6).map((sale) => (
             <div key={sale.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
               <div className="aspect-video bg-gray-200 flex items-center justify-center">
                 {sale.listings.image_urls && sale.listings.image_urls.length > 0 ? (
