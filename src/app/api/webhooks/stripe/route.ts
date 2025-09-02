@@ -252,28 +252,87 @@ export async function POST(request: NextRequest) {
       case 'payment_intent.succeeded':
         {
           const paymentIntent = event.data.object
+          console.log('💰 Payment Intent succeeded:', {
+            id: paymentIntent.id,
+            amount: paymentIntent.amount,
+            metadata: paymentIntent.metadata,
+            transfer_data: paymentIntent.transfer_data,
+            status: paymentIntent.status
+          })
           
-          // Update order status to paid
-          await supabase
-            .from('orders')
-            .update({ status: 'paid' })
-            .eq('payment_intent_id', paymentIntent.id)
+          // For Connect transfers, we need to handle this differently
+          const listingId = paymentIntent.metadata?.listing_id
+          const buyerId = paymentIntent.metadata?.buyer_id
+          const sellerId = paymentIntent.metadata?.seller_id
+          
+          if (listingId && buyerId && sellerId) {
+            try {
+              console.log('🔄 Processing payment intent success for Connect transfer:', {
+                paymentIntentId: paymentIntent.id,
+                listingId,
+                buyerId,
+                sellerId
+              })
 
-          // Mark listing as sold
-          const orderRecord = await supabase
-            .from('orders')
-            .select('listing_id')
-            .eq('payment_intent_id', paymentIntent.id)
-            .single()
+              // Update order status to paid
+              const { data: orderUpdate, error: orderError } = await supabase
+                .from('orders')
+                .update({ 
+                  status: 'paid',
+                  payment_intent_id: paymentIntent.id,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('listing_id', listingId)
+                .eq('buyer_id', buyerId)
+                .eq('status', 'pending')
+                .select()
 
-          if (orderRecord.data) {
-            await supabase
-              .from('listings')
-              .update({ is_sold: true })
-              .eq('id', orderRecord.data.listing_id)
+              if (orderError) {
+                console.error('❌ Order update error:', orderError)
+                console.error('❌ Order update details:', {
+                  listingId,
+                  buyerId,
+                  paymentIntentId: paymentIntent.id,
+                  error: orderError
+                })
+              } else {
+                console.log('✅ Order updated via payment intent:', orderUpdate)
+              }
+
+              // Mark listing as sold
+              const { data: listingUpdate, error: listingError } = await supabase
+                .from('listings')
+                .update({ 
+                  is_sold: true,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', listingId)
+                .select()
+
+              if (listingError) {
+                console.error('❌ Listing update error:', listingError)
+                console.error('❌ Listing update details:', {
+                  listingId,
+                  error: listingError
+                })
+              } else {
+                console.log('✅ Listing marked as sold via payment intent:', listingUpdate)
+                console.log('✅ Listing update details:', {
+                  listingId,
+                  isSold: listingUpdate?.[0]?.is_sold,
+                  updatedAt: listingUpdate?.[0]?.updated_at
+                })
+              }
+            } catch (error) {
+              console.error('❌ Error processing payment intent success:', error)
+            }
+          } else {
+            console.log('⚠️ Payment intent missing metadata:', {
+              listingId,
+              buyerId,
+              sellerId
+            })
           }
-
-          console.log('Payment succeeded:', paymentIntent.id)
         }
         break
 
