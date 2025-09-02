@@ -40,15 +40,29 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify webhook signature (using StripeConnect for new implementation)
-    const event = await StripeConnect.validateWebhook(body, signature)
-    const supabase = createAdminSupabase()
+    let event
+    try {
+      event = await StripeConnect.validateWebhook(body, signature)
+      console.log('✅ Webhook validated:', {
+        eventType: event.type,
+        eventId: event.id,
+        created: event.created,
+        account: event.account // For Connect events
+      })
+    } catch (validationError) {
+      console.error('❌ Webhook validation failed:', validationError)
+      console.error('❌ Validation error details:', {
+        error: validationError,
+        signature: signature?.substring(0, 20) + '...',
+        bodyLength: body.length
+      })
+      return NextResponse.json(
+        { error: 'Invalid webhook signature' },
+        { status: 400 }
+      )
+    }
 
-    console.log('✅ Webhook validated:', {
-      eventType: event.type,
-      eventId: event.id,
-      created: event.created,
-      account: event.account // For Connect events
-    })
+    const supabase = createAdminSupabase()
 
     // Handle different event types
     switch (event.type) {
