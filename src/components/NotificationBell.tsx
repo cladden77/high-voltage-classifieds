@@ -55,16 +55,26 @@ export default function NotificationBell() {
 
   const markAsRead = async (notificationId: string) => {
     try {
+      console.log('🔔 Marking notification as read:', notificationId)
       const supabase = createClientSupabase()
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('notifications')
         .update({ is_read: true })
         .eq('id', notificationId)
+        .select()
 
       if (error) {
-        console.error('Error marking notification as read:', error)
+        console.error('❌ Error marking notification as read:', error)
+        console.error('❌ Error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        })
         return
       }
+
+      console.log('✅ Notification marked as read:', data)
 
       // Update local state
       setNotifications(prev => 
@@ -74,33 +84,49 @@ export default function NotificationBell() {
       )
       setUnreadCount(prev => Math.max(0, prev - 1))
     } catch (error) {
-      console.error('Error marking notification as read:', error)
+      console.error('❌ Error marking notification as read:', error)
     }
   }
 
   const markAllAsRead = async () => {
     try {
       setLoading(true)
+      console.log('🔔 Marking all notifications as read...')
       const user = await getCurrentUser()
-      if (!user) return
+      if (!user) {
+        console.error('❌ No user found for mark all as read')
+        return
+      }
+
+      console.log('🔔 User ID:', user.id)
 
       const supabase = createClientSupabase()
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('notifications')
         .update({ is_read: true })
         .eq('user_id', user.id)
         .eq('is_read', false)
+        .select()
 
       if (error) {
-        console.error('Error marking all notifications as read:', error)
+        console.error('❌ Error marking all notifications as read:', error)
+        console.error('❌ Error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        })
         return
       }
+
+      console.log('✅ All notifications marked as read:', data)
+      console.log('✅ Updated count:', data?.length || 0)
 
       // Update local state
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
       setUnreadCount(0)
     } catch (error) {
-      console.error('Error marking all notifications as read:', error)
+      console.error('❌ Error marking all notifications as read:', error)
     } finally {
       setLoading(false)
     }
