@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     // Set default URLs if not provided
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
-    const successUrl = body.successUrl || `${baseUrl}/listings/${body.listingId}?payment=success`
+    const successUrl = body.successUrl || `${baseUrl}/dashboard?tab=purchased&payment=success`
     const cancelUrl = body.cancelUrl || `${baseUrl}/listings/${body.listingId}?payment=cancelled`
 
     // Create checkout session

@@ -46,10 +46,20 @@ function DashboardContent() {
   useEffect(() => {
     // Check for success messages in URL params
     const success = searchParams.get('success')
+    const payment = searchParams.get('payment')
+    
     if (success === 'listing-created') {
       setSuccessMessage('Listing created successfully!')
     } else if (success === 'listing-updated') {
       setSuccessMessage('Listing updated successfully!')
+    } else if (payment === 'success') {
+      setSuccessMessage('Purchase completed successfully! Your item will appear below.')
+    }
+
+    // Handle tab parameter from URL
+    const tabParam = searchParams.get('tab')
+    if (tabParam && ['favorites', 'listings', 'purchased', 'messages', 'account', 'seller-setup'].includes(tabParam)) {
+      setActiveTab(tabParam as any)
     }
     
     // Check if user is returning from Stripe Connect onboarding
