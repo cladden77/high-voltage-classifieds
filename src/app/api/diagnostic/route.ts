@@ -7,13 +7,20 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const listingId = searchParams.get('listingId')
 
-    console.log('🔍 Diagnostic: Checking database state for listing:', listingId)
+    // Clean up the listingId - remove any extra quotes
+    const cleanListingId = listingId?.replace(/"/g, '')
+
+    if (!cleanListingId) {
+      return NextResponse.json({ error: 'Listing ID is required' }, { status: 400 })
+    }
+
+    console.log('🔍 Diagnostic: Checking database state for listing:', cleanListingId)
 
     // Get all orders for this listing
     const { data: orders, error: ordersError } = await supabase
       .from('orders')
       .select('*')
-      .eq('listing_id', listingId)
+      .eq('listing_id', cleanListingId)
       .order('created_at', { ascending: false })
 
     if (ordersError) {
@@ -25,7 +32,7 @@ export async function GET(request: NextRequest) {
     const { data: listing, error: listingError } = await supabase
       .from('listings')
       .select('*')
-      .eq('id', listingId)
+      .eq('id', cleanListingId)
       .single()
 
     if (listingError) {
@@ -40,7 +47,7 @@ export async function GET(request: NextRequest) {
     }, {} as Record<string, number>)
 
     console.log('📊 Diagnostic results:', {
-      listingId,
+      listingId: cleanListingId,
       listingSold: listing.is_sold,
       totalOrders: orders.length,
       statusCounts,
@@ -55,7 +62,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       diagnostic: {
-        listingId,
+        listingId: cleanListingId,
         listingSold: listing.is_sold,
         totalOrders: orders.length,
         statusCounts,
