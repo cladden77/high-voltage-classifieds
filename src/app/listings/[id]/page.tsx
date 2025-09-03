@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { Heart, MessageCircle, ArrowLeft, Star, AlertCircle, CheckCircle } from 'lucide-react'
+import { Heart, MessageCircle, ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import AuthModal from '@/components/AuthModal'
@@ -357,10 +357,6 @@ export default function ListingDetailPage() {
                 </div>
                 <div>
                   <p className="font-open-sans font-bold">{listing.users?.full_name || 'Seller'}</p>
-                  <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="font-open-sans text-sm text-gray-600">4.8 (127 reviews)</span>
-                  </div>
                 </div>
               </div>
             </div>
