@@ -114,6 +114,24 @@ function DashboardContent() {
     }
   }, [activeTab, currentUser])
 
+  // Add periodic refresh for purchased/sold items to catch webhook updates
+  useEffect(() => {
+    if (!currentUser) return
+
+    const interval = setInterval(() => {
+      if (activeTab === 'purchased') {
+        console.log('🔄 Auto-refreshing purchased/sold items...')
+        if (currentUser.canSell && currentUser.sellerVerified) {
+          fetchSoldItems()
+        } else {
+          fetchPurchasedItems()
+        }
+      }
+    }, 10000) // Refresh every 10 seconds when on purchased tab
+
+    return () => clearInterval(interval)
+  }, [activeTab, currentUser])
+
   const checkAuth = async () => {
     try {
       const user = await getCurrentUser()

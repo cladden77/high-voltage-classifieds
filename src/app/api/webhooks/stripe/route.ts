@@ -288,6 +288,21 @@ export async function POST(request: NextRequest) {
                 sellerId
               })
 
+              // First, check if there's an existing order
+              const { data: existingOrder, error: checkError } = await supabase
+                .from('orders')
+                .select('*')
+                .eq('listing_id', listingId)
+                .eq('buyer_id', buyerId)
+                .order('created_at', { ascending: false })
+                .limit(1)
+
+              if (checkError) {
+                console.error('❌ Error checking existing order:', checkError)
+              } else {
+                console.log('📋 Existing order found:', existingOrder)
+              }
+
               // Update order status to paid
               const { data: orderUpdate, error: orderError } = await supabase
                 .from('orders')
@@ -309,9 +324,31 @@ export async function POST(request: NextRequest) {
                   paymentIntentId: paymentIntent.id,
                   error: orderError
                 })
+                
+                // Try updating without the status filter
+                console.log('🔄 Trying to update order without status filter...')
+                const { data: orderUpdateRetry, error: orderErrorRetry } = await supabase
+                  .from('orders')
+                  .update({ 
+                    status: 'paid',
+                    payment_intent_id: paymentIntent.id,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('listing_id', listingId)
+                  .eq('buyer_id', buyerId)
+                  .select()
+
+                if (orderErrorRetry) {
+                  console.error('❌ Order update retry failed:', orderErrorRetry)
+                } else {
+                  console.log('✅ Order updated via retry:', orderUpdateRetry)
+                }
               } else {
                 console.log('✅ Order updated via payment intent:', orderUpdate)
               }
+
+              // Add a small delay before updating listing
+              await new Promise(resolve => setTimeout(resolve, 1000))
 
               // Mark listing as sold
               const { data: listingUpdate, error: listingError } = await supabase
@@ -336,6 +373,15 @@ export async function POST(request: NextRequest) {
                   isSold: listingUpdate?.[0]?.is_sold,
                   updatedAt: listingUpdate?.[0]?.updated_at
                 })
+
+                // Double-check the listing status
+                const { data: verifyListing } = await supabase
+                  .from('listings')
+                  .select('id, is_sold, updated_at')
+                  .eq('id', listingId)
+                  .single()
+
+                console.log('🔍 Verified listing status after update:', verifyListing)
               }
             } catch (error) {
               console.error('❌ Error processing payment intent success:', error)
@@ -344,7 +390,8 @@ export async function POST(request: NextRequest) {
             console.log('⚠️ Payment intent missing metadata:', {
               listingId,
               buyerId,
-              sellerId
+              sellerId,
+              allMetadata: paymentIntent.metadata
             })
           }
         }
