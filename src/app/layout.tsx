@@ -16,6 +16,9 @@ const openSans = Open_Sans({
 export const metadata: Metadata = {
   title: "High Voltage Classifieds - Buy & Sell Surplus High Voltage Equipment",
   description: "A trusted platform for contractors, utilities, and solar providers to buy and sell surplus high voltage equipment",
+  icons: {
+    icon: "/highvoltageclassifieds-favicon.svg",
+  },
 };
 
 export default function RootLayout({
