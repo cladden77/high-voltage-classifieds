@@ -8,7 +8,7 @@ export default function SellerOrderEmail({ sellerName = 'Seller', listingTitle =
       <Preview>Your item has been purchased</Preview>
       <Body style={{ backgroundColor: '#f8f9fa', fontFamily: 'sans-serif' }}>
         <Container style={{ backgroundColor: '#fff', margin: '40px auto', padding: '32px', maxWidth: '560px', borderRadius: 12 }}>
-          <Img src="https://highvoltageclassifieds.com/logo.png" alt="High Voltage Classifieds" width="160" style={{ margin: '0 auto 16px' }} />
+          <Img src="https://highvoltageclassifieds.com/public/assets/high-voltage-classifieds-logo.svg" alt="High Voltage Classifieds" width="160" style={{ margin: '0 auto 16px' }} />
           <Heading as="h2" style={{ textAlign: 'center' }}>You made a sale 🎉</Heading>
           <Text style={{ color: '#333', fontSize: 16 }}>Hi {sellerName}, your listing <strong>{listingTitle}</strong> has been purchased.</Text>
           <Text style={{ fontSize: 16 }}>Total: <strong>{amount}</strong></Text>
