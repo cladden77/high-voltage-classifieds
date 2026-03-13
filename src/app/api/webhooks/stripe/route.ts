@@ -126,6 +126,17 @@ export async function POST(request: NextRequest) {
               break
             }
 
+            // Get buyer details for email and dashboard display
+            const { data: buyerData, error: buyerDataError } = await supabase
+              .from('users')
+              .select('id, full_name, email, phone')
+              .eq('id', buyerId)
+              .single()
+
+            if (buyerDataError) {
+              console.error('❌ Error fetching buyer data:', buyerDataError)
+            }
+
             // Update order status to completed and add payment intent ID
             const { data: orderUpdate, error: orderError } = await supabase
               .from('orders')
@@ -217,7 +228,7 @@ export async function POST(request: NextRequest) {
                 console.error('❌ Error creating buyer notification:', notifError)
               }
 
-              // Send seller email via Resend
+              // Send seller email via Resend (including buyer details)
               try {
                 if (listingData?.users?.email) {
                   const amountFormatted = `$${(session.amount_total / 100).toLocaleString()}`
@@ -229,6 +240,9 @@ export async function POST(request: NextRequest) {
                     listingTitle: listingData.title,
                     amount: amountFormatted,
                     orderId: orderId,
+                    buyerName: buyerData?.full_name || undefined,
+                    buyerEmail: buyerData?.email,
+                    buyerPhone: buyerData?.phone || undefined,
                   })
                   console.log('✅ Seller email sent')
                 }

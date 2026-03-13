@@ -317,7 +317,8 @@ function DashboardContent() {
           users!orders_buyer_id_fkey (
             id,
             full_name,
-            email
+            email,
+            phone
           )
         `)
         .eq('seller_id', currentUser.id)
@@ -1042,6 +1043,18 @@ function DashboardContent() {
                     <span>Buyer:</span>
                     <span>{sale.users?.full_name || sale.users?.email || 'Unknown'}</span>
                   </div>
+                  {sale.users?.email && (
+                    <div className="flex justify-between">
+                      <span>Buyer Email:</span>
+                      <span>{sale.users.email}</span>
+                    </div>
+                  )}
+                  {sale.users?.phone && (
+                    <div className="flex justify-between">
+                      <span>Buyer Phone:</span>
+                      <span>{sale.users.phone}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span>Location:</span>
                     <span>{sale.listings.location}</span>

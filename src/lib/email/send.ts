@@ -34,9 +34,42 @@ export async function sendNewMessageEmail({
   }
 }
 
-export async function sendSellerOrderEmail({ to, sellerName, listingTitle, amount, orderId }: { to: string; sellerName?: string; listingTitle?: string; amount?: string; orderId: string | number }) {
+type SendSellerOrderEmailParams = {
+  to: string
+  sellerName?: string
+  listingTitle?: string
+  amount?: string
+  orderId: string | number
+  buyerName?: string
+  buyerEmail?: string
+  buyerPhone?: string
+}
+
+export async function sendSellerOrderEmail({
+  to,
+  sellerName,
+  listingTitle,
+  amount,
+  orderId,
+  buyerName,
+  buyerEmail,
+  buyerPhone,
+}: SendSellerOrderEmailParams) {
   const link = `${APP_URL}/orders/${orderId}`
-  await resend.emails.send({ from: FROM, to, subject: `Your listing was purchased`, react: SellerOrderEmail({ sellerName, listingTitle, amount, link }) })
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Your listing was purchased`,
+    react: SellerOrderEmail({
+      sellerName,
+      listingTitle,
+      amount,
+      link,
+      buyerName,
+      buyerEmail,
+      buyerPhone,
+    }),
+  })
 }
 
 
