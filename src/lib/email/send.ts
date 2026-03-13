@@ -55,7 +55,8 @@ export async function sendSellerOrderEmail({
   buyerEmail,
   buyerPhone,
 }: SendSellerOrderEmailParams) {
-  const link = `${APP_URL}/orders/${orderId}`
+  // Currently, order details are managed from the seller dashboard "Sold Items" tab
+  const link = `${APP_URL}/dashboard?tab=purchased`
   await resend.emails.send({
     from: FROM,
     to,
