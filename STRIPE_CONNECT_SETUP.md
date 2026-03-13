@@ -57,6 +57,13 @@ NEXT_PUBLIC_BASE_URL=https://yourdomain.com    # Your production domain
    - `account.updated` (optional, for Connect account updates)
 5. Copy the webhook signing secret
 
+### 4. Enable buyer receipt emails (optional)
+
+Buyers receive Stripe’s receipt email after a successful payment. The app passes the buyer’s email to Checkout via `customer_email`. To ensure Stripe sends the receipt:
+
+1. In Stripe Dashboard go to **Settings** → **Emails**
+2. Under **Customer emails**, enable **Successful payments** (receipt emails)
+
 ## 🧪 Test Mode Setup
 
 ### Testing Seller Onboarding

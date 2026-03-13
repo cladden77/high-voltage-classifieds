@@ -145,10 +145,20 @@ export class StripeConnect {
         throw new Error('Seller account is not fully set up')
       }
 
+      // Get buyer email for Stripe receipt
+      const { data: buyer, error: buyerError } = await supabase
+        .from('users')
+        .select('email')
+        .eq('id', checkoutData.buyerId)
+        .single()
+
+      const buyerEmail = !buyerError && buyer?.email ? buyer.email : undefined
+
       // Create Checkout Session with transfer to seller
       const session = await stripe.checkout.sessions.create({
         mode: 'payment',
         payment_method_types: ['card'],
+        ...(buyerEmail && { customer_email: buyerEmail }),
         line_items: [
           {
             price_data: {
