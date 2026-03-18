@@ -54,5 +54,5 @@ body {
 
 /* HubSpot form styles */
 .hsfc-Step .hsfc-Step__Content {
-  padding: 0;
+  padding: 0 !important;
 }
