@@ -51,3 +51,8 @@ body {
 .font-open-sans {
   font-family: var(--font-open-sans), Arial, sans-serif;
 }
+
+/* HubSpot form styles */
+.hsfc-Step .hsfc-Step__Content {
+  padding: 0;
+}
