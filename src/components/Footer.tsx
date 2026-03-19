@@ -49,14 +49,26 @@ export default function Footer() {
         <div>
           <h3 className="text-[#f37121] text-lg font-bold mb-4">Newsletter</h3>
           <div className="space-y-3">
-            <script src="https://js-na2.hsforms.net/forms/embed/243765446.js" defer></script>
-            <div
-              className="hs-form-frame newsletter-hs-form"
-              data-hs-forms-root
-              data-region="na2"
-              data-form-id="ef60169f-ecda-4601-806b-f0a2e4657d7c"
-              data-portal-id="243765446"
-            ></div>
+            <script
+              src="https://js-na2.hsforms.net/forms/embed/v2.js"
+              defer
+            ></script>
+            <script
+              defer
+              // HubSpot "raw HTML" mode (no iframe shell) so we can style the form
+              dangerouslySetInnerHTML={{
+                __html: `
+                  hbspt.forms.create({
+                    region: "na2",
+                    portalId: "243765446",
+                    formId: "ef60169f-ecda-4601-806b-f0a2e4657d7c",
+                    target: "#newsletter-form",
+                    css: ""
+                  });
+                `,
+              }}
+            />
+            <div id="newsletter-form" />
           </div>
         </div>
       </div>

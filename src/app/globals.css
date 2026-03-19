@@ -52,44 +52,96 @@ body {
   font-family: var(--font-open-sans), Arial, sans-serif;
 }
 
-/* Footer newsletter HubSpot form styles (iframe-based).
-   HubSpot's "new forms" are rendered inside a cross-origin iframe, so your page CSS selectors
-   can't reach `.hsfc-*` elements inside the frame. Use HubSpot's documented CSS variables instead. */
-[data-hs-forms-root].newsletter-hs-form,
-.newsletter-hs-form {
-  /* Global typography */
-  --hsf-global__font-family: var(--font-open-sans), Arial, Helvetica, sans-serif;
-  --hsf-global__font-size: 16px;
-  --hsf-global__color: #ffffff;
+/* Footer newsletter HubSpot form styles (legacy/raw HTML).
+   We render the form without the cross-origin iframe shell so these selectors can apply. */
+#newsletter-form {
+  width: 100%;
+}
 
-  /* Remove container padding/borders */
-  --hsf-background__background-color: transparent;
-  --hsf-background__border-width: 0px;
-  --hsf-background__padding: 0px;
+#newsletter-form form.hs-form,
+#newsletter-form form {
+  margin: 0;
+}
 
-  /* Vertical spacing between the email field and submit button */
-  --hsf-row__vertical-spacing: 0px;
-  --hsf-module__vertical-spacing: 12px; /* matches `space-y-3` */
+/* Hide HubSpot's built-in field label to match your hardcoded form (optional). */
+#newsletter-form label {
+  display: none;
+}
 
-  /* Field input (dark input) */
-  --hsf-field-input__background-color: #262626;
-  --hsf-field-input__color: #ffffff;
-  --hsf-field-input__placeholder-color: #a1a1a1;
-  --hsf-field-input__border-width: 0px;
-  --hsf-field-input__border-style: solid;
-  --hsf-field-input__border-radius: 6px;
-  --hsf-field-input__padding: 12px 16px;
+/* Dark input to match the hardcoded newsletter input */
+#newsletter-form .hs-input {
+  width: 100%;
+  background: #262626;
+  color: #ffffff;
+  border: 0;
+  border-radius: 0.375rem;
+  padding: 0.75rem 1rem;
+  margin: 0;
+  box-sizing: border-box;
+}
 
-  /* Collapse the label area (so it matches your hardcoded form that has no visible label) */
-  --hsf-field-label__font-size: 0px;
-  --hsf-field-label__color: transparent;
+#newsletter-form input[type="email"],
+#newsletter-form input[type="text"] {
+  width: 100%;
+  background: #262626;
+  color: #ffffff;
+  border: 0;
+  border-radius: 0.375rem;
+  padding: 0.75rem 1rem;
+  margin: 0;
+  box-sizing: border-box;
+}
 
-  /* Button (full-width orange CTA) */
-  --hsf-button__background-color: #f37121;
-  --hsf-button__color: #171717;
-  --hsf-button__border-radius: 6px;
-  --hsf-button__padding: 10px 16px;
-  --hsf-button__font-family: var(--font-open-sans), Arial, Helvetica, sans-serif;
-  --hsf-button__font-size: 16px;
-  --hsf-button__box-shadow: none;
+#newsletter-form .hs-input::placeholder {
+  color: #a1a1a1;
+}
+
+/* For cases where the input doesn't carry `.hs-input` */
+#newsletter-form input::placeholder {
+  color: #a1a1a1;
+}
+
+/* Remove extra spacing around fields */
+#newsletter-form .hs-form-field,
+#newsletter-form .hs-form-field * {
+  margin: 0;
+  padding: 0;
+}
+
+/* Match the gap between input and button from the hardcoded form */
+#newsletter-form .hs-submit {
+  margin-top: 12px;
+}
+
+/* Orange subscribe button to match your hardcoded button */
+#newsletter-form .hs-submit input[type="submit"],
+#newsletter-form .hs-submit input[type="button"] {
+  width: 100%;
+  background: #f37121;
+  color: #171717;
+  border: 0;
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  box-sizing: border-box;
+  display: block;
+  cursor: pointer;
+}
+
+#newsletter-form input[type="submit"],
+#newsletter-form input[type="button"] {
+  width: 100%;
+  background: #f37121;
+  color: #171717;
+  border: 0;
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  box-sizing: border-box;
+  display: block;
+  cursor: pointer;
 }
