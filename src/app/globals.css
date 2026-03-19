@@ -53,6 +53,13 @@ body {
 }
 
 /* HubSpot form styles */
-form.hsfc-Form .hsfc-Step .hsfc-Step__Content {
+.hs-form-frame .hsfc-Step__Content {
+  padding: 0 !important;
+}
+
+.hs-form-frame .hsfc-Row,
+.hs-form-frame .hsfc-NavigationRow,
+.hs-form-frame .hsfc-EmailField {
+  margin: 0 !important;
   padding: 0 !important;
 }
