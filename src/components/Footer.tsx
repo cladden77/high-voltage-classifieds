@@ -49,16 +49,13 @@ export default function Footer() {
         <div>
           <h3 className="text-[#f37121] text-lg font-bold mb-4">Newsletter</h3>
           <div className="space-y-3">
-            <input
-              type="email"
-              placeholder="Your email address"
-              className="w-full bg-neutral-800 text-white px-4 py-3 rounded placeholder:text-[#a1a1a1]"
-            />
-            <button className="w-full bg-[#f37121] text-neutral-900 py-2 rounded font-bold uppercase hover:bg-[#e55a0a] transition-colors">
-              Subscribe
-            </button>
             <script src="https://js-na2.hsforms.net/forms/embed/243765446.js" defer></script>
-<div className="hs-form-frame" data-region="na2" data-form-id="ef60169f-ecda-4601-806b-f0a2e4657d7c" data-portal-id="243765446"></div>
+            <div
+              className="hs-form-frame newsletter-hs-form"
+              data-region="na2"
+              data-form-id="ef60169f-ecda-4601-806b-f0a2e4657d7c"
+              data-portal-id="243765446"
+            ></div>
           </div>
         </div>
       </div>

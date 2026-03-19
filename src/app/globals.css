@@ -52,14 +52,50 @@ body {
   font-family: var(--font-open-sans), Arial, sans-serif;
 }
 
-/* HubSpot form styles */
-.hs-form-frame .hsfc-Step__Content {
+/* Footer newsletter HubSpot form styles */
+.newsletter-hs-form,
+.newsletter-hs-form .hsfc-Step,
+.newsletter-hs-form .hsfc-Step__Content,
+.newsletter-hs-form .hsfc-Row,
+.newsletter-hs-form .hsfc-EmailField,
+.newsletter-hs-form .hsfc-NavigationRow,
+.newsletter-hs-form .hsfc-NavigationRow__Buttons {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
   padding: 0 !important;
 }
 
-.hs-form-frame .hsfc-Row,
-.hs-form-frame .hsfc-NavigationRow,
-.hs-form-frame .hsfc-EmailField {
+.newsletter-hs-form .hsfc-FieldLabel {
+  display: none !important;
+}
+
+.newsletter-hs-form .hsfc-TextInput {
+  width: 100% !important;
+  background: #262626 !important;
+  color: #ffffff !important;
+  border: 0 !important;
+  border-radius: 0.375rem !important;
+  padding: 0.75rem 1rem !important;
   margin: 0 !important;
-  padding: 0 !important;
+}
+
+.newsletter-hs-form .hsfc-TextInput::placeholder {
+  color: #a1a1a1 !important;
+}
+
+.newsletter-hs-form .hsfc-NavigationRow {
+  margin-top: 0.75rem !important;
+}
+
+.newsletter-hs-form .hsfc-Button {
+  width: 100% !important;
+  background: #f37121 !important;
+  color: #171717 !important;
+  border: 0 !important;
+  border-radius: 0.375rem !important;
+  padding: 0.5rem 1rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.02em !important;
 }
