@@ -1,59 +1,7 @@
-/* eslint-disable @next/next/no-before-interactive-script-outside-document */
-"use client";
-
-import React, { useEffect, useRef } from "react";
+import React from "react";
 import Link from "next/link";
 
 export default function Footer() {
-  const newsletterTargetRef = useRef<HTMLDivElement | null>(null);
-  const didCreateFormRef = useRef(false);
-
-  useEffect(() => {
-    if (didCreateFormRef.current) return;
-    didCreateFormRef.current = true;
-
-    const existing = document.querySelector<HTMLScriptElement>(
-      'script[data-hubspot-embed="newsletter-v2"]'
-    );
-    const create = () => {
-      const w = window as any;
-      if (!w?.hbspt?.forms?.create) return;
-
-      w.hbspt.forms.create({
-        region: "na2",
-        portalId: "243765446",
-        formId: "ef60169f-ecda-4601-806b-f0a2e4657d7c",
-        target: "#newsletter-form",
-        // HubSpot sometimes omits the “raw HTML” behavior unless you set css.
-        // This is the `code I had in there` that forces the form into the DOM
-        // (no cross-origin iframe shell), so our CSS can apply.
-        css: "",
-      });
-    };
-
-    const scriptLoaded = async () => {
-      if (existing) {
-        create();
-        return;
-      }
-
-      await new Promise<void>((resolve) => {
-        const script = document.createElement("script");
-        script.src = "https://js-na2.hsforms.net/forms/embed/v2.js";
-        script.async = true;
-        script.dataset.hubspotEmbed = "newsletter-v2";
-        script.onload = () => resolve();
-        script.onerror = () => resolve();
-        document.body.appendChild(script);
-      });
-
-      // HubSpot attaches `hbspt` on the script load, but be defensive.
-      setTimeout(create, 0);
-    };
-
-    void scriptLoaded();
-  }, []);
-
   return (
     <footer className="bg-[#1b1b1b] px-4 py-10 border-t border-neutral-800">
       <div className="max-w-[1280px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
@@ -101,7 +49,13 @@ export default function Footer() {
         <div>
           <h3 className="text-[#f37121] text-lg font-bold mb-4">Newsletter</h3>
           <div className="space-y-3">
-            <div id="newsletter-form" ref={newsletterTargetRef} />
+            <script src="https://js-na2.hsforms.net/forms/embed/243765446.js" defer></script>
+            <div
+              className="hs-form-frame"
+              data-region="na2"
+              data-form-id="ef60169f-ecda-4601-806b-f0a2e4657d7c"
+              data-portal-id="243765446"
+            ></div>
           </div>
         </div>
       </div>
