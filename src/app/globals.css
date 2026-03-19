@@ -55,7 +55,7 @@ body {
 /* Footer newsletter HubSpot form styles */
 .newsletter-hs-form,
 .newsletter-hs-form .hsfc-Step,
-.newsletter-hs-form .hsfc-Step__Content,
+.newsletter-hs-form .hsfc-Step .hsfc-Step__Content,
 .newsletter-hs-form .hsfc-Row,
 .newsletter-hs-form .hsfc-EmailField,
 .newsletter-hs-form .hsfc-NavigationRow,
