@@ -53,6 +53,6 @@ body {
 }
 
 /* HubSpot form styles */
-.hs-form-frame .hsfc-Form .hsfc-Step .hsfc-Step__Content {
+form.hsfc-Form .hsfc-Step .hsfc-Step__Content {
   padding: 0 !important;
 }
