@@ -57,13 +57,11 @@ body {
   width: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden;
 }
 
 .newsletter-form-frame iframe {
   display: block;
-  width: calc(100% + 24px) !important;
-  max-width: none !important;
-  margin: -12px;
-  height: calc(100% + 24px) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  border: 0 !important;
 }
