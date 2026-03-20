@@ -47,7 +47,7 @@ export default function Footer() {
         </div>
         
         <div>
-          <h3 className="text-[#f37121] text-lg font-bold mb-4">Newsletter</h3>
+          <h3 className="text-[#f37121] text-lg font-bold">Newsletter</h3>
           <div className="space-y-3">
             <script src="https://js-na2.hsforms.net/forms/embed/243765446.js" defer></script>
             <div
