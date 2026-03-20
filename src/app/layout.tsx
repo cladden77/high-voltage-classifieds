@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Staatliches, Open_Sans } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 const staatliches = Staatliches({
@@ -31,6 +32,10 @@ export default function RootLayout({
       <body
         className={`${staatliches.variable} ${openSans.variable} antialiased`}
       >
+        <Script
+          src="https://js-na2.hsforms.net/forms/embed/243765446.js"
+          strategy="afterInteractive"
+        />
         {children}
       </body>
     </html>

@@ -73,8 +73,12 @@ export default function ContactPage() {
             </div>
             
             {/* HubSpot Form Placeholder */}
-            <script src="https://js-na2.hsforms.net/forms/embed/243765446.js" defer></script>
-<div className="hs-form-frame" data-region="na2" data-form-id="be7e83a0-9dd3-4905-b2c8-14d546845e9a" data-portal-id="243765446"></div>
+            <div
+              className="hs-form-frame"
+              data-region="na2"
+              data-form-id="be7e83a0-9dd3-4905-b2c8-14d546845e9a"
+              data-portal-id="243765446"
+            ></div>
           </div>
 
           {/* Contact Information */}
