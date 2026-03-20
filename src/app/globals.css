@@ -58,6 +58,16 @@ body {
   margin: 0;
   padding: 0;
   --hsf-background__padding: 0px;
+  --hsf-default-background__padding: 0px;
+  --hsf-row__vertical-spacing: 0px;
+  --hsf-module__vertical-spacing: 0px;
+}
+
+.hs-form-frame[data-form-id="ef60169f-ecda-4601-806b-f0a2e4657d7c"] {
+  --hsf-background__padding: 0px;
+  --hsf-default-background__padding: 0px;
+  --hsf-row__vertical-spacing: 0px;
+  --hsf-module__vertical-spacing: 0px;
 }
 
 .newsletter-form-frame iframe {
