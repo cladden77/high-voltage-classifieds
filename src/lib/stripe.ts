@@ -265,6 +265,24 @@ export class StripeConnect {
   }
 
   /**
+   * Validate webhook signature with an explicitly provided secret.
+   * Useful when platform and connect webhooks use different endpoint secrets.
+   */
+  static async validateWebhookWithSecret(
+    payload: string,
+    signature: string,
+    webhookSecret: string
+  ): Promise<Stripe.Event> {
+    try {
+      const event = stripe.webhooks.constructEvent(payload, signature, webhookSecret)
+      return event
+    } catch (error) {
+      console.error('Error validating webhook with provided secret:', error)
+      throw new Error('Invalid webhook signature')
+    }
+  }
+
+  /**
    * Check if a Connect account is fully onboarded
    * @param accountId - Stripe account ID
    * @returns Promise<boolean>

@@ -2,9 +2,11 @@
 
 This endpoint handles Stripe webhook events for the High Voltage Classifieds platform.
 
-## Endpoint
+## Endpoints
 
-`POST /api/webhooks/stripe`
+- `POST /api/webhooks/stripe/platform` (recommended for **Your account** events)
+- `POST /api/webhooks/stripe/connect` (recommended for **Connected and v2 accounts** events)
+- `POST /api/webhooks/stripe` (backward-compatible route during migration)
 
 ## Supported Events
 
@@ -61,6 +63,9 @@ ngrok http 3000
 ## Required Environment Variables
 
 ```bash
+STRIPE_WEBHOOK_SECRET_PLATFORM=whsec_...  # Your account endpoint secret
+STRIPE_WEBHOOK_SECRET_CONNECT=whsec_...   # Connected/v2 endpoint secret
+# Optional compatibility fallback:
 STRIPE_WEBHOOK_SECRET=whsec_...
 ```
 
