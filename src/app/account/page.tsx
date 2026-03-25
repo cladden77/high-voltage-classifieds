@@ -88,6 +88,7 @@ export default function AccountPage() {
       // If enabling seller capabilities, we need to reset verification status
       const updateData: any = {
         ...formData,
+        role: formData.can_sell ? 'seller' : 'buyer',
         updated_at: new Date().toISOString()
       }
 

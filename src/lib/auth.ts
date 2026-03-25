@@ -54,11 +54,16 @@ export async function signInWithCredentials(email: string, password: string, rol
 
     console.log('👤 User profile:', profile)
 
+    const resolvedRole: 'buyer' | 'seller' =
+      profile?.role === 'seller' ? 'seller'
+      : profile?.can_sell ? 'seller'
+      : role || 'buyer'
+
     const user = {
       id: data.user.id,
       email: data.user.email!,
       name: profile?.full_name || data.user.user_metadata?.full_name || '',
-      role: profile?.role || role || 'buyer',
+      role: resolvedRole,
       canSell: profile?.can_sell || false,
       sellerVerified: profile?.seller_verified || false,
     }
@@ -101,7 +106,7 @@ export async function signUpWithCredentials(email: string, password: string, nam
         id: data.user.id,
         email: email,
         full_name: name,
-        role: 'buyer', // All users start as buyers
+        role: canSell ? 'seller' : 'buyer',
         can_sell: canSell,
         seller_verified: false, // Will be verified after Stripe Connect onboarding
         created_at: new Date().toISOString(),
@@ -122,7 +127,7 @@ export async function signUpWithCredentials(email: string, password: string, nam
           id: data.user.id,
           email: email,
           full_name: name,
-          role: 'buyer',
+          role: canSell ? 'seller' : 'buyer',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
@@ -141,6 +146,7 @@ export async function signUpWithCredentials(email: string, password: string, nam
               .from('users')
               .update({ 
                 can_sell: true,
+                role: 'seller',
                 seller_verified: false,
                 updated_at: new Date().toISOString()
               })
@@ -159,7 +165,7 @@ export async function signUpWithCredentials(email: string, password: string, nam
       id: data.user.id,
       email: email,
       name: name,
-      role: 'buyer', // All users start as buyers
+      role: canSell ? 'seller' : 'buyer',
       canSell: canSell,
     }
 
@@ -207,6 +213,10 @@ export async function getCurrentUser() {
         if (user.user_metadata?.role && (user.user_metadata.role === 'buyer' || user.user_metadata.role === 'seller')) {
           defaultRole = user.user_metadata.role as 'buyer' | 'seller'
         }
+        // If seller capabilities are enabled, treat user as seller for compatibility
+        if (user.user_metadata?.can_sell) {
+          defaultRole = 'seller'
+        }
         
         const { data: newProfile, error: createError } = await supabase
           .from('users')
@@ -231,7 +241,7 @@ export async function getCurrentUser() {
       id: user.id,
       email: user.email!,
       name: profile?.full_name || user.user_metadata?.full_name || '',
-      role: profile?.role || 'buyer',
+      role: (profile?.role === 'seller' || profile?.can_sell) ? 'seller' : 'buyer',
       canSell: profile?.can_sell || false,
       sellerVerified: profile?.seller_verified || false,
     }

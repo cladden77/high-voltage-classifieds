@@ -30,13 +30,15 @@ LIMIT 5;
 -- Test updating a user to enable seller capabilities
 -- (Replace 'USER_EMAIL_HERE' with an actual user email from your system)
 UPDATE public.users 
-SET can_sell = TRUE
+SET can_sell = TRUE,
+    role = 'seller'
 WHERE email = 'test@example.com'  -- Replace with actual email
-  AND can_sell IS NULL;
+  AND (can_sell IS NULL OR can_sell = FALSE);
 
 -- Verify the update
 SELECT 
   email,
+  role,
   can_sell,
   seller_verified,
   seller_verification_date
