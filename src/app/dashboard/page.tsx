@@ -33,6 +33,7 @@ function DashboardContent() {
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [userProfile, setUserProfile] = useState<any>(null)
   const [successMessage, setSuccessMessage] = useState('')
+  const [isFinalizingPurchase, setIsFinalizingPurchase] = useState(false)
   const [stripeAccountStatus, setStripeAccountStatus] = useState<any>(null)
   const [isCheckingVerification, setIsCheckingVerification] = useState(false)
   const [hasProcessedStripeReturn, setHasProcessedStripeReturn] = useState(false)
@@ -53,7 +54,8 @@ function DashboardContent() {
     } else if (success === 'listing-updated') {
       setSuccessMessage('Listing updated successfully!')
     } else if (payment === 'success') {
-      setSuccessMessage('Purchase completed successfully! Your item will appear below.')
+      setSuccessMessage('Finalizing your purchase. This usually takes a few seconds.')
+      setActiveTab('purchased')
     }
 
     // Handle tab parameter from URL
@@ -81,6 +83,62 @@ function DashboardContent() {
       return () => clearTimeout(timer)
     }
   }, [searchParams, successMessage, currentUser])
+
+  useEffect(() => {
+    const payment = searchParams.get('payment')
+    const sessionId = searchParams.get('session_id')
+
+    if (payment !== 'success' || !sessionId || !currentUser) return
+
+    let cancelled = false
+    const maxAttempts = 10
+    const pollIntervalMs = 1500
+
+    const pollPurchaseFinalization = async () => {
+      setIsFinalizingPurchase(true)
+
+      for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+        if (cancelled) return
+
+        try {
+          const response = await fetch(`/api/checkout/status?session_id=${encodeURIComponent(sessionId)}`, {
+            method: 'GET',
+            cache: 'no-store',
+          })
+
+          if (response.ok) {
+            const status = await response.json()
+            if (status.finalized) {
+              await fetchPurchasedItems()
+              if (currentUser?.canSell && currentUser?.sellerVerified) {
+                await fetchSoldItems()
+              }
+              if (!cancelled) {
+                setSuccessMessage('Purchase completed successfully!')
+                setIsFinalizingPurchase(false)
+              }
+              return
+            }
+          }
+        } catch (error) {
+          console.error('Error polling checkout status:', error)
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, pollIntervalMs))
+      }
+
+      if (!cancelled) {
+        setSuccessMessage('Payment received. Your purchase will appear shortly.')
+        setIsFinalizingPurchase(false)
+      }
+    }
+
+    pollPurchaseFinalization()
+
+    return () => {
+      cancelled = true
+    }
+  }, [searchParams, currentUser])
 
   useEffect(() => {
     if (currentUser) {
@@ -1114,7 +1172,11 @@ function DashboardContent() {
         {successMessage && (
           <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-8 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5" />
+              {isFinalizingPurchase ? (
+                <Clock className="h-5 w-5 animate-spin" />
+              ) : (
+                <CheckCircle className="h-5 w-5" />
+              )}
               <p className="font-open-sans text-sm">{successMessage}</p>
             </div>
             <button

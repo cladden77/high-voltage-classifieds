@@ -10,6 +10,14 @@ interface CheckoutRequestBody {
   cancelUrl?: string
 }
 
+function ensureSessionIdInSuccessUrl(url: string): string {
+  if (url.includes('{CHECKOUT_SESSION_ID}')) {
+    return url
+  }
+  const separator = url.includes('?') ? '&' : '?'
+  return `${url}${separator}session_id={CHECKOUT_SESSION_ID}`
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Get the current user from the session
@@ -65,7 +73,9 @@ export async function POST(request: NextRequest) {
 
     // Set default URLs if not provided
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
-    const successUrl = body.successUrl || `${baseUrl}/dashboard?tab=purchased&payment=success`
+    const successUrl = ensureSessionIdInSuccessUrl(
+      body.successUrl || `${baseUrl}/dashboard?tab=purchased&payment=success`
+    )
     const cancelUrl = body.cancelUrl || `${baseUrl}/listings/${body.listingId}?payment=cancelled`
 
     // Create checkout session
