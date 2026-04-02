@@ -1,26 +1,13 @@
 'use client'
 
 import React, { useState } from "react";
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation'
+import { LISTING_CATEGORIES } from '@/lib/listing-categories'
 
 export default function HeroSection() {
   const [searchKeywords, setSearchKeywords] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const router = useRouter()
-
-  const categories = [
-    'Transformers',
-    'Breakers', 
-    'Motors',
-    'Switchgear',
-    'Panels',
-    'Cables',
-    'Generators',
-    'Insulators',
-    'Protective Equipment',
-    'Testing Equipment',
-    'Other'
-  ]
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -74,7 +61,7 @@ export default function HeroSection() {
                 className="bg-neutral-100 border border-neutral-200 rounded px-4 py-3 text-[#1b1b1b] min-w-[120px] focus:outline-none focus:ring-2 focus:ring-[#f37121] focus:border-transparent"
               >
                 <option value="">All Categories</option>
-                {categories.map((category) => (
+                {LISTING_CATEGORIES.map((category) => (
                   <option key={category} value={category}>
                     {category}
                   </option>

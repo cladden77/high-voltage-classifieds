@@ -92,7 +92,7 @@ INSERT INTO public.listings (
     'Square D Model 6 Metal Clad Switchgear, 800A main breaker. 4.16kV class. Recently serviced with new control wiring. Includes 6 feeder breakers. Ideal for manufacturing facilities.',
     28000.00,
     'Dallas, TX', 
-    'Switchgear',
+    'Switches & Switchgear',
     'like_new',
     '675cc100-36ff-451d-af54-334ad1237dd2', -- Replace with real seller ID
     false
@@ -102,7 +102,7 @@ INSERT INTO public.listings (
     'Siemens TEFC motor, 150 HP, 460V, 1800 RPM. Excellent condition, recently rebuilt. Includes mounting hardware and documentation. Great for pumps, compressors, or conveyors.',
     8500.00,
     'Houston, TX',
-    'Motors', 
+    'Other', 
     'good',
     '675cc100-36ff-451d-af54-334ad1237dd2', -- Replace with real seller ID
     false
@@ -112,7 +112,7 @@ INSERT INTO public.listings (
     'Allen Bradley PowerFlex 755 Variable Frequency Drive panel. 200 HP, 480V. Includes HMI interface and bypass contactor. Perfect condition, surplus from cancelled project.',
     12000.00,
     'Chicago, IL',
-    'Panels',
+    'Distribution Hardware & Equipment',
     'new',
     '675cc100-36ff-451d-af54-334ad1237dd2', -- Replace with real seller ID
     true
@@ -122,7 +122,7 @@ INSERT INTO public.listings (
     '500 feet of 1000 MCM copper cable, 15kV insulation. Never installed, still on original reels. Perfect for underground distribution or large motor feeders.',
     4500.00,
     'Denver, CO',
-    'Cables',
+    'Wire & Cable',
     'new',
     '675cc100-36ff-451d-af54-334ad1237dd2', -- Replace with real seller ID
     false
@@ -132,7 +132,7 @@ INSERT INTO public.listings (
     'CAT 3512B diesel generator, 500kW standby rated. Low hours, well maintained. Includes transfer switch and control panel. Perfect for emergency backup or temporary power.',
     45000.00,
     'Miami, FL',
-    'Generators',
+    'Other',
     'good',
     '675cc100-36ff-451d-af54-334ad1237dd2', -- Replace with real seller ID
     true

@@ -6,6 +6,7 @@ import { useRouter, useParams } from 'next/navigation'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { createClientSupabase } from '@/lib/supabase'
+import { LISTING_CATEGORIES } from '@/lib/listing-categories'
 
 // Force dynamic rendering for this page
 export const dynamic = 'force-dynamic'
@@ -30,20 +31,6 @@ export default function EditListingPage() {
   const router = useRouter()
   const params = useParams()
   const listingId = params.id as string
-
-  const categories = [
-    'Transformers',
-    'Breakers',
-    'Motors',
-    'Switchgear',
-    'Panels',
-    'Cables',
-    'Generators',
-    'Insulators',
-    'Protective Equipment',
-    'Testing Equipment',
-    'Other'
-  ]
 
   useEffect(() => {
     loadListingData()
@@ -335,7 +322,7 @@ export default function EditListingPage() {
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                 >
                   <option value="">Select a category</option>
-                  {categories.map(category => (
+                  {LISTING_CATEGORIES.map((category) => (
                     <option key={category} value={category}>{category}</option>
                   ))}
                 </select>

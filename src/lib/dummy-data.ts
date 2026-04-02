@@ -1,56 +1,90 @@
 import { createAdminSupabase } from './supabase-server'
 import { v4 as uuidv4 } from 'uuid'
+import { LISTING_CATEGORIES, type ListingCategory } from './listing-categories'
 
 const supabase = createAdminSupabase()
 
-// Sample data for generating realistic listings
-const equipmentData = [
-  {
-    category: 'Transformers',
-    items: [
-      { name: '500 kVA Power Transformer', basePrice: 45000, description: 'Excellent condition 500 kVA power transformer. Recently tested and certified. Includes all original documentation and has been regularly maintained. Perfect for industrial applications requiring reliable power distribution.' },
-      { name: '1000 kVA Distribution Transformer', basePrice: 75000, description: 'Heavy-duty distribution transformer with proven reliability. Suitable for utility-scale applications. Recently serviced and includes comprehensive test reports.' },
-      { name: '300 kVA Step-Down Transformer', basePrice: 32000, description: 'Compact step-down transformer ideal for commercial installations. Low-maintenance design with excellent efficiency ratings.' },
-      { name: '750 kVA Pad-Mount Transformer', basePrice: 58000, description: 'Weather-resistant pad-mount transformer for outdoor installations. Includes protective cabinet and all necessary hardware.' },
-    ]
-  },
-  {
-    category: 'Breakers',
-    items: [
-      { name: '15 kV Vacuum Circuit Breaker', basePrice: 12500, description: 'High-quality 15 kV vacuum circuit breaker in like-new condition. Includes control panel and protection systems. Excellent for medium voltage applications.' },
-      { name: '35 kV Gas Circuit Breaker', basePrice: 28000, description: 'Reliable gas-insulated circuit breaker with remote operation capabilities. Fully tested and certified for safety.' },
-      { name: '5 kV Air Circuit Breaker', basePrice: 8500, description: 'Compact air circuit breaker suitable for low to medium voltage applications. Easy installation and maintenance.' },
-      { name: '25 kV Outdoor Circuit Breaker', basePrice: 22000, description: 'Weather-resistant outdoor circuit breaker with excellent breaking capacity. Includes lightning protection features.' },
-    ]
-  },
-  {
-    category: 'Motors',
-    items: [
-      { name: '1000 HP Electric Motor', basePrice: 28000, description: 'Industrial-grade 1000 HP electric motor. Good working condition with recent maintenance records. Suitable for heavy industrial applications.' },
-      { name: '500 HP Synchronous Motor', basePrice: 35000, description: 'High-efficiency synchronous motor with variable speed control. Perfect for pumps and compressors.' },
-      { name: '2000 HP Induction Motor', basePrice: 45000, description: 'Heavy-duty induction motor designed for continuous operation. Excellent for mining and steel industry applications.' },
-      { name: '750 HP AC Motor', basePrice: 24000, description: 'Reliable AC motor with soft-start capabilities. Recently refurbished with new bearings and windings.' },
-    ]
-  },
-  {
-    category: 'Switchgear',
-    items: [
-      { name: 'Medium Voltage Switchgear Panel', basePrice: 75000, description: 'Complete medium voltage switchgear panel. Includes protective relays, control systems, and monitoring equipment. Suitable for industrial substations.' },
-      { name: 'Low Voltage Switchgear Assembly', basePrice: 45000, description: 'Modular low voltage switchgear with intelligent protection systems. Easy to expand and modify for future needs.' },
-      { name: 'Metal-Clad Switchgear Unit', basePrice: 85000, description: 'Heavy-duty metal-clad switchgear for critical applications. Includes arc flash protection and remote monitoring capabilities.' },
-      { name: 'Outdoor Switchgear Station', basePrice: 125000, description: 'Complete outdoor switchgear station with weather protection. Ideal for utility and industrial substations.' },
-    ]
-  },
-  {
-    category: 'Panels',
-    items: [
-      { name: 'Generator Control Panel', basePrice: 8500, description: 'Advanced generator control panel with automatic transfer switch capabilities. Fair condition, suitable for backup power systems.' },
-      { name: 'Motor Control Center', basePrice: 15000, description: 'Comprehensive motor control center with variable frequency drives. Excellent for industrial automation applications.' },
-      { name: 'Distribution Panel Board', basePrice: 3500, description: 'Standard distribution panel board with surge protection. Perfect for commercial and light industrial use.' },
-      { name: 'PLC Control Panel', basePrice: 12000, description: 'Programmable logic controller panel with HMI interface. Includes custom programming for specific applications.' },
-    ]
-  }
-]
+type EquipmentItem = {
+  name: string
+  basePrice: number
+  description: string
+}
+
+const categoryEquipment: Record<ListingCategory, EquipmentItem[]> = {
+  'Distribution Hardware & Equipment': [
+    { name: '10\' Wood Crossarm Set', basePrice: 280, description: 'Pressure-treated crossarms with insulator pins. Surplus from distribution upgrade; stored dry.' },
+    { name: 'Pole Top Pin Insulator Brackets (Lot)', basePrice: 620, description: 'Mixed lot of distribution pole hardware, galvanized. Suitable for 15–25 kV class construction.' },
+  ],
+  'Substation Hardware & Equipment': [
+    { name: 'Substation Ground Grid Copper', basePrice: 4200, description: 'Reclaimed bare copper for substation grounding; cut to length available. Tested conductivity documentation on request.' },
+    { name: 'Rigid Bus Support Insulator Stands', basePrice: 1800, description: 'Porcelain standoffs for indoor substation bus. Good cosmetic condition; hardware included.' },
+  ],
+  'Transmission Hardware & Equipment': [
+    { name: 'Dead-End Strain Assembly 795 ACSR', basePrice: 950, description: 'Transmission dead-end hardware set for large conductor. Field surplus; inspect before energizing.' },
+    { name: 'Suspension Clamp Bundle (Used)', basePrice: 720, description: 'Assorted transmission suspension clamps and yoke plates. Priced as lot; tag photos available.' },
+  ],
+  Arresters: [
+    { name: '10 kV Distribution Surge Arrester', basePrice: 185, description: 'Polymer-housed distribution-class arrester. Removed during line rebuild; date codes documented.' },
+    { name: 'Station Class MOV Arrester 69kV', basePrice: 2400, description: 'Station-class metal-oxide surge arrester. Suitable for substation spares or testing bench.' },
+  ],
+  Breakers: [
+    { name: '15 kV Vacuum Circuit Breaker', basePrice: 12500, description: 'Vacuum breaker in like-new condition with controls. Ideal for medium-voltage motor or feeder applications.' },
+    { name: '5 kV Air Circuit Breaker', basePrice: 8500, description: 'Compact air breaker for low/medium voltage. Easy maintenance; includes trip unit.' },
+  ],
+  Clothing: [
+    { name: 'FR Shirt & Pants Set (Various Sizes)', basePrice: 120, description: 'Arc-rated FR workwear bundle; assorted sizes from contractor inventory. Laundered, no tears.' },
+    { name: 'Class 2 Rubber Insulating Gloves', basePrice: 85, description: 'Tested lineman gloves with leather protectors. Test dates within 6 months at time of listing.' },
+  ],
+  Conduit: [
+    { name: '4" Rigid Steel Conduit (20 ft sticks)', basePrice: 45, description: 'Galvanized rigid conduit; multiple lengths. Threaded ends; minor scuffs from storage.' },
+    { name: 'PVC Schedule 80 Conduit Bundle', basePrice: 320, description: 'Assorted elbows, couplings, and straight sections for underground runs.' },
+  ],
+  Insulators: [
+    { name: 'Porcelain Suspension Insulator String', basePrice: 340, description: 'Glass/porcelain disc string for transmission or sub-transmission. Inspected for chips; priced per string.' },
+    { name: 'Polymer Line Post Insulators', basePrice: 95, description: 'Distribution polymer posts; mixed voltage ratings. Bulk pricing available.' },
+  ],
+  'Switches & Switchgear': [
+    { name: 'Medium Voltage Metal-Clad Switchgear Section', basePrice: 75000, description: 'Switchgear section with relays and metering. Removed intact; buyer responsible for engineering review.' },
+    { name: 'Motor Control Center Bucket (VFD)', basePrice: 15000, description: 'MCC bucket with VFD; programmed for general-purpose motor. Verify nameplate with your application.' },
+  ],
+  Tools: [
+    { name: 'Hydraulic Crimper 12-Ton', basePrice: 890, description: 'Battery hydraulic crimper with dies for ACSR and copper. Recently serviced.' },
+    { name: 'Hot Stick Set (Fiberglass)', basePrice: 650, description: 'Assorted universal sticks and shotgun attachment. Dielectric test sticker current.' },
+  ],
+  Trailers: [
+    { name: '20 ft Equipment Trailer (Tandem Axle)', basePrice: 4200, description: 'Heavy-duty equipment trailer with ramps. Title clear; tires ~60% tread.' },
+    { name: 'Pole Trailer (Extendable)', basePrice: 7800, description: 'Utility pole trailer; extendable bunk. Surplus fleet unit; brakes serviced annually.' },
+  ],
+  Transformers: [
+    { name: '500 kVA Pad-Mount Transformer', basePrice: 45000, description: 'Padmount unit, recently tested. Documentation and oil samples available to serious buyers.' },
+    { name: '300 kVA Step-Down Transformer', basePrice: 32000, description: 'Compact step-down for commercial service. Low hours; suitable for industrial backup.' },
+  ],
+  Trucks: [
+    { name: 'Bucket Truck (Altec Boom)', basePrice: 85000, description: 'Class 7 chassis with insulated boom. DOT inspection current; PTO and hydraulics operational.' },
+    { name: 'Flatbed Stake Truck 26k GVW', basePrice: 38000, description: 'Stake bed for hauling poles and reels. Fleet-maintained; service records included.' },
+  ],
+  'Voltage Regulators': [
+    { name: 'Single-Phase Step Voltage Regulator', basePrice: 12000, description: 'Distribution regulator removed from upgrade project. Controls included; bench test recommended.' },
+    { name: 'Three-Phase Voltage Regulator Bank', basePrice: 45000, description: 'Bank suitable for substation or large industrial feeder. Sold as-is where-is.' },
+  ],
+  'Wood & Steel Structures': [
+    { name: '40 ft Class 4 Wood Pole (Used)', basePrice: 450, description: 'Pole suitable for yard storage or non-energized training. Buyer coordinates delivery.' },
+    { name: 'Steel Lattice Tower Sections', basePrice: 12000, description: 'Salvaged transmission tower steel; bolt patterns documented. Ideal for antenna or non-utility reuse.' },
+  ],
+  'Wire & Cable': [
+    { name: '1000 MCM Copper 15kV Cable (per ft)', basePrice: 12, description: 'Medium-voltage copper cable on partial reel; footage verified. Jacket intact.' },
+    { name: '795 ACSR Drake (Full Drum)', basePrice: 2800, description: 'Transmission conductor, new-old stock drum. Stored indoors; end seals intact.' },
+  ],
+  Other: [
+    { name: 'Industrial Generator Control Panel', basePrice: 8500, description: 'ATS-capable control panel; surplus from cancelled project. Wiring diagrams included.' },
+    { name: 'Cable Pulling Tension Meter', basePrice: 2200, description: 'Digital tension monitoring for pulls; calibrated within manufacturer interval.' },
+  ],
+}
+
+const equipmentData = LISTING_CATEGORIES.map((category) => ({
+  category,
+  items: categoryEquipment[category],
+}))
 
 const locations = [
   'Houston, TX', 'Dallas, TX', 'Austin, TX', 'San Antonio, TX', 'Phoenix, AZ',
@@ -58,7 +92,13 @@ const locations = [
   'Detroit, MI', 'Charlotte, NC', 'Seattle, WA', 'Portland, OR', 'Las Vegas, NV'
 ]
 
-const conditions: Array<'new' | 'used' | 'refurbished'> = ['new', 'used', 'refurbished']
+const conditions: Array<'new' | 'like_new' | 'good' | 'fair' | 'poor'> = [
+  'new',
+  'like_new',
+  'good',
+  'fair',
+  'poor',
+]
 
 const companies = [
   'PowerTech Solutions', 'Industrial Electric Co.', 'Voltage Systems Inc.',
@@ -152,10 +192,10 @@ export class DummyDataGenerator {
         location: getRandomItem(locations),
         category: categoryData.category,
         condition: getRandomItem(conditions),
-        images: [], // No images for dummy data
+        image_urls: [],
         seller_id: getRandomItem(sellers).id,
         is_sold: Math.random() > 0.8, // 20% sold
-        featured: Math.random() > 0.9, // 10% featured
+        is_featured: Math.random() > 0.9, // 10% featured
         created_at: getRandomDate(60),
         updated_at: getRandomDate(15)
       }

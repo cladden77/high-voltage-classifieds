@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { createClientSupabase } from '@/lib/supabase'
+import { LISTING_CATEGORIES } from '@/lib/listing-categories'
 
 // Force dynamic rendering for this page
 export const dynamic = 'force-dynamic'
@@ -31,20 +32,6 @@ export default function CreateListingPage() {
   const locationInputRef = useRef<HTMLInputElement>(null)
 
   const router = useRouter()
-
-  const categories = [
-    'Transformers',
-    'Breakers',
-    'Motors',
-    'Switchgear',
-    'Panels',
-    'Cables',
-    'Generators',
-    'Insulators',
-    'Protective Equipment',
-    'Testing Equipment',
-    'Other'
-  ]
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
@@ -336,7 +323,7 @@ export default function CreateListingPage() {
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                 >
                   <option value="">Select a category</option>
-                  {categories.map(category => (
+                  {LISTING_CATEGORIES.map((category) => (
                     <option key={category} value={category}>{category}</option>
                   ))}
                 </select>

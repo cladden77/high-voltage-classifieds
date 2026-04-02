@@ -8,6 +8,7 @@ import Footer from '@/components/Footer'
 import { createClientSupabase } from '@/lib/supabase'
 import { Database } from '@/lib/database.types'
 import { formatCondition } from '@/lib/utils'
+import { LISTING_CATEGORIES } from '@/lib/listing-categories'
 
 // Force dynamic rendering for this page  
 export const dynamic = 'force-dynamic'
@@ -40,20 +41,7 @@ function ListingsContent() {
     }
   }, [searchParams])
 
-  const categories = [
-    'All Categories',
-    'Transformers',
-    'Breakers', 
-    'Motors',
-    'Switchgear',
-    'Panels',
-    'Cables',
-    'Generators',
-    'Insulators',
-    'Protective Equipment',
-    'Testing Equipment',
-    'Other'
-  ]
+  const categories = ['All Categories', ...LISTING_CATEGORIES]
 
   useEffect(() => {
     fetchListings()
