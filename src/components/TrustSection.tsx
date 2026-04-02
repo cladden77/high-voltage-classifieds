@@ -14,9 +14,7 @@ export default function TrustSection() {
           Built for Trust, Speed, and Reliability
         </h2>
         <p className="text-white text-base lg:text-lg leading-7 max-w-[668px] mx-auto">
-          High Voltage Classifieds is the go-to marketplace for contractors and industrial pros. 
-          Our platform is designed for fast, secure transactions and is trusted by thousands in 
-          the high-voltage industry.
+        High Voltage Classifieds is the go-to marketplace for utilities, contractors, and industrial pros. Our platform is designed for fast, secure transactions and is trusted by thousands in the high-voltage industry.
         </p>
       </div>
     </section>
