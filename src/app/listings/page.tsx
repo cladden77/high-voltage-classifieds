@@ -332,12 +332,12 @@ function ListingsContent() {
             {filteredListings.map((listing) => (
               <div key={listing.id} className="bg-white border border-gray-200 rounded-md shadow-sm overflow-hidden">
                 {/* Image */}
-                <div className="h-48 bg-gray-200 flex items-center justify-center">
+                <div className="aspect-[3/4] bg-gray-200 flex items-center justify-center overflow-hidden">
                   {listing.image_urls && listing.image_urls.length > 0 ? (
                     <img 
                       src={listing.image_urls[0]} 
                       alt={listing.title}
-                      className="w-full h-full object-cover"
+                      className="h-full w-full object-cover"
                     />
                   ) : (
                     <span className="text-gray-500 font-open-sans">No Image</span>

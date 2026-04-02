@@ -124,12 +124,12 @@ export default function FavoritesPage() {
             {favorites.map((favorite) => (
               <div key={favorite.id} className="bg-white border border-gray-200 rounded-md shadow-sm overflow-hidden">
                 {/* Image */}
-                <div className="h-48 bg-gray-200 flex items-center justify-center relative">
+                <div className="aspect-[3/4] bg-gray-200 flex items-center justify-center relative overflow-hidden">
                   {favorite.listings.image_urls && favorite.listings.image_urls.length > 0 ? (
                     <img 
                       src={favorite.listings.image_urls[0]} 
                       alt={favorite.listings.title}
-                      className="w-full h-full object-cover"
+                      className="h-full w-full object-cover"
                     />
                   ) : (
                     <span className="text-gray-500 font-open-sans">No Image</span>

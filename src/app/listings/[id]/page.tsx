@@ -268,12 +268,12 @@ export default function ListingDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Image Gallery */}
           <div>
-            <div className="aspect-square bg-gray-200 rounded-lg mb-4 overflow-hidden">
+            <div className="aspect-[3/4] w-full bg-gray-200 rounded-lg mb-4 overflow-hidden">
               {listing.image_urls && listing.image_urls.length > 0 ? (
                 <img 
                   src={listing.image_urls[currentImageIndex]} 
                   alt={listing.title}
-                  className="w-full h-full object-cover"
+                  className="h-full w-full object-contain"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
@@ -293,7 +293,7 @@ export default function ListingDetailPage() {
                       currentImageIndex === index ? 'border-orange-500' : 'border-gray-200'
                     }`}
                   >
-                    <img src={image} alt={`${listing.title} ${index + 1}`} className="w-full h-full object-cover" />
+                    <img src={image} alt={`${listing.title} ${index + 1}`} className="h-full w-full object-cover" />
                   </button>
                 ))}
               </div>

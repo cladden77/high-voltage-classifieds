@@ -863,12 +863,12 @@ function DashboardContent() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {favorites.slice(0, 6).map((favorite) => (
             <div key={favorite.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-              <div className="aspect-video bg-gray-200 flex items-center justify-center">
+              <div className="aspect-[3/4] bg-gray-200 flex items-center justify-center overflow-hidden">
                 {favorite.listings.image_urls && favorite.listings.image_urls.length > 0 ? (
                   <img 
                     src={favorite.listings.image_urls[0]} 
                     alt={favorite.listings.title}
-                    className="w-full h-full object-cover"
+                    className="h-full w-full object-cover"
                   />
                 ) : (
                   <div className="text-gray-500 font-open-sans">No Image</div>
@@ -963,12 +963,12 @@ function DashboardContent() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {purchasedItems.slice(0, 6).map((purchase) => (
             <div key={purchase.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-              <div className="aspect-video bg-gray-200 flex items-center justify-center">
+              <div className="aspect-[3/4] bg-gray-200 flex items-center justify-center overflow-hidden">
                 {purchase.listings.image_urls && purchase.listings.image_urls.length > 0 ? (
                   <img 
                     src={purchase.listings.image_urls[0]} 
                     alt={purchase.listings.title}
-                    className="w-full h-full object-cover"
+                    className="h-full w-full object-cover"
                   />
                 ) : (
                   <div className="text-gray-500 font-open-sans">No Image</div>
@@ -1070,12 +1070,12 @@ function DashboardContent() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {soldItems.slice(0, 6).map((sale) => (
             <div key={sale.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-              <div className="aspect-video bg-gray-200 flex items-center justify-center">
+              <div className="aspect-[3/4] bg-gray-200 flex items-center justify-center overflow-hidden">
                 {sale.listings.image_urls && sale.listings.image_urls.length > 0 ? (
                   <img 
                     src={sale.listings.image_urls[0]} 
                     alt={sale.listings.title}
-                    className="w-full h-full object-cover"
+                    className="h-full w-full object-cover"
                   />
                 ) : (
                   <div className="text-gray-500 font-open-sans">No Image</div>

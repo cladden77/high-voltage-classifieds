@@ -48,7 +48,7 @@ export default function FeaturedListings() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {[...Array(4)].map((_, index) => (
               <div key={index} className="block bg-white rounded-lg shadow-[0px_10px_15px_-3px_rgba(0,0,0,0.1),0px_4px_6px_-4px_rgba(0,0,0,0.1)] border border-neutral-200 overflow-hidden">
-                <div className="bg-neutral-100 h-40 flex items-center justify-center">
+                <div className="bg-neutral-100 aspect-[3/4] flex items-center justify-center">
                   <div className="animate-pulse bg-neutral-300 h-8 w-32 rounded"></div>
                 </div>
                 <div className="p-4">
@@ -67,12 +67,12 @@ export default function FeaturedListings() {
                 href={`/listings/${listing.id}`}
                 className="block bg-white rounded-lg shadow-[0px_10px_15px_-3px_rgba(0,0,0,0.1),0px_4px_6px_-4px_rgba(0,0,0,0.1)] border border-neutral-200 overflow-hidden hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer"
               >
-                <div className="bg-neutral-100 h-40 flex items-center justify-center">
+                <div className="bg-neutral-100 aspect-[3/4] flex items-center justify-center overflow-hidden">
                   {listing.image_urls && listing.image_urls.length > 0 ? (
                     <img 
                       src={listing.image_urls[0]} 
                       alt={listing.title}
-                      className="w-full h-full object-cover"
+                      className="h-full w-full object-cover"
                     />
                   ) : (
                     <span className="text-[#666] opacity-80 text-center px-4">{listing.title}</span>
