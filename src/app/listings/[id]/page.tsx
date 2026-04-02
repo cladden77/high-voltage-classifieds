@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import { Heart, MessageCircle, ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import ListingShareButton from '@/components/ListingShareButton'
 import AuthModal from '@/components/AuthModal'
 import CheckoutButton from '@/components/stripe/CheckoutButton'
 import { createClientSupabase } from '@/lib/supabase'
@@ -312,12 +313,22 @@ export default function ListingDetailPage() {
               }`}>
                 {formatCondition(listing.condition)}
               </span>
-              <button 
-                onClick={toggleFavorite}
-                className="p-2 rounded-full hover:bg-gray-100"
-              >
-                <Heart className={`h-6 w-6 ${isFavorited ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
-              </button>
+              <div className="flex items-center gap-1">
+                <ListingShareButton
+                  listingId={listing.id}
+                  title={listing.title}
+                  price={listing.price}
+                  imageUrl={listing.image_urls?.[0] ?? null}
+                />
+                <button 
+                  onClick={toggleFavorite}
+                  className="p-2 rounded-full hover:bg-gray-100"
+                  type="button"
+                  title={isFavorited ? 'Remove from favorites' : 'Save to favorites'}
+                >
+                  <Heart className={`h-6 w-6 ${isFavorited ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
+                </button>
+              </div>
             </div>
 
             {/* Title and Price */}
