@@ -55,7 +55,7 @@ export default function HeroSection() {
               </div>
           </h1>
           <p className="text-white text-xl md:text-xl lg:text-2xl mb-8 mx-auto">
-            A trusted platform for contractors, utilities, and solar providers
+          A trusted platform for contractors, utilities, and industrials
           </p>
           
           {/* Search Form */}
