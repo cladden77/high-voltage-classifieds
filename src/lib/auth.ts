@@ -272,6 +272,28 @@ export async function signOut() {
   }
 }
 
+// Send a password reset email
+export async function sendPasswordResetEmail(email: string) {
+  try {
+    const supabase = createClientSupabase()
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ||
+      (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000')
+    const redirectTo = `${baseUrl}/auth/reset-password`
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo,
+    })
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: 'An unexpected error occurred' }
+  }
+}
+
 // Function to safely check if user is authenticated
 export async function isAuthenticated() {
   try {

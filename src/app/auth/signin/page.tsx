@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import { signInWithCredentials } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 export default function SignInPage() {
   const [formData, setFormData] = useState({
@@ -130,9 +131,9 @@ export default function SignInPage() {
               </div>
 
               <div className="text-sm">
-                <a href="#" className="font-open-sans font-medium text-orange-600 hover:text-orange-500">
+                <Link href="/auth/forgot-password" className="font-open-sans font-medium text-orange-600 hover:text-orange-500">
                   Forgot your password?
-                </a>
+                </Link>
               </div>
             </div>
 
