@@ -180,13 +180,13 @@ export default function FavoritesPage() {
                   </div>
 
                   {/* Category and View Details */}
-                  <div className="flex justify-between items-center">
-                    <span className="font-open-sans font-bold text-sm text-gray-500">
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="font-open-sans font-bold text-sm text-gray-500 min-w-0 flex-1 break-words line-clamp-2">
                       {favorite.listings.category}
                     </span>
                     <a
                       href={`/listings/${favorite.listings.id}`}
-                      className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded font-open-sans font-bold text-sm uppercase transition-colors"
+                      className="shrink-0 whitespace-nowrap self-center bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded font-open-sans font-bold text-sm uppercase transition-colors"
                     >
                       View Details
                     </a>
