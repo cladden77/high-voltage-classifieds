@@ -199,7 +199,7 @@ export default function AdminDashboard() {
           <p className="font-open-sans text-2xl font-bold text-gray-900">{overview?.totalSales ?? '-'}</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <p className="font-open-sans text-sm text-gray-500">GMV</p>
+          <p className="font-open-sans text-sm text-gray-500">Gross Merchandise Value</p>
           <p className="font-open-sans text-2xl font-bold text-gray-900">${overview?.gmv?.toLocaleString() ?? '-'}</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-lg p-6">
