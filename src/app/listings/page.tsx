@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useState, useEffect, Suspense } from 'react'
+import React, { useState, useEffect, useRef, Suspense, useSyncExternalStore } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { X, RotateCcw } from 'lucide-react'
+import { X, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { createClientSupabase } from '@/lib/supabase'
@@ -15,6 +15,33 @@ export const dynamic = 'force-dynamic'
 
 type Listing = Database['public']['Tables']['listings']['Row']
 
+const LISTINGS_ROWS_PER_PAGE = 3
+
+function getListingGridColumnCount(): number {
+  if (typeof window === 'undefined') return 3
+  if (window.matchMedia('(min-width: 1024px)').matches) return 3
+  if (window.matchMedia('(min-width: 768px)').matches) return 2
+  return 1
+}
+
+function subscribeListingGridColumns(onStoreChange: () => void): () => void {
+  const mqs = [
+    window.matchMedia('(min-width: 1024px)'),
+    window.matchMedia('(min-width: 768px)'),
+  ]
+  mqs.forEach((mq) => mq.addEventListener('change', onStoreChange))
+  return () => mqs.forEach((mq) => mq.removeEventListener('change', onStoreChange))
+}
+
+function useListingsPerPage(): number {
+  const cols = useSyncExternalStore(
+    subscribeListingGridColumns,
+    getListingGridColumnCount,
+    () => 3
+  )
+  return cols * LISTINGS_ROWS_PER_PAGE
+}
+
 // Separate component for search parameter handling
 function ListingsContent() {
   const [listings, setListings] = useState<Listing[]>([])
@@ -24,6 +51,11 @@ function ListingsContent() {
   const [selectedCategory, setSelectedCategory] = useState('All Categories')
   const [selectedLocation, setSelectedLocation] = useState('All Locations')
   const [sortBy, setSortBy] = useState('newest')
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const listingsPerPage = useListingsPerPage()
+  const resultsAnchorRef = useRef<HTMLDivElement>(null)
+  const skipPaginationScrollRef = useRef(true)
 
   const searchParams = useSearchParams()
 
@@ -50,6 +82,30 @@ function ListingsContent() {
   useEffect(() => {
     filterListings()
   }, [listings, searchTerm, selectedCategory, selectedLocation, sortBy])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, selectedCategory, selectedLocation, sortBy, listings.length])
+
+  const totalPages =
+    filteredListings.length === 0
+      ? 1
+      : Math.max(1, Math.ceil(filteredListings.length / listingsPerPage))
+
+  useEffect(() => {
+    setCurrentPage((p) => Math.min(p, totalPages))
+  }, [totalPages])
+
+  useEffect(() => {
+    if (skipPaginationScrollRef.current) {
+      skipPaginationScrollRef.current = false
+      return
+    }
+    resultsAnchorRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    })
+  }, [currentPage])
 
   const fetchListings = async () => {
     try {
@@ -137,6 +193,18 @@ function ListingsContent() {
 
   // Check if any filters are applied
   const hasActiveFilters = searchTerm || selectedCategory !== 'All Categories' || selectedLocation !== 'All Locations' || sortBy !== 'newest'
+
+  const pageOffset = (currentPage - 1) * listingsPerPage
+  const paginatedListings = filteredListings.slice(
+    pageOffset,
+    pageOffset + listingsPerPage
+  )
+  const showingFrom =
+    filteredListings.length === 0 ? 0 : pageOffset + 1
+  const showingTo = Math.min(
+    pageOffset + listingsPerPage,
+    filteredListings.length
+  )
 
       if (loading) {
       return (
@@ -315,10 +383,19 @@ function ListingsContent() {
         </div>
 
                   {/* Results Header */}
-          <div className="flex justify-between items-center mb-6">
+          <div
+            ref={resultsAnchorRef}
+            className="flex justify-between items-center mb-6 scroll-mt-24"
+          >
             <p className="font-open-sans text-gray-500">
-              Showing {filteredListings.length} results
-              {searchTerm && ` for "${searchTerm}"`}
+              {filteredListings.length === 0 ? (
+                <>Showing 0 results{searchTerm && ` for "${searchTerm}"`}</>
+              ) : (
+                <>
+                  Showing {showingFrom}–{showingTo} of {filteredListings.length} results
+                  {searchTerm && ` for "${searchTerm}"`}
+                </>
+              )}
             </p>
           </div>
 
@@ -329,8 +406,9 @@ function ListingsContent() {
               <p className="font-open-sans text-gray-500">Try adjusting your search criteria</p>
             </div>
           ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            {filteredListings.map((listing) => (
+          <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            {paginatedListings.map((listing) => (
               <div key={listing.id} className="bg-white border border-gray-200 rounded-md shadow-sm overflow-hidden">
                 {/* Image */}
                 <div className="aspect-[3/4] bg-gray-200 flex items-center justify-center overflow-hidden">
@@ -402,6 +480,36 @@ function ListingsContent() {
               </div>
             ))}
           </div>
+
+          {totalPages > 1 && (
+            <nav
+              className="flex flex-wrap items-center justify-center gap-4 mb-12"
+              aria-label="Browse listings pagination"
+            >
+              <button
+                type="button"
+                disabled={currentPage <= 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-4 py-2 font-open-sans text-sm font-bold text-gray-700 transition-colors hover:border-orange-300 hover:text-orange-600 disabled:pointer-events-none disabled:opacity-40"
+              >
+                <ChevronLeft className="h-4 w-4" aria-hidden />
+                Previous
+              </button>
+              <span className="font-open-sans text-sm text-gray-600">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-4 py-2 font-open-sans text-sm font-bold text-gray-700 transition-colors hover:border-orange-300 hover:text-orange-600 disabled:pointer-events-none disabled:opacity-40"
+              >
+                Next
+                <ChevronRight className="h-4 w-4" aria-hidden />
+              </button>
+            </nav>
+          )}
+          </>
         )}
       </div>
       
