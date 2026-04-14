@@ -4,6 +4,7 @@
 -- Drop existing policies
 DROP POLICY IF EXISTS "Users can view own notifications" ON public.notifications;
 DROP POLICY IF EXISTS "Users can update own notifications" ON public.notifications;
+DROP POLICY IF EXISTS "Users can delete own notifications" ON public.notifications;
 
 -- Recreate policies with optimized auth.uid() calls
 -- Using (select auth.uid()) prevents re-evaluation for each row

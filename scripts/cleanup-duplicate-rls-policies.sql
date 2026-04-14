@@ -11,6 +11,7 @@ DROP POLICY IF EXISTS "Users can view own notifications" ON public.notifications
 DROP POLICY IF EXISTS "Users can update own notifications" ON public.notifications;
 DROP POLICY IF EXISTS "Users can view their own notifications" ON public.notifications;
 DROP POLICY IF EXISTS "Users can update their own notifications" ON public.notifications;
+DROP POLICY IF EXISTS "Users can delete own notifications" ON public.notifications;
 
 -- Recreate only the optimized policies
 CREATE POLICY "Users can view own notifications" ON public.notifications
