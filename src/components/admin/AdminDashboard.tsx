@@ -125,6 +125,54 @@ export default function AdminDashboard() {
     }
   }
 
+  const removeUser = async (userId: string) => {
+    const confirmed = window.confirm('Remove this user account? This action cannot be undone.')
+    if (!confirmed) return
+
+    try {
+      setSavingUserId(userId)
+      const response = await fetch('/api/admin/users', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      })
+      const result = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to remove user')
+      }
+      setNotice('User removed successfully.')
+      await loadData()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to remove user.'
+      setNotice(message)
+    } finally {
+      setSavingUserId(null)
+    }
+  }
+
+  const removeListing = async (listingId: string) => {
+    const confirmed = window.confirm('Remove this listing? This action cannot be undone.')
+    if (!confirmed) return
+
+    try {
+      setSavingListingId(listingId)
+      const response = await fetch('/api/admin/listings', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ listingId }),
+      })
+      if (!response.ok) {
+        throw new Error('Failed to remove listing')
+      }
+      setNotice('Listing removed successfully.')
+      await loadData()
+    } catch {
+      setNotice('Failed to remove listing.')
+    } finally {
+      setSavingListingId(null)
+    }
+  }
+
   return (
     <div className="space-y-8">
       {notice && (
@@ -176,36 +224,58 @@ export default function AdminDashboard() {
             <div key={user.id} className="border border-gray-200 rounded-lg p-4">
               <div className="font-open-sans font-bold text-gray-900">{user.full_name || user.email}</div>
               <div className="font-open-sans text-sm text-gray-500 mb-3">{user.email}</div>
-              <div className="flex flex-wrap items-center gap-2">
-                <select
-                  className="px-3 py-2 border border-gray-200 rounded-lg bg-white font-open-sans text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  value={user.role}
-                  disabled={savingUserId === user.id}
-                  onChange={(e) => updateUser(user.id, { role: e.target.value })}
-                >
-                  <option value="buyer">buyer</option>
-                  <option value="seller">seller</option>
-                  <option value="admin">admin</option>
-                </select>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="block font-open-sans text-xs font-bold text-gray-500 uppercase mb-1">
+                    Role
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white font-open-sans text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    value={user.role}
+                    disabled={savingUserId === user.id}
+                    onChange={(e) => updateUser(user.id, { role: e.target.value })}
+                  >
+                    <option value="buyer">buyer</option>
+                    <option value="seller">seller</option>
+                    <option value="admin">admin</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-open-sans text-xs font-bold text-gray-500 uppercase mb-1">
+                    Can Sell
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white font-open-sans text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    value={String(user.can_sell)}
+                    disabled={savingUserId === user.id}
+                    onChange={(e) => updateUser(user.id, { canSell: e.target.value === 'true' })}
+                  >
+                    <option value="true">Enabled</option>
+                    <option value="false">Disabled</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-open-sans text-xs font-bold text-gray-500 uppercase mb-1">
+                    Seller Verified
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white font-open-sans text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    value={String(!!user.seller_verified)}
+                    disabled={savingUserId === user.id}
+                    onChange={(e) => updateUser(user.id, { sellerVerified: e.target.value === 'true' })}
+                  >
+                    <option value="true">Verified</option>
+                    <option value="false">Not Verified</option>
+                  </select>
+                </div>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
                 <button
-                  className={`px-3 py-2 rounded-lg font-open-sans text-sm font-bold ${
-                    user.can_sell ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                  }`}
+                  className="px-3 py-2 rounded-lg font-open-sans text-sm font-bold bg-red-100 text-red-700 hover:bg-red-200"
                   disabled={savingUserId === user.id}
-                  onClick={() => updateUser(user.id, { canSell: !user.can_sell })}
+                  onClick={() => removeUser(user.id)}
                 >
-                  can_sell: {String(user.can_sell)}
-                </button>
-                <button
-                  className={`px-3 py-2 rounded-lg font-open-sans text-sm font-bold ${
-                    user.seller_verified ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                  }`}
-                  disabled={savingUserId === user.id}
-                  onClick={() =>
-                    updateUser(user.id, { sellerVerified: !user.seller_verified })
-                  }
-                >
-                  seller_verified: {String(user.seller_verified)}
+                  Remove User
                 </button>
               </div>
             </div>
@@ -231,26 +301,45 @@ export default function AdminDashboard() {
               <div className="font-open-sans text-sm text-gray-500 mb-3">
                 ${Number(listing.price).toLocaleString()} - {listing.category} - {listing.location}
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <select
-                  className="px-3 py-2 border border-gray-200 rounded-lg bg-white font-open-sans text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  value={listing.status}
-                  disabled={savingListingId === listing.id}
-                  onChange={(e) => updateListing(listing.id, { status: e.target.value })}
-                >
-                  <option value="draft">draft</option>
-                  <option value="active">active</option>
-                  <option value="sold">sold</option>
-                  <option value="archived">archived</option>
-                </select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-open-sans text-xs font-bold text-gray-500 uppercase mb-1">
+                    Status
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white font-open-sans text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    value={listing.status}
+                    disabled={savingListingId === listing.id}
+                    onChange={(e) => updateListing(listing.id, { status: e.target.value })}
+                  >
+                    <option value="draft">draft</option>
+                    <option value="active">active</option>
+                    <option value="sold">sold</option>
+                    <option value="archived">archived</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-open-sans text-xs font-bold text-gray-500 uppercase mb-1">
+                    Sold Flag
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white font-open-sans text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    value={String(!!listing.is_sold)}
+                    disabled={savingListingId === listing.id}
+                    onChange={(e) => updateListing(listing.id, { isSold: e.target.value === 'true' })}
+                  >
+                    <option value="true">Sold</option>
+                    <option value="false">Available</option>
+                  </select>
+                </div>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
                 <button
-                  className={`px-3 py-2 rounded-lg font-open-sans text-sm font-bold ${
-                    listing.is_sold ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                  }`}
+                  className="px-3 py-2 rounded-lg font-open-sans text-sm font-bold bg-red-100 text-red-700 hover:bg-red-200"
                   disabled={savingListingId === listing.id}
-                  onClick={() => updateListing(listing.id, { isSold: !listing.is_sold })}
+                  onClick={() => removeListing(listing.id)}
                 >
-                  is_sold: {String(listing.is_sold)}
+                  Remove Listing
                 </button>
               </div>
             </div>

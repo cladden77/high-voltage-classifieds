@@ -50,3 +50,24 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    await requireAdmin()
+    const body = await request.json()
+    const listingId = body?.listingId as string
+    if (!listingId) {
+      return NextResponse.json({ error: 'listingId is required' }, { status: 400 })
+    }
+
+    const { error } = await createAdminSupabase()
+      .from('listings')
+      .delete()
+      .eq('id', listingId)
+
+    if (error) throw error
+    return NextResponse.json({ success: true })
+  } catch {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+  }
+}

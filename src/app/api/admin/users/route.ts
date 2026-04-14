@@ -51,3 +51,26 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const adminUser = await requireAdmin()
+    const body = await request.json()
+    const userId = body?.userId as string
+    if (!userId) {
+      return NextResponse.json({ error: 'userId is required' }, { status: 400 })
+    }
+
+    if (userId === adminUser.id) {
+      return NextResponse.json({ error: 'You cannot remove your own admin account.' }, { status: 400 })
+    }
+
+    const supabase = createAdminSupabase()
+    const { error } = await supabase.auth.admin.deleteUser(userId)
+    if (error) throw error
+
+    return NextResponse.json({ success: true })
+  } catch {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+  }
+}
