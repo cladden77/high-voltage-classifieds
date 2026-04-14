@@ -88,22 +88,24 @@ export default function Header() {
             {!loading && (
               <>
                 {currentUser ? (
-                  <div className="hidden lg:flex items-center gap-4 whitespace-nowrap">
+                  <div className="hidden lg:flex items-center gap-4">
                     <NotificationBell />
-                    <span className="text-neutral-100 text-sm max-w-[180px] truncate">
-                      Hi, {currentUser.name || currentUser.email}
-                    </span>
-                    <button 
-                      onClick={handleSignOut}
-                      className="text-neutral-100 text-sm font-bold hover:text-[#f37121] transition-colors"
-                    >
-                      Sign Out
-                    </button>
-                    {currentUser.role === 'admin' && (
-                      <Link href="/admin" className="text-neutral-100 text-sm font-bold hover:text-[#f37121] transition-colors">
-                        Admin
-                      </Link>
-                    )}
+                    <div className="flex items-center gap-4 whitespace-nowrap">
+                      <span className="text-neutral-100 text-sm max-w-[180px] truncate">
+                        Hi, {currentUser.name || currentUser.email}
+                      </span>
+                      <button 
+                        onClick={handleSignOut}
+                        className="text-neutral-100 text-sm font-bold hover:text-[#f37121] transition-colors"
+                      >
+                        Sign Out
+                      </button>
+                      {currentUser.role === 'admin' && (
+                        <Link href="/admin" className="text-neutral-100 text-sm font-bold hover:text-[#f37121] transition-colors">
+                          Admin
+                        </Link>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <div className="hidden lg:flex items-center gap-4">
