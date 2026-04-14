@@ -13,6 +13,9 @@ CREATE POLICY "Users can view own notifications" ON public.notifications
 CREATE POLICY "Users can update own notifications" ON public.notifications
     FOR UPDATE USING ((select auth.uid()) = user_id);
 
+CREATE POLICY "Users can delete own notifications" ON public.notifications
+    FOR DELETE USING ((select auth.uid()) = user_id);
+
 -- Keep the service role policy as is (it doesn't use auth.uid())
 -- CREATE POLICY "Service role can insert notifications" ON public.notifications
 --     FOR INSERT WITH CHECK (true);

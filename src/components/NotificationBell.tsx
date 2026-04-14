@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Bell, X, CheckCircle, Info, AlertTriangle, AlertCircle } from 'lucide-react'
 import { createClientSupabase } from '@/lib/supabase'
 import { getCurrentUser } from '@/lib/auth'
@@ -19,10 +19,13 @@ interface Notification {
 
 export default function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([])
-  const [unreadCount, setUnreadCount] = useState(0)
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => !n.is_read).length,
+    [notifications]
+  )
 
   useEffect(() => {
     loadNotifications()
@@ -47,7 +50,6 @@ export default function NotificationBell() {
       }
 
       setNotifications(data || [])
-      setUnreadCount(data?.filter(n => !n.is_read).length || 0)
     } catch (error) {
       console.error('Error loading notifications:', error)
     }
@@ -82,9 +84,34 @@ export default function NotificationBell() {
           n.id === notificationId ? { ...n, is_read: true } : n
         )
       )
-      setUnreadCount(prev => Math.max(0, prev - 1))
     } catch (error) {
       console.error('❌ Error marking notification as read:', error)
+    }
+  }
+
+  const dismissNotification = async (
+    notificationId: string,
+    e?: React.MouseEvent
+  ) => {
+    e?.preventDefault()
+    e?.stopPropagation()
+    try {
+      const supabase = createClientSupabase()
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', notificationId)
+
+      if (error) {
+        console.error('Error dismissing notification:', error)
+        return
+      }
+
+      setNotifications((prev) =>
+        prev.filter((n) => n.id !== notificationId)
+      )
+    } catch (error) {
+      console.error('Error dismissing notification:', error)
     }
   }
 
@@ -124,7 +151,6 @@ export default function NotificationBell() {
 
       // Update local state
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
-      setUnreadCount(0)
     } catch (error) {
       console.error('❌ Error marking all notifications as read:', error)
     } finally {
@@ -199,6 +225,7 @@ export default function NotificationBell() {
     <div className="relative">
       {/* Notification Bell */}
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
       >
@@ -212,12 +239,13 @@ export default function NotificationBell() {
 
       {/* Notifications Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+        <div className="absolute right-0 mt-2 w-80 max-w-[min(100vw-2rem,20rem)] bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-x-hidden">
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <h3 className="font-open-sans font-bold text-gray-900">Notifications</h3>
               {unreadCount > 0 && (
                 <button
+                  type="button"
                   onClick={markAllAsRead}
                   disabled={loading}
                   className="text-sm text-orange-600 hover:text-orange-700 font-medium disabled:opacity-50"
@@ -244,26 +272,25 @@ export default function NotificationBell() {
                     }`}
                     onClick={() => handleNotificationClick(notification)}
                   >
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
                       <div className="flex-shrink-0 mt-0.5">
                         {getNotificationIcon(notification.type)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between">
-                          <p className="font-open-sans font-bold text-sm text-gray-900">
+                        <div className="flex items-start justify-between gap-2 min-w-0">
+                          <p className="font-open-sans font-bold text-sm text-gray-900 min-w-0 flex-1 break-words">
                             {notification.title}
                           </p>
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              markAsRead(notification.id)
-                            }}
-                            className="text-gray-400 hover:text-gray-600 ml-2"
+                            type="button"
+                            aria-label="Dismiss notification"
+                            onClick={(e) => dismissNotification(notification.id, e)}
+                            className="flex-shrink-0 text-gray-400 hover:text-gray-600 p-0.5 -m-0.5 rounded hover:bg-gray-100"
                           >
                             <X className="h-4 w-4" />
                           </button>
                         </div>
-                        <p className="font-open-sans text-sm text-gray-600 mt-1">
+                        <p className="font-open-sans text-sm text-gray-600 mt-1 break-words">
                           {notification.message}
                         </p>
                         <p className="font-open-sans text-xs text-gray-400 mt-2">
