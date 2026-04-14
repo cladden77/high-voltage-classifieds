@@ -64,6 +64,7 @@ export default function ListingDetailPage() {
           users (*)
         `)
         .eq('id', listingId)
+        .neq('status', 'draft')
         .single()
 
       if (error) throw error

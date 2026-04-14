@@ -30,4 +30,15 @@ export function formatCondition(condition: string): string {
     default:
       return condition
   }
+}
+
+/**
+ * Strips characters that would split or alter PostgREST `.or()` filter strings
+ * (comma-separated clauses). Keeps dots so email-style searches still work.
+ */
+export function sanitizePostgrestOrFilterSearchTerm(raw: string): string {
+  return raw
+    .replace(/[,()[\]\n\r]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 } 

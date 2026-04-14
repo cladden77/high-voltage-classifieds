@@ -57,6 +57,11 @@ function DashboardContent() {
       setSuccessMessage('Finalizing your purchase. This usually takes a few seconds.')
       setActiveTab('purchased')
     }
+    const listingFee = searchParams.get('listing_fee')
+    if (listingFee === 'success') {
+      setSuccessMessage('Listing fee paid. Activating your listing now...')
+      setActiveTab('listings')
+    }
 
     // Handle tab parameter from URL
     const tabParam = searchParams.get('tab')
@@ -83,6 +88,62 @@ function DashboardContent() {
       return () => clearTimeout(timer)
     }
   }, [searchParams, successMessage, currentUser])
+
+  useEffect(() => {
+    const listingFee = searchParams.get('listing_fee')
+    const listingId = searchParams.get('listing_id')
+    const sessionId = searchParams.get('session_id')
+    if (listingFee !== 'success' || !listingId || !currentUser) return
+
+    let cancelled = false
+    const poll = async () => {
+      // Activate immediately using Checkout session (does not rely on webhooks)
+      if (sessionId) {
+        try {
+          const finalizeRes = await fetch('/api/listings/fee-finalize', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: sessionId }),
+            cache: 'no-store',
+          })
+          if (finalizeRes.ok) {
+            const finalizeJson = await finalizeRes.json()
+            if (finalizeJson.activated) {
+              if (!cancelled) {
+                setSuccessMessage('Listing created and activated successfully!')
+                await fetchListings()
+              }
+              return
+            }
+          }
+        } catch (e) {
+          console.error('Listing fee finalize failed:', e)
+        }
+      }
+
+      for (let attempt = 0; attempt < 10; attempt += 1) {
+        if (cancelled) return
+        const response = await fetch(`/api/listings/fee-status?listing_id=${encodeURIComponent(listingId)}`, {
+          cache: 'no-store',
+        })
+        if (response.ok) {
+          const data = await response.json()
+          if (data.active) {
+            setSuccessMessage('Listing created and activated successfully!')
+            await fetchListings()
+            return
+          }
+        }
+        await new Promise((resolve) => setTimeout(resolve, 1500))
+      }
+      setSuccessMessage('Payment received. Listing activation may take a moment.')
+    }
+
+    poll()
+    return () => {
+      cancelled = true
+    }
+  }, [searchParams, currentUser])
 
   useEffect(() => {
     const payment = searchParams.get('payment')
