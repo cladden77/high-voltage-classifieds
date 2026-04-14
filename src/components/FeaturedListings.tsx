@@ -22,7 +22,8 @@ export default function FeaturedListings() {
       const { data, error } = await supabase
         .from('listings')
         .select('*')
-        .eq('is_sold', false) // Only show available listings
+        .eq('is_sold', false)
+        .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(4); // Get the 4 most recent listings
 

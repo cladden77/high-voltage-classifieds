@@ -13,7 +13,9 @@ export async function processStripeWebhookEvent(event: Stripe.Event): Promise<vo
         if (purpose === 'listing_fee') {
           const listingFeeId = session.metadata?.listing_fee_id
           const sellerId = session.metadata?.seller_id
-          if (!listingFeeId || !sellerId || session.payment_status !== 'paid') {
+          const isPaid =
+            session.payment_status === 'paid' || session.payment_status === 'no_payment_required'
+          if (!listingFeeId || !sellerId || !isPaid) {
             break
           }
 
@@ -249,6 +251,44 @@ export async function processStripeWebhookEvent(event: Stripe.Event): Promise<vo
     case 'payment_intent.succeeded':
       {
         const paymentIntent = event.data.object as Stripe.PaymentIntent
+
+        if (paymentIntent.metadata?.purpose === 'listing_fee') {
+          const listingFeeId = paymentIntent.metadata?.listing_fee_id
+          const sellerId = paymentIntent.metadata?.seller_id
+          if (listingFeeId && sellerId) {
+            const { data: feeRecord } = await supabase
+              .from('listing_fees')
+              .select('id, listing_id, status')
+              .eq('id', listingFeeId)
+              .single()
+
+            if (feeRecord && feeRecord.status !== 'paid') {
+              await supabase
+                .from('listing_fees')
+                .update({
+                  status: 'paid',
+                  stripe_payment_intent_id: paymentIntent.id,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', listingFeeId)
+            }
+
+            if (feeRecord?.listing_id) {
+              await supabase
+                .from('listings')
+                .update({
+                  status: 'active',
+                  listing_fee_status: 'paid',
+                  listing_fee_paid_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', feeRecord.listing_id)
+                .eq('seller_id', sellerId)
+            }
+          }
+          break
+        }
+
         const listingId = paymentIntent.metadata?.listing_id
         const buyerId = paymentIntent.metadata?.buyer_id
         const sellerId = paymentIntent.metadata?.seller_id

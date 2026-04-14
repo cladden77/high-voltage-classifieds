@@ -92,10 +92,35 @@ function DashboardContent() {
   useEffect(() => {
     const listingFee = searchParams.get('listing_fee')
     const listingId = searchParams.get('listing_id')
+    const sessionId = searchParams.get('session_id')
     if (listingFee !== 'success' || !listingId || !currentUser) return
 
     let cancelled = false
     const poll = async () => {
+      // Activate immediately using Checkout session (does not rely on webhooks)
+      if (sessionId) {
+        try {
+          const finalizeRes = await fetch('/api/listings/fee-finalize', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: sessionId }),
+            cache: 'no-store',
+          })
+          if (finalizeRes.ok) {
+            const finalizeJson = await finalizeRes.json()
+            if (finalizeJson.activated) {
+              if (!cancelled) {
+                setSuccessMessage('Listing created and activated successfully!')
+                await fetchListings()
+              }
+              return
+            }
+          }
+        } catch (e) {
+          console.error('Listing fee finalize failed:', e)
+        }
+      }
+
       for (let attempt = 0; attempt < 10; attempt += 1) {
         if (cancelled) return
         const response = await fetch(`/api/listings/fee-status?listing_id=${encodeURIComponent(listingId)}`, {
