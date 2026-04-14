@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 interface OverviewTotals {
   listings: number
@@ -14,8 +14,10 @@ interface OverviewTotals {
 interface AdminUser {
   id: string
   email: string
+  full_name?: string | null
   role: string
   can_sell: boolean
+  seller_verified?: boolean
 }
 
 interface AdminListing {
@@ -23,6 +25,9 @@ interface AdminListing {
   title: string
   price: number
   status: string
+  is_sold?: boolean
+  category?: string
+  location?: string
 }
 
 interface ListingFeeRow {
@@ -36,12 +41,19 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<AdminUser[]>([])
   const [listings, setListings] = useState<AdminListing[]>([])
   const [fees, setFees] = useState<ListingFeeRow[]>([])
+  const [savingUserId, setSavingUserId] = useState<string | null>(null)
+  const [savingListingId, setSavingListingId] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string>('')
+  const [userSearch, setUserSearch] = useState('')
+  const [listingSearch, setListingSearch] = useState('')
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
+    const userSearchParam = userSearch ? `?q=${encodeURIComponent(userSearch)}` : ''
+    const listingSearchParam = listingSearch ? `?q=${encodeURIComponent(listingSearch)}` : ''
     const [overviewRes, usersRes, listingsRes, feesRes] = await Promise.all([
       fetch('/api/admin/overview'),
-      fetch('/api/admin/users'),
-      fetch('/api/admin/listings'),
+      fetch(`/api/admin/users${userSearchParam}`),
+      fetch(`/api/admin/listings${listingSearchParam}`),
       fetch('/api/admin/revenue'),
     ])
 
@@ -61,51 +73,201 @@ export default function AdminDashboard() {
       const json = await feesRes.json()
       setFees(json.listingFees || [])
     }
-  }
+  }, [userSearch, listingSearch])
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [loadData])
+
+  const updateUser = async (
+    userId: string,
+    payload: { role?: string; canSell?: boolean; sellerVerified?: boolean }
+  ) => {
+    try {
+      setSavingUserId(userId)
+      const response = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, ...payload }),
+      })
+      if (!response.ok) {
+        throw new Error('Failed to update user')
+      }
+      setNotice('User updated successfully.')
+      await loadData()
+    } catch {
+      setNotice('Failed to update user.')
+    } finally {
+      setSavingUserId(null)
+    }
+  }
+
+  const updateListing = async (
+    listingId: string,
+    payload: { status?: string; isSold?: boolean }
+  ) => {
+    try {
+      setSavingListingId(listingId)
+      const response = await fetch('/api/admin/listings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ listingId, ...payload }),
+      })
+      if (!response.ok) {
+        throw new Error('Failed to update listing')
+      }
+      setNotice('Listing updated successfully.')
+      await loadData()
+    } catch {
+      setNotice('Failed to update listing.')
+    } finally {
+      setSavingListingId(null)
+    }
+  }
 
   return (
     <div className="space-y-8">
-      <section className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <div className="border rounded-lg p-4">Total Listings: {overview?.listings ?? '-'}</div>
-        <div className="border rounded-lg p-4">Active Listings: {overview?.activeListings ?? '-'}</div>
-        <div className="border rounded-lg p-4">Sold Listings: {overview?.soldListings ?? '-'}</div>
-        <div className="border rounded-lg p-4">Total Sales: {overview?.totalSales ?? '-'}</div>
-        <div className="border rounded-lg p-4">GMV: ${overview?.gmv?.toLocaleString() ?? '-'}</div>
-        <div className="border rounded-lg p-4">Fee Income: ${overview?.listingFeeIncome?.toLocaleString() ?? '-'}</div>
+      {notice && (
+        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+          {notice}
+        </div>
+      )}
+
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <p className="font-open-sans text-sm text-gray-500">Total Listings</p>
+          <p className="font-open-sans text-2xl font-bold text-gray-900">{overview?.listings ?? '-'}</p>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <p className="font-open-sans text-sm text-gray-500">Active Listings</p>
+          <p className="font-open-sans text-2xl font-bold text-gray-900">{overview?.activeListings ?? '-'}</p>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <p className="font-open-sans text-sm text-gray-500">Sold Listings</p>
+          <p className="font-open-sans text-2xl font-bold text-gray-900">{overview?.soldListings ?? '-'}</p>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <p className="font-open-sans text-sm text-gray-500">Total Sales</p>
+          <p className="font-open-sans text-2xl font-bold text-gray-900">{overview?.totalSales ?? '-'}</p>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <p className="font-open-sans text-sm text-gray-500">GMV</p>
+          <p className="font-open-sans text-2xl font-bold text-gray-900">${overview?.gmv?.toLocaleString() ?? '-'}</p>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <p className="font-open-sans text-sm text-gray-500">Listing Fee Income</p>
+          <p className="font-open-sans text-2xl font-bold text-gray-900">${overview?.listingFeeIncome?.toLocaleString() ?? '-'}</p>
+        </div>
       </section>
 
-      <section className="border rounded-lg p-4">
-        <h2 className="font-bold mb-3">Account Management</h2>
-        <div className="space-y-2 max-h-80 overflow-auto">
+      <section className="bg-white border border-gray-200 rounded-lg p-6">
+        <h2 className="font-open-sans text-xl font-bold text-gray-900 mb-6">Account Management</h2>
+        <div className="mb-4">
+          <input
+            type="text"
+            value={userSearch}
+            onChange={(e) => setUserSearch(e.target.value)}
+            placeholder="Search users by name or email..."
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 font-open-sans text-sm"
+          />
+        </div>
+        <div className="space-y-3 max-h-96 overflow-auto">
           {users.map((user) => (
-            <div key={user.id} className="text-sm border-b pb-2">
-              {user.email} - {user.role} - seller enabled: {String(user.can_sell)}
+            <div key={user.id} className="border border-gray-200 rounded-lg p-4">
+              <div className="font-open-sans font-bold text-gray-900">{user.full_name || user.email}</div>
+              <div className="font-open-sans text-sm text-gray-500 mb-3">{user.email}</div>
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  className="px-3 py-2 border border-gray-200 rounded-lg bg-white font-open-sans text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  value={user.role}
+                  disabled={savingUserId === user.id}
+                  onChange={(e) => updateUser(user.id, { role: e.target.value })}
+                >
+                  <option value="buyer">buyer</option>
+                  <option value="seller">seller</option>
+                  <option value="admin">admin</option>
+                </select>
+                <button
+                  className={`px-3 py-2 rounded-lg font-open-sans text-sm font-bold ${
+                    user.can_sell ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                  }`}
+                  disabled={savingUserId === user.id}
+                  onClick={() => updateUser(user.id, { canSell: !user.can_sell })}
+                >
+                  can_sell: {String(user.can_sell)}
+                </button>
+                <button
+                  className={`px-3 py-2 rounded-lg font-open-sans text-sm font-bold ${
+                    user.seller_verified ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                  }`}
+                  disabled={savingUserId === user.id}
+                  onClick={() =>
+                    updateUser(user.id, { sellerVerified: !user.seller_verified })
+                  }
+                >
+                  seller_verified: {String(user.seller_verified)}
+                </button>
+              </div>
             </div>
           ))}
         </div>
       </section>
 
-      <section className="border rounded-lg p-4">
-        <h2 className="font-bold mb-3">Listings Management</h2>
-        <div className="space-y-2 max-h-80 overflow-auto">
+      <section className="bg-white border border-gray-200 rounded-lg p-6">
+        <h2 className="font-open-sans text-xl font-bold text-gray-900 mb-6">Listings Management</h2>
+        <div className="mb-4">
+          <input
+            type="text"
+            value={listingSearch}
+            onChange={(e) => setListingSearch(e.target.value)}
+            placeholder="Search listings by title, category, or location..."
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 font-open-sans text-sm"
+          />
+        </div>
+        <div className="space-y-3 max-h-96 overflow-auto">
           {listings.map((listing) => (
-            <div key={listing.id} className="text-sm border-b pb-2">
-              {listing.title} - ${Number(listing.price).toLocaleString()} - {listing.status}
+            <div key={listing.id} className="border border-gray-200 rounded-lg p-4">
+              <div className="font-open-sans font-bold text-gray-900">{listing.title}</div>
+              <div className="font-open-sans text-sm text-gray-500 mb-3">
+                ${Number(listing.price).toLocaleString()} - {listing.category} - {listing.location}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  className="px-3 py-2 border border-gray-200 rounded-lg bg-white font-open-sans text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  value={listing.status}
+                  disabled={savingListingId === listing.id}
+                  onChange={(e) => updateListing(listing.id, { status: e.target.value })}
+                >
+                  <option value="draft">draft</option>
+                  <option value="active">active</option>
+                  <option value="sold">sold</option>
+                  <option value="archived">archived</option>
+                </select>
+                <button
+                  className={`px-3 py-2 rounded-lg font-open-sans text-sm font-bold ${
+                    listing.is_sold ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                  }`}
+                  disabled={savingListingId === listing.id}
+                  onClick={() => updateListing(listing.id, { isSold: !listing.is_sold })}
+                >
+                  is_sold: {String(listing.is_sold)}
+                </button>
+              </div>
             </div>
           ))}
         </div>
       </section>
 
-      <section className="border rounded-lg p-4">
-        <h2 className="font-bold mb-3">Listing Fee Revenue</h2>
-        <div className="space-y-2 max-h-80 overflow-auto">
+      <section className="bg-white border border-gray-200 rounded-lg p-6">
+        <h2 className="font-open-sans text-xl font-bold text-gray-900 mb-6">Listing Fee Revenue</h2>
+        <div className="space-y-3 max-h-96 overflow-auto">
           {fees.map((fee) => (
-            <div key={fee.id} className="text-sm border-b pb-2">
-              Fee ${Number(fee.fee_amount).toFixed(2)} - status: {fee.status}
+            <div key={fee.id} className="border border-gray-200 rounded-lg p-4">
+              <p className="font-open-sans text-sm text-gray-500">Fee Transaction</p>
+              <p className="font-open-sans text-lg font-bold text-gray-900">
+                ${Number(fee.fee_amount).toFixed(2)}
+              </p>
+              <p className="font-open-sans text-sm text-gray-600">Status: {fee.status}</p>
             </div>
           ))}
         </div>

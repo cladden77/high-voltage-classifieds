@@ -1,16 +1,23 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin'
 import { createAdminSupabase } from '@/lib/supabase-server'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await requireAdmin()
+    const search = new URL(request.url).searchParams.get('q')
     const supabase = createAdminSupabase()
-    const { data, error } = await supabase
+    let query = supabase
       .from('listings')
       .select('id,title,price,status,is_sold,category,location,created_at,seller_id')
       .order('created_at', { ascending: false })
       .limit(200)
+
+    if (search) {
+      query = query.or(`title.ilike.%${search}%,category.ilike.%${search}%,location.ilike.%${search}%`)
+    }
+
+    const { data, error } = await query
 
     if (error) throw error
     return NextResponse.json({ listings: data || [] })

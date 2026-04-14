@@ -53,7 +53,7 @@ export default function Header() {
   return (
     <header className="bg-[#1b1b1b] h-[95px] sticky top-0 z-50 shadow-[0px_10px_15px_-3px_rgba(0,0,0,0.1),0px_4px_6px_-4px_rgba(0,0,0,0.1)]">
       <div className="box-border content-stretch flex flex-col items-center justify-center pb-px pt-0 px-4 lg:px-20 relative size-full">
-        <nav className="box-border content-stretch flex flex-row gap-4 lg:gap-[323px] items-center justify-between max-w-[1280px] px-0 py-4 relative shrink-0 w-full">
+        <nav className="box-border content-stretch flex flex-row gap-4 items-center justify-between max-w-[1280px] px-0 py-4 relative shrink-0 w-full">
           <div className="box-border content-stretch flex flex-row gap-4 lg:gap-[38px] items-center justify-start p-0 relative shrink-0">
             {/* Logo */}
             <div className="box-border content-stretch flex flex-row gap-2 items-center justify-start p-0 relative shrink-0">
@@ -83,24 +83,24 @@ export default function Header() {
           </div>
           
           {/* Right side navigation */}
-          <div className="flex flex-row gap-4 items-center">
+          <div className="flex flex-row gap-4 items-center shrink-0">
             {/* Dynamic Auth Link - Desktop */}
             {!loading && (
               <>
                 {currentUser ? (
-                  <div className="hidden lg:flex items-center gap-4">
+                  <div className="hidden lg:flex items-center gap-4 whitespace-nowrap">
                     <NotificationBell />
-                    <span className="text-neutral-100 text-sm">
+                    <span className="text-neutral-100 text-sm max-w-[180px] truncate">
                       Hi, {currentUser.name || currentUser.email}
                     </span>
                     <button 
                       onClick={handleSignOut}
-                      className="text-neutral-100 text-base font-bold hover:text-[#f37121] transition-colors"
+                      className="text-neutral-100 text-sm font-bold hover:text-[#f37121] transition-colors"
                     >
                       Sign Out
                     </button>
                     {currentUser.role === 'admin' && (
-                      <Link href="/admin" className="text-neutral-100 text-base font-bold hover:text-[#f37121] transition-colors">
+                      <Link href="/admin" className="text-neutral-100 text-sm font-bold hover:text-[#f37121] transition-colors">
                         Admin
                       </Link>
                     )}
@@ -124,7 +124,7 @@ export default function Header() {
               <Link 
                 href="/dashboard" 
                 onClick={closeMobileMenu}
-                className="hidden lg:inline-block bg-[#f37121] text-white px-5 py-2 rounded shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)] text-base font-bold uppercase hover:bg-[#e55a0a] transition-colors"
+                className="hidden lg:inline-block bg-[#f37121] text-white px-5 py-2 rounded shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)] text-base font-bold uppercase hover:bg-[#e55a0a] transition-colors whitespace-nowrap"
               >
                 Dashboard
               </Link>

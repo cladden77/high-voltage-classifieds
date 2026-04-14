@@ -25,7 +25,9 @@ export default async function AdminPage() {
         <p className="font-open-sans text-lg text-gray-500 mb-8">
           Manage accounts, listings, and platform performance.
         </p>
-        <AdminDashboard />
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <AdminDashboard />
+        </div>
       </main>
       <Footer />
     </div>
