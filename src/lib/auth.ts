@@ -15,7 +15,7 @@ export const authConfig = {
 }
 
 // User authentication functions (for client components)
-export async function signInWithCredentials(email: string, password: string, role?: 'buyer' | 'seller') {
+export async function signInWithCredentials(email: string, password: string, role?: 'buyer' | 'seller' | 'admin') {
   try {
     console.log('🔐 Signing in user:', email)
     
@@ -54,7 +54,9 @@ export async function signInWithCredentials(email: string, password: string, rol
 
     console.log('👤 User profile:', profile)
 
-    const resolvedRole: 'buyer' | 'seller' =
+    const resolvedRole: 'buyer' | 'seller' | 'admin' =
+      profile?.role === 'admin' ? 'admin'
+      :
       profile?.role === 'seller' ? 'seller'
       : profile?.can_sell ? 'seller'
       : role || 'buyer'
@@ -199,19 +201,20 @@ export async function getCurrentUser() {
     }
 
     // Get user profile
-    let { data: profile, error: profileError } = await supabase
+    const { data: initialProfile, error: profileError } = await supabase
       .from('users')
       .select('*')
       .eq('id', user.id)
       .single()
+    let profile = initialProfile
 
     if (profileError) {
       // Try to create the profile if it doesn't exist
       if (profileError.code === 'PGRST116') { // No rows returned
         // Try to determine the role from user metadata or default to buyer
-        let defaultRole: 'buyer' | 'seller' = 'buyer'
-        if (user.user_metadata?.role && (user.user_metadata.role === 'buyer' || user.user_metadata.role === 'seller')) {
-          defaultRole = user.user_metadata.role as 'buyer' | 'seller'
+        let defaultRole: 'buyer' | 'seller' | 'admin' = 'buyer'
+        if (user.user_metadata?.role && (user.user_metadata.role === 'buyer' || user.user_metadata.role === 'seller' || user.user_metadata.role === 'admin')) {
+          defaultRole = user.user_metadata.role as 'buyer' | 'seller' | 'admin'
         }
         // If seller capabilities are enabled, treat user as seller for compatibility
         if (user.user_metadata?.can_sell) {
@@ -241,7 +244,7 @@ export async function getCurrentUser() {
       id: user.id,
       email: user.email!,
       name: profile?.full_name || user.user_metadata?.full_name || '',
-      role: (profile?.role === 'seller' || profile?.can_sell) ? 'seller' : 'buyer',
+      role: profile?.role === 'admin' ? 'admin' : (profile?.role === 'seller' || profile?.can_sell) ? 'seller' : 'buyer',
       canSell: profile?.can_sell || false,
       sellerVerified: profile?.seller_verified || false,
     }
@@ -306,7 +309,7 @@ export async function debugAuthState() {
 }
 
 // Utility function to manually create/fix user profile
-export async function createUserProfile(userId: string, email: string, name: string, role: 'buyer' | 'seller' = 'buyer', canSell: boolean = false) {
+export async function createUserProfile(userId: string, email: string, name: string, role: 'buyer' | 'seller' | 'admin' = 'buyer', canSell: boolean = false) {
   try {
     console.log('🔧 Creating/fixing user profile for:', userId)
     
@@ -341,7 +344,7 @@ export interface User {
   id: string
   email: string
   name: string
-  role: 'buyer' | 'seller'
+  role: 'buyer' | 'seller' | 'admin'
   canSell?: boolean
   sellerVerified?: boolean
 } 

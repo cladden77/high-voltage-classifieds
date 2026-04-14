@@ -14,7 +14,7 @@ export interface Database {
           id: string
           full_name: string | null
           email: string
-          role: 'buyer' | 'seller'
+          role: 'buyer' | 'seller' | 'admin'
           avatar_url: string | null
           phone: string | null
           location: string | null
@@ -33,7 +33,7 @@ export interface Database {
           id: string
           full_name?: string | null
           email: string
-          role?: 'buyer' | 'seller'
+          role?: 'buyer' | 'seller' | 'admin'
           avatar_url?: string | null
           phone?: string | null
           location?: string | null
@@ -52,7 +52,7 @@ export interface Database {
           id?: string
           full_name?: string | null
           email?: string
-          role?: 'buyer' | 'seller'
+          role?: 'buyer' | 'seller' | 'admin'
           avatar_url?: string | null
           phone?: string | null
           location?: string | null
@@ -81,7 +81,13 @@ export interface Database {
           image_urls: string[]
           seller_id: string
           is_sold: boolean
+          status: 'draft' | 'active' | 'sold' | 'archived'
           is_featured: boolean
+          listing_fee_amount: number
+          listing_fee_status: 'pending' | 'paid' | 'failed' | 'cancelled' | 'refunded' | 'free'
+          listing_fee_paid_at: string | null
+          archived_at: string | null
+          listing_fee_payment_id: string | null
           created_at: string
           updated_at: string
         }
@@ -96,7 +102,13 @@ export interface Database {
           image_urls?: string[]
           seller_id: string
           is_sold?: boolean
+          status?: 'draft' | 'active' | 'sold' | 'archived'
           is_featured?: boolean
+          listing_fee_amount?: number
+          listing_fee_status?: 'pending' | 'paid' | 'failed' | 'cancelled' | 'refunded' | 'free'
+          listing_fee_paid_at?: string | null
+          archived_at?: string | null
+          listing_fee_payment_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -111,7 +123,13 @@ export interface Database {
           image_urls?: string[]
           seller_id?: string
           is_sold?: boolean
+          status?: 'draft' | 'active' | 'sold' | 'archived'
           is_featured?: boolean
+          listing_fee_amount?: number
+          listing_fee_status?: 'pending' | 'paid' | 'failed' | 'cancelled' | 'refunded' | 'free'
+          listing_fee_paid_at?: string | null
+          archived_at?: string | null
+          listing_fee_payment_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -321,6 +339,63 @@ export interface Database {
           {
             foreignKeyName: "notifications_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      listing_fees: {
+        Row: {
+          id: string
+          seller_id: string
+          listing_id: string | null
+          listed_price: number
+          fee_amount: number
+          stripe_checkout_session_id: string | null
+          stripe_payment_intent_id: string | null
+          status: 'pending' | 'paid' | 'failed' | 'cancelled' | 'refunded' | 'free'
+          metadata: Json | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          seller_id: string
+          listing_id?: string | null
+          listed_price: number
+          fee_amount: number
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          status?: 'pending' | 'paid' | 'failed' | 'cancelled' | 'refunded' | 'free'
+          metadata?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          seller_id?: string
+          listing_id?: string | null
+          listed_price?: number
+          fee_amount?: number
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          status?: 'pending' | 'paid' | 'failed' | 'cancelled' | 'refunded' | 'free'
+          metadata?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_fees_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_fees_seller_id_fkey"
+            columns: ["seller_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]

@@ -25,6 +25,15 @@ export interface CheckoutSession {
   paymentIntentId?: string
 }
 
+export interface ListingFeeCheckoutData {
+  sellerId: string
+  listingFeeId: string
+  listingPrice: number
+  feeAmount: number
+  successUrl: string
+  cancelUrl: string
+}
+
 // Stripe Connect Integration
 export class StripeConnect {
   /**
@@ -241,6 +250,53 @@ export class StripeConnect {
     } catch (error) {
       console.error('Error creating checkout session:', error)
       throw new Error(`Failed to create checkout session: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  static async createListingFeeCheckoutSession(data: ListingFeeCheckoutData): Promise<CheckoutSession> {
+    const seller = await createAdminSupabase()
+      .from('users')
+      .select('email')
+      .eq('id', data.sellerId)
+      .single()
+
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      payment_method_types: ['card'],
+      ...(seller.data?.email ? { customer_email: seller.data.email } : {}),
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: 'Listing Fee',
+              description: `Listing price $${data.listingPrice.toLocaleString()}`,
+            },
+            unit_amount: Math.round(data.feeAmount * 100),
+          },
+        },
+      ],
+      success_url: data.successUrl,
+      cancel_url: data.cancelUrl,
+      metadata: {
+        purpose: 'listing_fee',
+        seller_id: data.sellerId,
+        listing_fee_id: data.listingFeeId,
+      },
+      payment_intent_data: {
+        metadata: {
+          purpose: 'listing_fee',
+          seller_id: data.sellerId,
+          listing_fee_id: data.listingFeeId,
+        },
+      },
+    })
+
+    return {
+      id: session.id,
+      url: session.url || '',
+      paymentIntentId: typeof session.payment_intent === 'string' ? session.payment_intent : undefined,
     }
   }
 

@@ -99,6 +99,11 @@ export default function Header() {
                     >
                       Sign Out
                     </button>
+                    {currentUser.role === 'admin' && (
+                      <Link href="/admin" className="text-neutral-100 text-base font-bold hover:text-[#f37121] transition-colors">
+                        Admin
+                      </Link>
+                    )}
                   </div>
                 ) : (
                   <div className="hidden lg:flex items-center gap-4">
@@ -252,6 +257,15 @@ export default function Header() {
                       >
                         Dashboard
                       </Link>
+                      {currentUser.role === 'admin' && (
+                        <Link
+                          href="/admin"
+                          onClick={closeMobileMenu}
+                          className="block text-neutral-100 text-base font-bold uppercase hover:text-[#f37121] transition-colors py-2"
+                        >
+                          Admin
+                        </Link>
+                      )}
                     </div>
                     
                     {/* Sign Out Button */}

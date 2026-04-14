@@ -57,6 +57,11 @@ function DashboardContent() {
       setSuccessMessage('Finalizing your purchase. This usually takes a few seconds.')
       setActiveTab('purchased')
     }
+    const listingFee = searchParams.get('listing_fee')
+    if (listingFee === 'success') {
+      setSuccessMessage('Listing fee paid. Activating your listing now...')
+      setActiveTab('listings')
+    }
 
     // Handle tab parameter from URL
     const tabParam = searchParams.get('tab')
@@ -83,6 +88,37 @@ function DashboardContent() {
       return () => clearTimeout(timer)
     }
   }, [searchParams, successMessage, currentUser])
+
+  useEffect(() => {
+    const listingFee = searchParams.get('listing_fee')
+    const listingId = searchParams.get('listing_id')
+    if (listingFee !== 'success' || !listingId || !currentUser) return
+
+    let cancelled = false
+    const poll = async () => {
+      for (let attempt = 0; attempt < 10; attempt += 1) {
+        if (cancelled) return
+        const response = await fetch(`/api/listings/fee-status?listing_id=${encodeURIComponent(listingId)}`, {
+          cache: 'no-store',
+        })
+        if (response.ok) {
+          const data = await response.json()
+          if (data.active) {
+            setSuccessMessage('Listing created and activated successfully!')
+            await fetchListings()
+            return
+          }
+        }
+        await new Promise((resolve) => setTimeout(resolve, 1500))
+      }
+      setSuccessMessage('Payment received. Listing activation may take a moment.')
+    }
+
+    poll()
+    return () => {
+      cancelled = true
+    }
+  }, [searchParams, currentUser])
 
   useEffect(() => {
     const payment = searchParams.get('payment')

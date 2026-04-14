@@ -7,6 +7,7 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { createClientSupabase } from '@/lib/supabase'
 import { LISTING_CATEGORIES } from '@/lib/listing-categories'
+import { calculateListingFee } from '@/lib/listing-fees'
 
 // Force dynamic rendering for this page
 export const dynamic = 'force-dynamic'
@@ -24,6 +25,7 @@ export default function CreateListingPage() {
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [feePreview, setFeePreview] = useState(0)
   
   // Location autocomplete state
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>([])
@@ -32,6 +34,15 @@ export default function CreateListingPage() {
   const locationInputRef = useRef<HTMLInputElement>(null)
 
   const router = useRouter()
+
+  useEffect(() => {
+    const parsedPrice = parseFloat(formData.price)
+    if (Number.isFinite(parsedPrice) && parsedPrice >= 0) {
+      setFeePreview(calculateListingFee(parsedPrice))
+    } else {
+      setFeePreview(0)
+    }
+  }, [formData.price])
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
@@ -220,36 +231,34 @@ export default function CreateListingPage() {
         return
       }
 
-      // Create listing
-      const supabase = createClientSupabase()
-      const { data, error } = await supabase
-        .from('listings')
-        .insert({
-          title: formData.title,
-          description: formData.description,
-          price: price,
-          location: formData.location,
-          category: formData.category,
-          condition: formData.condition,
-          image_urls: imageUrls,
-          seller_id: currentUser.id,
-          is_sold: false
-        })
-        .select()
-        .single()
+      const response = await fetch('/api/listings/fee-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          listing: {
+            title: formData.title,
+            description: formData.description,
+            price,
+            location: formData.location,
+            category: formData.category,
+            condition: formData.condition,
+            image_urls: imageUrls,
+          },
+        }),
+      })
 
-      if (error) {
-        console.error('Database error creating listing:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code,
-          error: error
-        })
-        throw new Error(`Failed to create listing: ${error.message}`)
+      const result = await response.json()
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create listing')
       }
 
-      // Redirect to dashboard with success message
+      if (result.checkoutUrl) {
+        window.location.href = result.checkoutUrl
+        return
+      }
+
       router.push('/dashboard?success=listing-created')
     } catch (error: any) {
       console.error('Error creating listing:', error)
@@ -483,6 +492,12 @@ export default function CreateListingPage() {
           </div>
 
           {/* Submit Buttons */}
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+            <p className="font-open-sans text-sm text-orange-900">
+              Listing fee for this price: <span className="font-bold">${feePreview.toFixed(2)}</span>
+            </p>
+          </div>
+
           <div className="flex justify-end gap-4">
             <button
               type="button"

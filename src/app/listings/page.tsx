@@ -57,7 +57,8 @@ function ListingsContent() {
       let query = supabase
         .from('listings')
         .select('*')
-        .eq('is_sold', false) // Only show available listings
+        .eq('is_sold', false)
+        .eq('status', 'active')
 
       // Apply sorting
       switch (sortBy) {
