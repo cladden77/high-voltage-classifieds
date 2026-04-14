@@ -16,10 +16,42 @@ interface ListingPayload {
   image_urls: string[]
 }
 
-function isListingPayload(value: unknown): value is ListingPayload {
-  if (!value || typeof value !== 'object') return false
-  const candidate = value as Partial<ListingPayload>
-  return !!candidate.title && !!candidate.description && Number.isFinite(candidate.price)
+const LISTING_CONDITIONS: ListingPayload['condition'][] = [
+  'new',
+  'like_new',
+  'good',
+  'fair',
+  'poor',
+]
+
+function parseListingPayload(value: unknown): ListingPayload | null {
+  if (!value || typeof value !== 'object') return null
+  const o = value as Record<string, unknown>
+
+  if (typeof o.title !== 'string' || !o.title.trim()) return null
+  if (typeof o.description !== 'string' || !o.description.trim()) return null
+  if (typeof o.price !== 'number' || !Number.isFinite(o.price) || o.price < 0) return null
+  if (typeof o.location !== 'string' || !o.location.trim()) return null
+  if (typeof o.category !== 'string' || !o.category.trim()) return null
+
+  const condition = o.condition
+  if (typeof condition !== 'string' || !LISTING_CONDITIONS.includes(condition as ListingPayload['condition'])) {
+    return null
+  }
+
+  if (!Array.isArray(o.image_urls) || !o.image_urls.every((u) => typeof u === 'string')) {
+    return null
+  }
+
+  return {
+    title: o.title.trim(),
+    description: o.description.trim(),
+    price: o.price,
+    location: o.location.trim(),
+    category: o.category.trim(),
+    condition: condition as ListingPayload['condition'],
+    image_urls: o.image_urls as string[],
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -30,8 +62,8 @@ export async function POST(request: NextRequest) {
     if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
 
     const body = await request.json()
-    const listing = body?.listing
-    if (!isListingPayload(listing)) {
+    const listing = parseListingPayload(body?.listing)
+    if (!listing) {
       return NextResponse.json({ error: 'Invalid listing payload' }, { status: 400 })
     }
 
@@ -51,7 +83,13 @@ export async function POST(request: NextRequest) {
     const { data: createdListing, error: listingError } = await admin
       .from('listings')
       .insert({
-        ...listing,
+        title: listing.title,
+        description: listing.description,
+        price: listing.price,
+        location: listing.location,
+        category: listing.category,
+        condition: listing.condition,
+        image_urls: listing.image_urls,
         seller_id: user.id,
         is_sold: false,
         status: feeAmount > 0 ? 'draft' : 'active',

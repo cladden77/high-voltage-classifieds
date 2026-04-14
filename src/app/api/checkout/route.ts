@@ -61,8 +61,7 @@ export async function POST(request: NextRequest) {
         { error: 'This item has already been sold' },
         { status: 400 }
       )
-    }
-    if (listing.status !== 'active') {
+    } else if (listing.status !== 'active') {
       return NextResponse.json(
         { error: 'This listing is not available for purchase yet' },
         { status: 400 }

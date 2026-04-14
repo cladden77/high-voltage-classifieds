@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin'
 import { createAdminSupabase } from '@/lib/supabase-server'
+import { sanitizePostgrestOrFilterSearchTerm } from '@/lib/utils'
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,8 +14,11 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(200)
 
-    if (search) {
-      query = query.or(`title.ilike.%${search}%,category.ilike.%${search}%,location.ilike.%${search}%`)
+    const safeSearch = search ? sanitizePostgrestOrFilterSearchTerm(search) : ''
+    if (safeSearch) {
+      query = query.or(
+        `title.ilike.%${safeSearch}%,category.ilike.%${safeSearch}%,location.ilike.%${safeSearch}%`
+      )
     }
 
     const { data, error } = await query
