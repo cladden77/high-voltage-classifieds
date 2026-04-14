@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { ArrowLeft, Upload, X, Plus, DollarSign, MapPin, Tag, FileText, Search } from 'lucide-react'
+import { ArrowLeft, Upload, X, DollarSign, MapPin, Tag, FileText, Search, CreditCard, Lock } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
@@ -35,14 +35,17 @@ export default function CreateListingPage() {
 
   const router = useRouter()
 
+  const listPriceNumber = parseFloat(formData.price)
+  const parsedListPrice =
+    Number.isFinite(listPriceNumber) && listPriceNumber >= 0 ? listPriceNumber : null
+
   useEffect(() => {
-    const parsedPrice = parseFloat(formData.price)
-    if (Number.isFinite(parsedPrice) && parsedPrice >= 0) {
-      setFeePreview(calculateListingFee(parsedPrice))
+    if (parsedListPrice !== null) {
+      setFeePreview(calculateListingFee(parsedListPrice))
     } else {
       setFeePreview(0)
     }
-  }, [formData.price])
+  }, [parsedListPrice])
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
@@ -491,11 +494,58 @@ export default function CreateListingPage() {
             </div>
           </div>
 
-          {/* Submit Buttons */}
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-            <p className="font-open-sans text-sm text-orange-900">
-              Listing fee for this price: <span className="font-bold">${feePreview.toFixed(2)}</span>
-            </p>
+          {/* Listing fee — checkout-style summary */}
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+            <div className="bg-gray-50 border-b border-gray-200 px-6 py-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
+                <CreditCard className="h-5 w-5" aria-hidden />
+              </div>
+              <div>
+                <h2 className="font-open-sans text-lg font-bold text-gray-900">Listing fee checkout</h2>
+                <p className="font-open-sans text-sm text-gray-500">
+                  Review what you will pay to publish this listing. Equipment price is shown for reference only.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="flex justify-between gap-4 font-open-sans text-sm">
+                <span className="text-gray-600">Equipment list price</span>
+                <span className="font-bold text-gray-900 tabular-nums">
+                  {parsedListPrice !== null ? `$${parsedListPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
+                </span>
+              </div>
+              <div className="flex justify-between gap-4 font-open-sans text-sm">
+                <span className="text-gray-600">Listing fee (due today)</span>
+                <span className="font-bold text-gray-900 tabular-nums">
+                  {feePreview === 0 ? (
+                    <span className="text-green-700">$0.00 <span className="font-open-sans font-normal text-gray-500">(Free)</span></span>
+                  ) : (
+                    `$${feePreview.toFixed(2)}`
+                  )}
+                </span>
+              </div>
+
+              <div className="border-t border-gray-200 pt-4 flex justify-between items-baseline gap-4">
+                <span className="font-open-sans font-bold text-gray-900">Total due today</span>
+                <span className="font-open-sans text-2xl font-bold text-gray-900 tabular-nums">
+                  ${feePreview.toFixed(2)}
+                </span>
+              </div>
+
+              {feePreview > 0 ? (
+                <div className="flex items-start gap-2 rounded-lg bg-gray-50 border border-gray-100 px-3 py-2.5">
+                  <Lock className="h-4 w-4 text-gray-500 mt-0.5 shrink-0" aria-hidden />
+                  <p className="font-open-sans text-sm text-gray-600">
+                    After you submit, you will be redirected to <span className="font-bold text-gray-800">Stripe</span> to pay the listing fee. Your listing goes live to buyers only after payment succeeds.
+                  </p>
+                </div>
+              ) : (
+                <p className="font-open-sans text-sm text-gray-600">
+                  No listing fee applies for this price tier. Your listing will publish immediately after you submit.
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="flex justify-end gap-4">
@@ -511,7 +561,13 @@ export default function CreateListingPage() {
               disabled={isSubmitting}
               className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 text-white py-3 px-6 rounded-lg font-open-sans font-bold"
             >
-              {isSubmitting ? 'Creating Listing...' : 'Create Listing'}
+              {isSubmitting
+                ? feePreview > 0
+                  ? 'Redirecting to checkout…'
+                  : 'Publishing…'
+                : feePreview > 0
+                  ? 'Continue to secure checkout'
+                  : 'Publish listing'}
             </button>
           </div>
         </form>
