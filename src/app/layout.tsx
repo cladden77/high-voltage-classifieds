@@ -34,7 +34,7 @@ export default function RootLayout({
       >
         <Script
           src="https://js-na2.hsforms.net/forms/embed/243765446.js"
-          strategy="lazyOnload"
+          strategy="afterInteractive"
         />
         {children}
       </body>
