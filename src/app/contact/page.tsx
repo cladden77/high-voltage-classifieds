@@ -66,17 +66,18 @@ export default function ContactPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* HubSpot Form Section */}
-          <div className="bg-white border border-gray-200 rounded-lg p-8">
-            <div className="flex items-center gap-3 mb-6">
+          <div className="rounded-lg border border-gray-200 bg-white px-5 py-5 sm:px-6 sm:py-6">
+            <div className="mb-4 flex items-center gap-3">
               <h2 className="font-open-sans text-2xl font-bold text-gray-900">
                 Get in Touch
               </h2>
             </div>
-            
+
             <HubSpotEmbed
               region="na2"
               formId="be7e83a0-9dd3-4905-b2c8-14d546845e9a"
               portalId="243765446"
+              className="contact-page-hubspot"
             />
           </div>
 

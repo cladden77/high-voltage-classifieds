@@ -58,6 +58,14 @@ body {
   min-height: 120px;
 }
 
+/* Contact page: strip default HubSpot form padding inside the iframe */
+.hs-form-frame.contact-page-hubspot {
+  --hsf-background__padding: 0px;
+  --hsf-default-background__padding: 0px;
+  --hsf-row__vertical-spacing: 8px;
+  --hsf-module__vertical-spacing: 0px;
+}
+
 .hs-form-frame iframe {
   display: block;
   width: 100% !important;
