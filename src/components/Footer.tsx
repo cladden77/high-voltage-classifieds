@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import NewsletterSubscribeForm from "@/components/NewsletterSubscribeForm";
 
 export default function Footer() {
   return (
@@ -47,15 +48,8 @@ export default function Footer() {
         </div>
         
         <div>
-          <h3 className="text-[#f37121] text-lg font-bold">Newsletter</h3>
-          <div className="space-y-3">
-            <div
-              className="hs-form-frame newsletter-form-frame"
-              data-region="na2"
-              data-form-id="ef60169f-ecda-4601-806b-f0a2e4657d7c"
-              data-portal-id="243765446"
-            ></div>
-          </div>
+          <h3 className="text-[#f37121] text-lg font-bold mb-3">Newsletter</h3>
+          <NewsletterSubscribeForm />
         </div>
       </div>
       

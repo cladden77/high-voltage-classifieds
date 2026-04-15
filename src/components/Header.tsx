@@ -51,13 +51,13 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-[#1b1b1b] h-[95px] sticky top-0 z-50 shadow-[0px_10px_15px_-3px_rgba(0,0,0,0.1),0px_4px_6px_-4px_rgba(0,0,0,0.1)]">
-      <div className="box-border content-stretch flex flex-col items-center justify-center pb-px pt-0 px-4 lg:px-20 relative size-full">
-        <nav className="box-border content-stretch flex flex-row gap-4 items-center justify-between max-w-[1280px] px-0 py-4 relative shrink-0 w-full">
-          <div className="box-border content-stretch flex flex-row gap-4 lg:gap-[38px] items-center justify-start p-0 relative shrink-0">
+    <header className="sticky top-0 z-50 h-[95px] bg-[#1b1b1b] shadow-[0px_10px_15px_-3px_rgba(0,0,0,0.1),0px_4px_6px_-4px_rgba(0,0,0,0.1)]">
+      <div className="mx-auto flex h-full w-full max-w-[1280px] items-center px-4 lg:px-20">
+        <nav className="flex w-full min-w-0 items-center justify-between gap-4 py-4">
+          <div className="flex min-w-0 flex-1 items-center gap-4 lg:gap-[38px]">
             {/* Logo */}
-            <div className="box-border content-stretch flex flex-row gap-2 items-center justify-start p-0 relative shrink-0">
-              <Link href="/" className="flex items-center h-12 relative shrink-0" onClick={closeMobileMenu}>
+            <div className="flex shrink-0 items-center gap-2">
+              <Link href="/" className="relative flex h-12 shrink-0 items-center" onClick={closeMobileMenu}>
                 <Image
                   src="/assets/high-voltage-classifieds-logo.svg"
                   alt="High Voltage Classifieds"
@@ -69,7 +69,7 @@ export default function Header() {
             </div>
             
             {/* Navigation Links - Hidden on mobile */}
-            <div className="hidden lg:flex flex-row gap-6 items-center">
+            <div className="hidden min-w-0 items-center gap-6 lg:flex">
               <Link href="/listings" className="text-neutral-100 text-sm font-bold uppercase hover:text-[#f37121] transition-colors">
                 Browse Listings
               </Link>
