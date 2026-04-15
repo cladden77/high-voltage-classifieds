@@ -142,6 +142,13 @@ export default function Header() {
                 Post Listing
               </Link>
             )}
+
+            {/* Mobile Notifications Icon */}
+            {!loading && currentUser && (
+              <div className="lg:hidden">
+                <NotificationBell variant="mobile" />
+              </div>
+            )}
             
             {/* Mobile menu button */}
             <button 
@@ -219,12 +226,6 @@ export default function Header() {
                   <div className="space-y-4">
                     <div className="text-neutral-100 text-sm font-medium">
                       Hi, {currentUser.name || currentUser.email}
-                    </div>
-                    
-                    {/* Mobile Notifications */}
-                    <div className="flex items-center justify-between py-2">
-                      <span className="text-neutral-100 text-base font-bold uppercase">Notifications</span>
-                      <NotificationBell />
                     </div>
                     
                     {/* User Navigation Links */}

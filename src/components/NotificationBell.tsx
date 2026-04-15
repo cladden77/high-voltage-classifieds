@@ -17,7 +17,11 @@ interface Notification {
   created_at: string
 }
 
-export default function NotificationBell() {
+interface NotificationBellProps {
+  variant?: 'desktop' | 'mobile'
+}
+
+export default function NotificationBell({ variant = 'desktop' }: NotificationBellProps) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -221,13 +225,24 @@ export default function NotificationBell() {
     return date.toLocaleDateString()
   }
 
+  const isMobileVariant = variant === 'mobile'
+  const bellButtonClassName = isMobileVariant
+    ? 'relative inline-flex items-center justify-center h-11 w-11 rounded-lg border border-neutral-600 text-neutral-100 hover:text-white hover:border-[#f37121] hover:bg-[#242424] transition-colors'
+    : 'relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors'
+
+  const dropdownClassName = isMobileVariant
+    ? 'absolute right-0 top-full mt-3 w-[min(22rem,calc(100vw-3rem))] bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-x-hidden'
+    : 'absolute right-0 mt-2 w-80 max-w-[min(100vw_-_2rem,20rem)] bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-x-hidden'
+
   return (
     <div className="relative">
       {/* Notification Bell */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+        className={bellButtonClassName}
+        aria-label="Open notifications"
+        aria-expanded={isOpen}
       >
         <Bell className="h-6 w-6" />
         {unreadCount > 0 && (
@@ -239,7 +254,7 @@ export default function NotificationBell() {
 
       {/* Notifications Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 max-w-[min(100vw_-_2rem,20rem)] bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-x-hidden">
+        <div className={dropdownClassName}>
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <h3 className="font-open-sans font-bold text-gray-900">Notifications</h3>
