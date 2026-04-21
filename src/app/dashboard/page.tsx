@@ -1640,7 +1640,7 @@ function DashboardContent() {
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-6 h-6 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center font-bold text-xs">3</div>
-                  <p>Money goes directly to your bank account (no platform fees currently)</p>
+                  <p>Money goes directly to your bank account after any applicatable listing fees are deducted</p>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-6 h-6 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center font-bold text-xs">4</div>
