@@ -3,6 +3,7 @@ import { Calendar, User, ArrowLeft } from 'lucide-react'
 import { PortableText } from '@portabletext/react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import NewsletterSubscribeForm from '@/components/NewsletterSubscribeForm'
 import { getPostBySlug, getAllPostSlugs, SanityPost } from '@/lib/sanity'
 import { urlFor } from '@/lib/sanity'
 import Link from 'next/link'
@@ -315,16 +316,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           <p className="font-open-sans text-gray-600 mb-6">
             Get the latest industry insights and equipment listings delivered to your inbox
           </p>
-          <div className="max-w-md mx-auto flex gap-2">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
-            <button className="bg-orange-500 hover:bg-orange-600 text-white py-2 px-6 rounded-lg font-open-sans font-bold">
-              Subscribe
-            </button>
-          </div>
+          <NewsletterSubscribeForm variant="lightInline" />
         </div>
       </div>
 
